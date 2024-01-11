@@ -41,4 +41,4 @@ for d in pkg:
           f"bash /coverup/eval/run_coverup.sh {src} {package} {' '.join(files)}"
     print(cmd)
     subprocess.run(cmd, shell=True, check=True)
-    break
+#    break
