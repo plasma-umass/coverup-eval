@@ -41,6 +41,7 @@ run "python3 -m slipcover $SLIPCOVER_ARGS --out /output/interim.json -m pytest $
 run "chown -R $OWNER /output"
 
 # re-run CoverUp to try to improve on it
+echo "-------- 2nd run --------" >> /output/coverup-log
 run "python3 /coverup/coverup.py $COVERUP_ARGS /output/interim.json $FILES"
 run "cp -R coverup-tests /output"
 run "chown -R $OWNER /output"
