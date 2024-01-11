@@ -4,14 +4,15 @@ import json
 import re
 from statistics import mean
 
-juan = Path("/home/juan")
-replication = juan / "codamosa" / "replication"
-output = replication / "output"
-coverup_eval = Path("eval")
+codamosa = Path("/home/juan") / "codamosa" # FIXME
+
+replication = codamosa / "replication"
+codamosa_output = replication / "output"
+coverup_output = Path("output")
 
 codamosa = defaultdict(list)
 
-for f in output.iterdir():
+for f in codamosa_output.iterdir():
     m = re.match('(.*?)-\d+', f.name)
     module = m.group(1)
     file = module.replace('.','/') + ".py"
@@ -29,7 +30,7 @@ coverup = dict()
 for m in codamosa:
     base_module = m.split('.')[0]
 
-    cov_file = coverup_eval / base_module / "final.json"
+    cov_file = coverup_output / base_module / "final.json"
     if not cov_file.exists():
         continue
 
