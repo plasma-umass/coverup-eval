@@ -9,6 +9,18 @@ codamosa = Path("/home/juan") / "codamosa"  # FIXME
 replication = codamosa / "replication"
 modules_csv = replication / "test-apps" / "good_modules.csv"
 
+def parse_args():
+    import argparse
+    ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    ap.add_argument('--one', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help=f'just run one package and stop')
+
+    return ap.parse_args()
+
+args = parse_args()
+
 pkg = defaultdict(list)
 
 with modules_csv.open() as f:
@@ -41,4 +53,5 @@ for d in pkg:
           f"bash /coverup/eval/run_coverup.sh {src} {package} {' '.join(files)}"
     print(cmd)
     subprocess.run(cmd, shell=True, check=True)
-#    break
+    if args.one:
+        break
