@@ -14,6 +14,7 @@ run "cd package"
 
 run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 run "pip install -r /coverup/requirements.txt"
+run "pip install -r /coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
@@ -31,7 +32,7 @@ run "chown -R $OWNER /output"
 export PYTHONPATH=$SRC
 
 # run CoverUp on it
-COVERUP_ARGS="--no-checkpoint --log-file /output/coverup-log --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
+COVERUP_ARGS="--no-checkpoint --write-requirements-to /output/requirements.txt --log-file /output/coverup-log --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
 run "python3 /coverup/coverup.py $COVERUP_ARGS /output/initial.json $FILES"
 run "chown -R $OWNER /output"
 
