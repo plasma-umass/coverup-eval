@@ -10,6 +10,18 @@ replication = codamosa / "replication"
 codamosa_output = replication / "output"
 coverup_output = Path("output")
 
+def parse_args():
+    import argparse
+    ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    ap.add_argument('--only-coverup', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help=f'only show lines with CoverUp data')
+
+    return ap.parse_args()
+
+args = parse_args()
+
 codamosa = defaultdict(list)
 
 for f in codamosa_output.iterdir():
@@ -48,6 +60,9 @@ def table():
     from simple_colors import red, green
 
     for m in sorted(codamosa.keys()):
+        if args.only_coverup and m not in coverup:
+            continue
+
         cm = round(mean(codamosa[m]),1) if codamosa[m] else None
         cu = round(coverup[m],1) if m in coverup else None
         if cm and cu:
