@@ -13,6 +13,13 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    ap.add_argument('module', type=str, nargs='?',
+                    help='only process the given module')
+
+    ap.add_argument('--dry-run', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help=f'only print out the command(s), but don\'t execute them')
+
     ap.add_argument('--one', default=False,
                     action=argparse.BooleanOptionalAction,
                     help=f'just run one package and stop')
@@ -29,8 +36,12 @@ with modules_csv.open() as f:
         pkg[d].append(m)
 
 for d in pkg:
+    if args.module and args.module not in d:
+        continue
+
     package = pkg[d][0].split('.')[0]
 
+    assert Path(d).parts[0] == 'test-apps'
     pkg_top = replication / Path(*Path(d).parts[:2]) # just 'test-apps' and top level
     src = (replication / Path(d)).relative_to(pkg_top)
 
@@ -38,12 +49,12 @@ for d in pkg:
 
     output = Path("output") / package
 
-    if output.exists():
+    if output.exists() and not args.dry_run:
         continue
 
-    output.mkdir(parents=True)
+    if not args.dry_run:
+        output.mkdir(parents=True)
 
-#    cmd = f"docker run --user {os.getuid()}:{os.getgid()} --rm " +\
     cmd = f"docker run --rm " +\
           f"-e OPENAI_API_KEY=\"{os.environ['OPENAI_API_KEY']}\" " +\
            "-v .:/coverup:ro " +\
@@ -51,7 +62,10 @@ for d in pkg:
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
            "-t slipcover-runner " +\
           f"bash /coverup/eval/run_coverup.sh {src} {package} {' '.join(files)}"
+
     print(cmd)
-    subprocess.run(cmd, shell=True, check=True)
+    if not args.dry_run:
+        subprocess.run(cmd, shell=True, check=True)
+
     if args.one:
         break
