@@ -12,6 +12,10 @@ run() {
 run "cp -R /package ."
 run "cd package"
 
+# requirementslib has a variable named _fragment_dict and pydantic, if also installed,
+# causes load failures (saying it should be renamed to fragment_dict).
+run "sed -i '/requirementslib/d' package.txt"
+
 run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 run "pip install -r /coverup/requirements.txt"
 run "pip install -r /coverup/test-modules.txt"
