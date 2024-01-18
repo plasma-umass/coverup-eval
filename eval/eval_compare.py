@@ -141,18 +141,21 @@ else:
                     cu = red(f"{cu:5.2f}")
             yield m, l_b, cu, cm, len(codamosa[m])
 
-    def count_green():
-        green = 0
+    def count_improved():
+        improved = 0
+        improvement = 0
         total = 0 
         for m in codamosa:
             cm = round(mean(codamosa[m]),1) if codamosa[m] else None
             cu = round(coverup[m],1) if m in coverup else None
             if cm and cu:
                 total += 1
-                if cu >= cm: green += 1
+                improvement += (cu - cm)
+                if cu >= cm:
+                    improved += 1
 
-        return green, total
+        return improvement/total, improved, total
 
     print(tabulate(table(), headers=headers))
-    green, total = count_green()
-    print(f"{green} green out of {total} ({green/total*100:.1f}%)")
+    improvement, improved, total = count_improved()
+    print(f"{improvement:.2f}% better;  {improved} improved ({improved/total*100:.1f}%)")
