@@ -9,6 +9,8 @@ codamosa = Path("/home/juan") / "codamosa"  # FIXME
 replication = codamosa / "replication"
 modules_csv = replication / "test-apps" / "good_modules.csv"
 
+pip_cache = Path("pip-cache")  # set to None to disable
+
 def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -23,6 +25,10 @@ def parse_args():
     ap.add_argument('--one', default=False,
                     action=argparse.BooleanOptionalAction,
                     help=f'just run one package and stop')
+
+    ap.add_argument('-i', '--interactive', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help=f'start interactive docker (rather than run CoverUp)')
 
     return ap.parse_args()
 
@@ -49,19 +55,21 @@ for d in pkg:
 
     output = Path("output") / package
 
-    if output.exists() and not args.dry_run:
+    if (output / "final.json").exists() and not (args.dry_run or args.interactive):
         continue
 
     if not args.dry_run:
-        output.mkdir(parents=True)
+        output.mkdir(parents=True, exist_ok=True)
 
     cmd = f"docker run --rm " +\
           f"-e OPENAI_API_KEY=\"{os.environ['OPENAI_API_KEY']}\" " +\
            "-v .:/coverup:ro " +\
           f"-v {str(output.absolute())}:/output " +\
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
-           "-t slipcover-runner " +\
-          f"bash /coverup/eval/run_coverup.sh {src} {package} {' '.join(files)}"
+           "-v ./pip-cache:/root/.cache/pip " +\
+          ("-ti " if args.interactive else "-t ") +\
+           "slipcover-runner bash " +\
+          (f"/coverup/eval/run_coverup.sh {src} {package} {' '.join(files)}" if not args.interactive else "")
 
     print(cmd)
     if not args.dry_run:
