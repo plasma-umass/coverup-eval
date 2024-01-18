@@ -17,13 +17,13 @@ if ! [ -d package ]; then
 
     # requirementslib has a variable named _fragment_dict and pydantic, if also installed,
     # causes load failures (saying it should be renamed to fragment_dict).
-    run "sed -i '/requirementslib/d' package/package.txt"
+    run "sed -i '/requirementslib/d' package/$SRC/package.txt"
     run "chown -R $OWNER /output"
 fi
 
 run "cd package"
 
-run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
+run "pip install -r $SRC/package.txt || true"    # ignore any errors because so did CodaMOSA
 run "pip install -r /coverup/requirements.txt -r /coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
