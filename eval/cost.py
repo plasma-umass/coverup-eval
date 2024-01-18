@@ -12,8 +12,8 @@ codamosa = Path("/home/juan") / "codamosa" # FIXME
 def get_usage():
     coverup_output = Path("output")
 
-    for file in coverup_output.iterdir():
-        log = file / "coverup-log"
+    for out_dir in coverup_output.iterdir():
+        log = out_dir / "coverup-log"
         last_usage = None
         if log.exists():
             with log.open("r") as f:
@@ -24,95 +24,59 @@ def get_usage():
                         # CoverUp may be started multiple times; look for restarts by when prompt_tokens drops
                         # and return maximum from each run
                         if last_usage and usage['prompt_tokens'] < last_usage['prompt_tokens']:
-                            yield file, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
+                            yield out_dir, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
                         last_usage = usage
 
             if last_usage:
-                yield file, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
+                yield out_dir, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
 
 def get_events():
     coverup_output = Path("output")
 
-    for file in coverup_output.iterdir():
-        log = file / "coverup-log"
+    for out_dir in coverup_output.iterdir():
+        log = out_dir / "coverup-log"
         if log.exists():
             log_content = log.read_text()
             for m in re.finditer('---- (?:(\S+) )?(\S+):(\d+)-(\d+) ----\n\n?(.*)\n', log_content):
                 timestamp, py, begin, end, first_line = m.groups()
 
                 if first_line.startswith("The code below,"): # prompt
-                    yield 'P', file, py, int(begin), int(end)
+                    yield 'P', out_dir, py, int(begin), int(end)
                 elif first_line.startswith("Executing the test yields an error"):
-                    yield 'F', file, py, int(begin), int(end)
+                    yield 'F', out_dir, py, int(begin), int(end)
                 elif first_line.startswith("Executing the test along with"): # side effect
-                    yield 'F', file, py, int(begin), int(end)
+                    yield 'F', out_dir, py, int(begin), int(end)
 #                elif first_line.startswith("```python"): # response
 #                    pass
                 elif first_line.startswith("This test still lacks coverage"):
-                    yield 'U', file, py, int(begin), int(end)
+                    yield 'U', out_dir, py, int(begin), int(end)
                 elif first_line.startswith("Saved as"): # success
-                    yield 'G', file, py, int(begin), int(end)
-
-
-#def get_loc():
-#    replication = codamosa / "replication"
-#    modules_csv = replication / "test-apps" / "good_modules.csv"
-#
-#    loc = defaultdict(int)
-#
-#    with modules_csv.open() as f:
-#        reader = csv.reader(f)
-#        for d, m in reader:
-#            base_module = m.split('.')[0]
-#            file = replication / d / (m.replace('.','/') + ".py")
-#            with file.open("rb") as mf:
-#                loc[base_module] += sum(1 for _ in mf)
-#
-#    return loc
-
-def get_modules():
-    replication = codamosa / "replication"
-    base = replication / "test-apps"
-
-    with (base / "good_modules.csv").open() as f:
-        reader = csv.reader(f)
-        for d, m in reader:
-            base_module = m.split('.')[0]
-            path_to_src = replication / d
-            rel_path = path_to_src.relative_to(base)
-            src_dir = Path(*rel_path.parts[1:])     # rel_path.parts[0] is package name
-            py = src_dir / (m.replace('.','/') + ".py")
-            yield py, base_module
-
-py2base = dict()
-for py, base_module in get_modules():
-    py2base[str(py)] = base_module
+                    yield 'G', out_dir, py, int(begin), int(end)
 
 cost = defaultdict(int)
 
-for file, usage in get_usage():
-    cost[file] += usage
+for out_dir, usage in get_usage():
+    cost[out_dir] += usage
 
 loc = defaultdict(int)
 events = defaultdict(lambda: defaultdict(int))
 
-for ev, file, py, begin, end in get_events():
-    base_module = py2base[py]
+for ev, out_dir, py, begin, end in get_events():
+    events[out_dir][ev] += 1
     if ev == 'P':
-        loc[base_module] += end-begin
-    events[base_module][ev] += 1
+        loc[out_dir] += end-begin
 
 
 headers=["Directory", "$", "LOC prompted", "$/1k LOC", "P", "G", "F", "U"]
 
 def table():
     total=0
-    for file in sorted(cost.keys(), key=lambda f:cost[f], reverse=True):
-        base_module = file.name
+    for out_dir in sorted(cost.keys(), key=lambda f:cost[f], reverse=True):
+        base_module = out_dir.name
         if '.' in base_module: base_module = base_module.split('.')[0]
-        yield str(file), round(cost[file], 2), loc[base_module], round(cost[file]/loc[base_module]*1000, 2), \
-              events[base_module]['P'], events[base_module]['G'], events[base_module]['F'], events[base_module]['U']
-        total += cost[file]
+        yield str(out_dir), round(cost[out_dir], 2), loc[out_dir], round(cost[out_dir]/loc[out_dir]*1000, 2), \
+              events[out_dir]['P'], events[out_dir]['G'], events[out_dir]['F'], events[out_dir]['U']
+        total += cost[out_dir]
 
     yield 'total', round(total, 2), *([None] * (len(headers)-2))
 
