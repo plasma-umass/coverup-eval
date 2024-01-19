@@ -16,18 +16,33 @@ def get_usage():
         log = out_dir / "coverup-log"
         last_usage = None
         if log.exists():
-            with log.open("r") as f:
-                for line in f.readlines():
-                    m = re.match('^total usage: (.*)$', line, re.MULTILINE)
-                    if m:
-                        usage = ast.literal_eval(m.group(1))
-                        # CoverUp may be started multiple times; look for restarts by when prompt_tokens drops
-                        # and return maximum from each run
-                        if last_usage and usage['prompt_tokens'] < last_usage['prompt_tokens']:
+            log_content = log.read_text()
+            no_startup = re.match('^---- (?:(\S+) )?startup ----\n', log_content) is None
+            last_command = None
+            for m in re.finditer('---- (?:(\S+) )?(\S+) ----\n\n?(.+(?:\n[^-].*)?)\n', log_content):
+                timestamp, seg, first_lines = m.groups()
+                if seg == 'startup':
+                    if m:= re.search('^Command: (.*)$', first_lines, re.MULTILINE):
+                        # This version uses checkpoints, so multiple starts may be restarts of the same work. 
+                        # Detect a new run when different options are passed (in particular, a different coverage file).
+                        if last_usage and last_command and m.group(1) != last_command:
+#                            print(out_dir, last_usage)
                             yield out_dir, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
-                        last_usage = usage
+                            last_usage = None
+
+                        last_command = m.group(1)
+
+                if m := re.match('^total usage: (.*)', first_lines):
+                    usage = ast.literal_eval(m.group(1))
+                    if no_startup and last_usage and usage['prompt_tokens'] < last_usage['prompt_tokens']:
+                        # this version didn't use checkpoints, so a lower prompt_tokens means it is another run
+#                        print(out_dir, last_usage)
+                        yield out_dir, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
+
+                    last_usage = usage
 
             if last_usage:
+#                print(out_dir, last_usage)
                 yield out_dir, llm_utils.calculate_cost(last_usage['prompt_tokens'], last_usage['completion_tokens'], MODEL)
 
 def get_events():
