@@ -23,8 +23,12 @@ fi
 
 run "cd package"
 
+# install CodaMOSA-computed package dependencies
 run "pip install -r $SRC/package.txt || true"    # ignore any errors because so did CodaMOSA
-run "pip install -r /coverup/requirements.txt -r /coverup/test-modules.txt"
+
+# install CoverUp and common test modules
+run "pip install /coverup"
+run "pip install -r /coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
@@ -51,7 +55,7 @@ export PYTHONPATH=$SRC
 # 1st pass
 if ! [ -e /output/interim.json ]; then
     # run CoverUp on it
-    run "python3 /coverup/coverup.py $COVERUP_ARGS --no-initial-test-check /output/initial.json $FILES"
+    run "coverup $COVERUP_ARGS --no-initial-test-check /output/initial.json $FILES"
     run "mv coverup-ckpt.json coverup-ckpt-0.json"
 
     # measure where coverage's at
@@ -62,7 +66,7 @@ fi
 
 # 2nd pass: re-run to try to improve coverage
 if ! [ -e /output/final.json ]; then
-    run "python3 /coverup/coverup.py $COVERUP_ARGS /output/interim.json $FILES"
+    run "coverup $COVERUP_ARGS /output/interim.json $FILES"
 
     # measure final coverage
     run "python3 -m slipcover $SLIPCOVER_ARGS --out /output/final.json -m pytest $PYTEST_ARGS coverup-tests"
