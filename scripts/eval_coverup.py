@@ -63,13 +63,13 @@ for d in pkg:
 
     cmd = f"docker run --rm " +\
           f"-e OPENAI_API_KEY=\"{os.environ['OPENAI_API_KEY']}\" " +\
-           "-v .:/coverup:ro " +\
+           "-v .:/eval:ro " +\
           f"-v {str(output.absolute())}:/output " +\
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
            "-v ./pip-cache:/root/.cache/pip " +\
           ("-ti " if args.interactive else "-t ") +\
            "slipcover-runner bash " +\
-          (f"/coverup/eval/run_coverup.sh {src} {package} {' '.join(files)}" if not args.interactive else "")
+          (f"/eval/scripts/run_coverup.sh {src} {package} {' '.join(files)}" if not args.interactive else "")
 
     print(cmd)
     if not args.dry_run:

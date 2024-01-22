@@ -27,8 +27,8 @@ run "cd package"
 run "pip install -r $SRC/package.txt || true"    # ignore any errors because so did CodaMOSA
 
 # install CoverUp and common test modules
-run "pip install /coverup"
-run "pip install -r /coverup/test-modules.txt"
+run "pip install /eval/coverup"
+run "pip install -r /eval/coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
