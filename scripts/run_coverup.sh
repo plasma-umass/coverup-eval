@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 SRC=$1; shift
 PKG=$1; shift
 FILES=$@
@@ -9,22 +11,21 @@ run() {
     eval $1 || exit 1
 }
 
-cd /output
+run "cd /output"
 
-# create writable version of the package
-if ! [ -d package ]; then
-    run "cp -R /package ."
-
-    # requirementslib has a variable named _fragment_dict and pydantic, if also installed,
-    # causes load failures (saying it should be renamed to fragment_dict).
-    run "sed -i '/requirementslib/d' package/$SRC/package.txt"
-    run "chown -R $OWNER /output"
+if ! [ -e $SRC/$PKG ]; then
+    run "mkdir -p $SRC"
+    run "ln -s `realpath /package/$SRC/$PKG` $SRC"
 fi
 
-run "cd package"
-
-# install CodaMOSA-computed package dependencies
-run "pip install -r $SRC/package.txt || true"    # ignore any errors because so did CodaMOSA
+# install CodaMOSA-computed package dependencies;
+# requirementslib has a variable named _fragment_dict and pydantic, if also installed,
+# causes load failures (saying it should be renamed to fragment_dict).
+if ! [ -e package.txt ]; then
+    run "cp /package/$SRC/package.txt ."
+    run "sed -i '/requirementslib/d' package.txt"
+fi
+run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 
 # install CoverUp and common test modules
 run "pip install /eval/coverup"
@@ -32,44 +33,25 @@ run "pip install -r /eval/coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
-COVERUP_ARGS="--write-requirements-to /output/requirements.txt --log-file /output/coverup-log --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
+COVERUP_ARGS="--write-requirements-to requirements.txt --log-file coverup-log --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
 
 [ -d coverup-tests ] || mkdir coverup-tests
-
-# generate initial coverage file where nothing is covered
-if ! [ -e /output/initial.json ]; then
-    cat >coverup-tests/test_dummy.py <<XXX
-def test_dummy():
-    pass
-XXX
-
-    run "python3 -m slipcover $SLIPCOVER_ARGS --out /output/initial.json -m pytest $PYTEST_ARGS coverup-tests"
-    rm coverup-tests/test_dummy.py
-
-    run "chown -R $OWNER /output"
-fi
 
 # set Python path so the package can be 'import'ed
 export PYTHONPATH=$SRC
 
-# 1st pass
-if ! [ -e /output/interim.json ]; then
-    # run CoverUp on it
-    run "coverup $COVERUP_ARGS --no-initial-test-check /output/initial.json $FILES"
-    run "mv coverup-ckpt.json coverup-ckpt-0.json"
+# run coverup twice: once to get stated, then another to help fill any gaps
+for RUN in 1 2; do
+    if ! [ -e coverup-ckpt-$RUN.json ]; then
+        # run CoverUp on it
+        run "coverup $COVERUP_ARGS --checkpoint coverup-ckpt.json $FILES"
+        run "chown -R $OWNER /output"
+        run "mv coverup-ckpt.json coverup-ckpt-$RUN.json"
+    fi
+done
 
-    # measure where coverage's at
-    run "python3 -m slipcover $SLIPCOVER_ARGS --out /output/interim.json -m pytest $PYTEST_ARGS coverup-tests"
-
-    run "chown -R $OWNER /output"
-fi
-
-# 2nd pass: re-run to try to improve coverage
+# measure final coverage
 if ! [ -e /output/final.json ]; then
-    run "coverup $COVERUP_ARGS /output/interim.json $FILES"
-
-    # measure final coverage
-    run "python3 -m slipcover $SLIPCOVER_ARGS --out /output/final.json -m pytest $PYTEST_ARGS coverup-tests"
-
+    run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest $PYTEST_ARGS coverup-tests"
     run "chown -R $OWNER /output"
 fi
