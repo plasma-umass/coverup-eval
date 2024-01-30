@@ -60,7 +60,7 @@ def get_events():
                 elif first_line.startswith("Executing the test yields an error"):
                     yield 'F', out_dir, py, int(begin), int(end)
                 elif first_line.startswith("Executing the test along with"): # side effect
-                    yield 'F', out_dir, py, int(begin), int(end)
+                    yield 'S', out_dir, py, int(begin), int(end)
 #                elif first_line.startswith("```python"): # response
 #                    pass
                 elif first_line.startswith("This test still lacks coverage"):
@@ -82,7 +82,7 @@ for ev, out_dir, py, begin, end in get_events():
         loc[out_dir] += end-begin
 
 
-headers=["Directory", "$", "LOC prompted", "$/1k LOC", "P", "G", "F", "U"]
+headers=["Directory", "$", "LOC prompted", "$/1k LOC", "P", "G", "F", "S", "U"]
 
 def table():
     total=0
@@ -90,7 +90,7 @@ def table():
         base_module = out_dir.name
         if '.' in base_module: base_module = base_module.split('.')[0]
         yield str(out_dir), round(cost[out_dir], 2), loc[out_dir], round(cost[out_dir]/loc[out_dir]*1000, 2), \
-              events[out_dir]['P'], events[out_dir]['G'], events[out_dir]['F'], events[out_dir]['U']
+              *[events[out_dir][k] for k in "PGFSU"]
         total += cost[out_dir]
 
     yield 'total', round(total, 2), *([None] * (len(headers)-2))
