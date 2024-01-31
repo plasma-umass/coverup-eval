@@ -108,8 +108,10 @@ if args.plot:
 
     bars_x = np.arange(len(cov_increase))
 
+    colors = ['green' if v>0 else 'black' for v in cov_increase]
+
     fig, ax = plt.subplots()
-    ax.bar(bars_x, cov_increase, .7, color='black')
+    ax.bar(bars_x, cov_increase, .7, color=colors)
     ax.set_xticks([])
 
     ax.set_title('Coverage increase (larger is better)', size=18)
@@ -120,7 +122,7 @@ if args.plot:
 
     fig.set_size_inches(16, 8)
     fig.tight_layout()
-    fig.savefig('plot.jpg')
+    fig.savefig('plot.png')
 
 else:
     headers=["Module", "Lines+Branches", "CoverUp %", "CodaMosa %", "samples"]
