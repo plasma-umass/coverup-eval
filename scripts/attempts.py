@@ -36,14 +36,14 @@ def get_events():
 events = defaultdict(str)
 for ev, out_dir, py, begin, end in get_events():
     key = f"{py}:{begin}-{end}"
-    if key == "flutils/packages.py:53-87":
-        print(ev, out_dir, py, begin, end)
+#    if key == "flutils/packages.py:53-87":
+#        print(ev, out_dir, py, begin, end)
 
     if "G" not in events[key]:
         events[key] += ev
 
 #for key in events:
-#    if events[key] == 'PPPG':
+#    if events[key] == 'PFFFFFF*PG':
 #        print(key)
 
 seq_count = defaultdict(int)
