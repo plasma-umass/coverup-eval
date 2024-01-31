@@ -26,7 +26,7 @@ def parse_args():
 
     ap.add_argument('--abs', default=False,
                     action=argparse.BooleanOptionalAction,
-                    help='plot actual number of lines rather than % of code')
+                    help='plot actual number of lines rather than percentage of code')
 
     return ap.parse_args()
 
