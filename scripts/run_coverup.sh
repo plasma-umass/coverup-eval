@@ -33,7 +33,7 @@ run "pip install -r /eval/coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
-COVERUP_ARGS="--write-requirements-to requirements.txt --log-file coverup-log --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
+COVERUP_ARGS="--write-requirements-to requirements.txt --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
 
 [ -d coverup-tests ] || mkdir coverup-tests
 
@@ -41,10 +41,10 @@ COVERUP_ARGS="--write-requirements-to requirements.txt --log-file coverup-log --
 export PYTHONPATH=$SRC
 
 # run coverup twice: once to get stated, then another to help fill any gaps
-for RUN in 1 2; do
+for RUN in 1 2 3; do
     if ! [ -e coverup-ckpt-$RUN.json ]; then
         # run CoverUp on it
-        run "coverup $COVERUP_ARGS --checkpoint coverup-ckpt.json $FILES"
+        run "coverup $COVERUP_ARGS --log-file coverup-log-$RUN --checkpoint coverup-ckpt.json $FILES"
         run "chown -R $OWNER /output"
         run "mv coverup-ckpt.json coverup-ckpt-$RUN.json"
     fi

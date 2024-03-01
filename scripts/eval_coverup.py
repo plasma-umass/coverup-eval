@@ -4,11 +4,7 @@ from collections import defaultdict
 import subprocess
 import os
 
-codamosa = Path("/home/juan") / "codamosa"  # FIXME
-
-replication = codamosa / "replication"
-modules_csv = replication / "test-apps" / "good_modules.csv"
-
+test_apps = Path("test-apps")  # linked to codamosa/replication/test-apps
 pip_cache = Path("pip-cache")  # set to None to disable
 
 def parse_args():
@@ -22,9 +18,8 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help=f'only print out the command(s), but don\'t execute them')
 
-    ap.add_argument('--one', default=False,
-                    action=argparse.BooleanOptionalAction,
-                    help=f'just run one package and stop')
+    ap.add_argument('--modules', choices=['good', '1_0'], default='good',
+                    help='set of modules to process')
 
     ap.add_argument('-i', '--interactive', default=False,
                     action=argparse.BooleanOptionalAction,
@@ -33,6 +28,8 @@ def parse_args():
     return ap.parse_args()
 
 args = parse_args()
+
+modules_csv = test_apps / f"{args.modules}_modules.csv"
 
 pkg = defaultdict(list)
 
@@ -48,12 +45,12 @@ for d in pkg:
     package = pkg[d][0].split('.')[0]
 
     assert Path(d).parts[0] == 'test-apps'
-    pkg_top = replication / Path(*Path(d).parts[:2]) # just 'test-apps' and top level
-    src = (replication / Path(d)).relative_to(pkg_top)
+    pkg_top = test_apps / Path(d).parts[1] # just top level
+    src = (test_apps / Path(*Path(d).parts[1:])).relative_to(pkg_top)
 
     files = [str(src / (m.replace('.','/') + ".py")) for m in pkg[d]]
 
-    output = Path("output") / package
+    output = Path("output") / args.modules / package
 
     if (output / "final.json").exists() and not (args.dry_run or args.interactive):
         continue
@@ -74,6 +71,3 @@ for d in pkg:
     print(cmd)
     if not args.dry_run:
         subprocess.run(cmd, shell=True, check=True)
-
-    if args.one:
-        break
