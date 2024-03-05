@@ -45,20 +45,32 @@ coverup_output = coverup_output / args.modules
 
 codamosa = defaultdict(list)
 lines_and_branches = dict()
-source_dir = dict()
 
+coverup_totals = defaultdict(int)
+codamosa_totals = defaultdict(int)
+coverup_on_codamosa_tests_totals = defaultdict(int)
+def add_to_totals(totals, summ):
+    totals['count'] += 1
+    for k in ['covered_lines', 'covered_branches', 'missing_lines', 'missing_branches']:
+        totals[k] += summ[k]
+
+
+modules_list = []
 with modules_csv.open() as f:
     reader = csv.reader(f)
     for d, m in reader:
-        codamosa[m] # make sure it's in the dict
-        base_module = m.split('.')[0]
         dp = Path(d)
         assert dp.parts[0] == 'test-apps'
-        source_dir[m] = str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
+
+        modules_list.append({
+            'name': m,
+            'base_module': m.split('.')[0],
+            'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
+        })
 
 if args.modules == '1_0':
-    for m in codamosa:
-        codamosa[m] = [100.0]
+    for m in modules_list:
+        codamosa[m['name']] = [100.0]
 
 else:
     assert args.modules == 'good'
@@ -75,13 +87,15 @@ else:
             codamosa[module].append(summ['percent_covered'])
             lines_and_branches[module] = summ['covered_lines']+summ['missing_lines'] +\
                                          summ['covered_branches']+summ['missing_branches']
-        else:
-            codamosa[module]
+            add_to_totals(codamosa_totals, summ)
+#        else:
+#            codamosa[module]
 
 coverup = dict()
 
-for m in codamosa:
-    base_module = m.split('.')[0]
+for m in modules_list:
+    m_name = m['name']
+    base_module = m['base_module']
 
     cov_file = coverup_output / base_module / "final.json"
     if cov_file.exists():
@@ -98,12 +112,15 @@ for m in codamosa:
         if not cov:
             continue
 
-    file = source_dir[m] + m.replace('.','/') + ".py"
+    file = m['source_dir'] + m_name.replace('.','/') + ".py"
     if file in cov['files']:
         summ = cov['files'][file]['summary']
-        coverup[m] = summ['percent_covered']
-        lines_and_branches[m] = summ['covered_lines']+summ['missing_lines'] +\
-                                summ['covered_branches']+summ['missing_branches']
+        coverup[m_name] = summ['percent_covered']
+        lines_and_branches[m_name] = summ['covered_lines']+summ['missing_lines'] +\
+                                     summ['covered_branches']+summ['missing_branches']
+        add_to_totals(coverup_totals, summ)
+        if m_name in codamosa:
+            add_to_totals(coverup_on_codamosa_tests_totals, summ)
 
 from tabulate import tabulate
 
@@ -206,16 +223,14 @@ else:
 
     def print_totals():
         improvement = []
-        cov_on_imp = []
         cov = []
         cod = []
         for m in codamosa:
-            cm = round(mean(codamosa[m]),1) if codamosa[m] else None
-            cu = round(coverup[m],1) if m in coverup else None
+            cm = mean(codamosa[m]) if codamosa[m] else None
+            cu = coverup[m] if m in coverup else None
 
             if cm is not None and cu is not None:
                 improvement.append(cu - cm)
-                cov_on_imp.append(cu)
 
             if cu is not None:
                 cov.append(cu)
@@ -223,13 +238,32 @@ else:
             if cm is not None:
                 cod.append(cm)
 
-        print(f"{len(improvement)} benchmarks available for both")
-        print(f"coverup:     {len(cov):3} benchmarks, {mean(cov):.2f}% mean, {median(cov):.2f}% median")
-        print(f"codamosa:    {len(cod):3} benchmarks, {mean(cod):.2f}% mean, {median(cod):.2f}% median")
+        def pct_cover(count, rest):
+            if (count+rest) > 0:
+                return 100 * count / (count + rest)
+
+        print("")
+        print(f"coverup:        {len(cov):3} benchmarks, {mean(cov):.1f}% mean, {median(cov):.1f}% median")
+        print(f"   line:        {pct_cover(coverup_totals['covered_lines'], coverup_totals['missing_lines']):.1f}%")
+        print(f"   branch:      {pct_cover(coverup_totals['covered_branches'], coverup_totals['missing_branches']):.1f}%")
+        print(f"   combined:    {pct_cover(coverup_totals['covered_lines']+coverup_totals['covered_branches'], coverup_totals['missing_lines']+coverup_totals['missing_branches']):.1f}%")
+
+        print(f"codamosa:       {len(cod):3} benchmarks, {mean(cod):.1f}% mean, {median(cod):.1f}% median")
+        if codamosa_totals:
+            print(f"   line:        {pct_cover(codamosa_totals['covered_lines'], codamosa_totals['missing_lines']):.1f}%")
+            print(f"   branch:      {pct_cover(codamosa_totals['covered_branches'], codamosa_totals['missing_branches']):.1f}%")
+            print(f"   combined:    {pct_cover(codamosa_totals['covered_lines']+codamosa_totals['covered_branches'], codamosa_totals['missing_lines']+codamosa_totals['missing_branches']):.1f}%")
+
+            print(f"coverup on codamosa benchmarks: ({coverup_on_codamosa_tests_totals['count']} benchmarks)")
+            print(f"   line:        {pct_cover(coverup_on_codamosa_tests_totals['covered_lines'], coverup_on_codamosa_tests_totals['missing_lines']):.1f}%")
+            print(f"   branch:      {pct_cover(coverup_on_codamosa_tests_totals['covered_branches'], coverup_on_codamosa_tests_totals['missing_branches']):.1f}%")
+            print(f"   combined:    {pct_cover(coverup_on_codamosa_tests_totals['covered_lines']+coverup_on_codamosa_tests_totals['covered_branches'], coverup_on_codamosa_tests_totals['missing_lines']+coverup_on_codamosa_tests_totals['missing_branches']):.1f}%")
+            assert coverup_on_codamosa_tests_totals['count'] == len(cod)
+
         better_count = sum([v > 0 for v in improvement])
         worse_count = sum([v < 0 for v in improvement])
-        print(f"improvement: +{better_count} ({100*better_count/len(improvement):.1f}%)/-{worse_count}/{len(improvement):3} benchmarks, {mean(improvement):.2f}% mean, {median(improvement):.2f}% median;")
-        print(f"             of these, coverup {mean(cov_on_imp):.2f}% mean, {median(cov_on_imp):.2f}% median")
+        print(f"improvement: +{better_count} ({100*better_count/len(improvement):.1f}%)/-{worse_count}/{len(improvement):3} benchmarks, {mean(improvement):.1f}% mean, {median(improvement):.1f}% median, {max(improvement):.1f}% max;")
+
 
     print(tabulate(table(), headers=headers))
     print_totals()
