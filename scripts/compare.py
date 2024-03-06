@@ -225,12 +225,14 @@ else:
         improvement = []
         cov = []
         cod = []
-        for m in codamosa:
+        cov_on_cod = []
+        for m in codamosa.keys()|coverup.keys():
             cm = mean(codamosa[m]) if codamosa[m] else None
             cu = coverup[m] if m in coverup else None
 
             if cm is not None and cu is not None:
                 improvement.append(cu - cm)
+                cov_on_cod.append(cu)
 
             if cu is not None:
                 cov.append(cu)
@@ -254,11 +256,12 @@ else:
             print(f"   branch:      {pct_cover(codamosa_totals['covered_branches'], codamosa_totals['missing_branches']):.1f}%")
             print(f"   combined:    {pct_cover(codamosa_totals['covered_lines']+codamosa_totals['covered_branches'], codamosa_totals['missing_lines']+codamosa_totals['missing_branches']):.1f}%")
 
-            print(f"coverup on codamosa benchmarks: ({coverup_on_codamosa_tests_totals['count']} benchmarks)")
+            print(f"coverup_on_cod: {len(cov_on_cod):3} benchmarks, {mean(cov_on_cod):.1f}% mean, {median(cov_on_cod):.1f}% median")
             print(f"   line:        {pct_cover(coverup_on_codamosa_tests_totals['covered_lines'], coverup_on_codamosa_tests_totals['missing_lines']):.1f}%")
             print(f"   branch:      {pct_cover(coverup_on_codamosa_tests_totals['covered_branches'], coverup_on_codamosa_tests_totals['missing_branches']):.1f}%")
             print(f"   combined:    {pct_cover(coverup_on_codamosa_tests_totals['covered_lines']+coverup_on_codamosa_tests_totals['covered_branches'], coverup_on_codamosa_tests_totals['missing_lines']+coverup_on_codamosa_tests_totals['missing_branches']):.1f}%")
             assert coverup_on_codamosa_tests_totals['count'] == len(cod)
+            assert coverup_on_codamosa_tests_totals['count'] == len(cov_on_cod)
 
         better_count = sum([v > 0 for v in improvement])
         worse_count = sum([v < 0 for v in improvement])
