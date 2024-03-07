@@ -3,6 +3,7 @@
 SRC=$1; shift
 PKG=$1; shift
 FILES=$@
+REPEAT=false
 
 OWNER=`stat -c %u /output`:`stat -c %g /output`
 
@@ -32,6 +33,12 @@ run "pip install /eval/coverup"
 run "pip install -r /eval/coverup/test-modules.txt"
 
 PYTEST_ARGS="--rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
+
+if $REPEAT; then
+    run "pip install pytest-repeat"
+    PYTEST_ARGS+=" --count 5"
+fi
+
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
 COVERUP_ARGS="--write-requirements-to requirements.txt --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
 
