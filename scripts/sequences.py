@@ -22,14 +22,14 @@ def parse_args():
 args = parse_args()
 
 
-def get_events(log: Path):
-    log_content = log.read_text()
-#    for m in re.finditer('---- (?:(\S+) )?(\S+):(\d+)-(\d+) ----\n\n?(.*)\n', log_content):
+TERMINAL_EVENTS=('G', 'M', 'T', '-', '*')
+
+def parse_log(log_content: str):
     for m in re.finditer('---- (?:(\S+) )?([\S+ ]+) ----\n\n?(.*?)(?=\n---- |\Z)', log_content, re.DOTALL):
-        timestamp, event, entry = m.groups()
+        timestamp, event, content = m.groups()
 
         if event == 'startup':
-            yield 'startup', timestamp, None
+            yield timestamp, 'startup', None
             continue
 
         if not (m := re.match('(\S+):(\d+)-(\d+)', event)):
@@ -38,66 +38,74 @@ def get_events(log: Path):
         py, begin, end = m.groups()
 
         def what():
-            if entry.startswith(("The code below,", "You are an expert")): # prompt
-                if "\nwhen tested, it does not execute." in entry:
+            if content.startswith(("The code below,", "You are an expert")): # prompt
+                if "\nwhen tested, it does not execute." in content:
                     return 'P'
                 return 'C'
-            elif entry.startswith("Executing the test yields an error"):
+            elif content.startswith("Executing the test yields an error"):
                 return 'F'
-            elif entry.startswith("Executing the test along with"): # side effect
+            elif content.startswith("Executing the test along with"): # side effect
                 return 'S'
-            elif entry.startswith("```python"): # response
+            elif content.startswith("```python"): # response
                 return 'R'
-            elif entry.startswith("This test still lacks coverage"):
+            elif content.startswith("This test still lacks coverage"):
                 return 'U'
-
-            elif entry.startswith("Saved as"): # success
+            elif content.startswith("Saved as"): # success
                 return 'G'
-            elif entry.startswith("Missing modules"):
+            elif content.startswith("Missing modules"):
                 return 'M'
-            elif entry.startswith("measure_coverage timed out"):
+            elif content.startswith("measure_coverage timed out"):
                 return 'T'
-            elif entry.startswith("No Python code in GPT response"):
+            elif content.startswith("No Python code in GPT response"):
                 return '-'
-            elif entry.startswith("Too many attempts"): # gave up
+            elif content.startswith("Too many attempts"): # gave up
                 return '*'
             else:
                 return '?'
 
-        if what() in ('R', '?'): continue
+#        if what() == '?': print(content)
 
-        yield what(), timestamp, (py, int(begin), int(end))
+        yield timestamp, what(), (py, int(begin), int(end))
+
+
+def get_sequences(log_content: str):
+    seqs = defaultdict(str)
+
+    def yield_sequences():
+        for seg, seq in seqs.items():
+            # Only include sequences that reached a terminal
+            # state, or else we'd count partial executions,
+            # when CoverUp gets interrupted.
+            if seq[-1] in TERMINAL_EVENTS:
+                yield seg, seq
+        seqs.clear()
+
+    for ts, ev, details in parse_log(log_content):
+        if ev == 'startup':
+            yield from yield_sequences()
+            continue
+
+        (py, begin, end) = details
+
+        if ev not in ('R', '?'):
+            seqs[f"{py}:{begin}-{end}"] += ev
+
+    yield from yield_sequences()
+
 
 seq_count = defaultdict(int)
-
-def add_seqs(events):
-    for k, v in events.items():
-        if args.show and args.show == v:
-            print(f"{k} {v}")
-
-        # Only count sequences that reached a terminal state,
-        # or else we would count partial executions (when
-        # CoverUp gets interrrupted)
-        if v[-1] in ('G', 'M', 'T', '-', '*'):
-            seq_count[v] += 1
-
 for file in (Path('output') / args.modules).glob(args.logs):
     if args.skip and args.skip in str(file):
         continue
 
-    events = defaultdict(str)
-    for ev, ts, details in get_events(file):
-        if ev == 'startup':
-            add_seqs(events)
-            events = defaultdict(str)
-            continue
+    for seg, seq in get_sequences(file.read_text()):
+        if args.show and args.show == seq:
+            print(f"{seg} {seq}")
 
-        (py, begin, end) = details
-        events[f"{py}:{begin}-{end}"] += ev
-
-    add_seqs(events)
+        seq_count[seq] += 1
 
 total_seq = sum(seq_count.values())
+
 
 def mktable(data):
     row_total = 0
