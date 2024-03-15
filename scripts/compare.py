@@ -245,18 +245,18 @@ else:
                 return 100 * count / (count + rest)
 
         print("")
-        print(f"coverup:        {len(cov):3} benchmarks, {mean(cov):.1f}% mean, {median(cov):.1f}% median")
+        print(f"coverup:        {len(cov):3} benchmarks, {mean(cov):.1f}% mean, {median(cov):.1f}% median, {min(cov):.1f}% min, {max(cov):.1f}% max, {sum(c==100 for c in cov)} @ 100%")
         print(f"   line:        {pct_cover(coverup_totals['covered_lines'], coverup_totals['missing_lines']):.1f}%")
         print(f"   branch:      {pct_cover(coverup_totals['covered_branches'], coverup_totals['missing_branches']):.1f}%")
         print(f"   combined:    {pct_cover(coverup_totals['covered_lines']+coverup_totals['covered_branches'], coverup_totals['missing_lines']+coverup_totals['missing_branches']):.1f}%")
 
-        print(f"codamosa:       {len(cod):3} benchmarks, {mean(cod):.1f}% mean, {median(cod):.1f}% median")
+        print(f"codamosa:       {len(cod):3} benchmarks, {mean(cod):.1f}% mean, {median(cod):.1f}% median, {min(cod):.1f}% min, {max(cod):.1f}% max, {sum(c==100 for c in cod)} @ 100%")
         if codamosa_totals:
             print(f"   line:        {pct_cover(codamosa_totals['covered_lines'], codamosa_totals['missing_lines']):.1f}%")
             print(f"   branch:      {pct_cover(codamosa_totals['covered_branches'], codamosa_totals['missing_branches']):.1f}%")
             print(f"   combined:    {pct_cover(codamosa_totals['covered_lines']+codamosa_totals['covered_branches'], codamosa_totals['missing_lines']+codamosa_totals['missing_branches']):.1f}%")
 
-            print(f"coverup_on_cod: {len(cov_on_cod):3} benchmarks, {mean(cov_on_cod):.1f}% mean, {median(cov_on_cod):.1f}% median")
+            print(f"coverup_on_cod: {len(cov_on_cod):3} benchmarks, {mean(cov_on_cod):.1f}% mean, {median(cov_on_cod):.1f}% median, {min(cov_on_cod):.1f}% min, {max(cov_on_cod):.1f}% max")
             print(f"   line:        {pct_cover(coverup_on_codamosa_tests_totals['covered_lines'], coverup_on_codamosa_tests_totals['missing_lines']):.1f}%")
             print(f"   branch:      {pct_cover(coverup_on_codamosa_tests_totals['covered_branches'], coverup_on_codamosa_tests_totals['missing_branches']):.1f}%")
             print(f"   combined:    {pct_cover(coverup_on_codamosa_tests_totals['covered_lines']+coverup_on_codamosa_tests_totals['covered_branches'], coverup_on_codamosa_tests_totals['missing_lines']+coverup_on_codamosa_tests_totals['missing_branches']):.1f}%")
