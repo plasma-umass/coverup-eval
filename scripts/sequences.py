@@ -10,6 +10,8 @@ def parse_args():
     ap.add_argument('--modules', choices=['good', '1_0'], default='good',
                     help='set of modules to compare')
 
+    ap.add_argument('--variant', type=str, help='specify an execution variant')
+
     ap.add_argument('--show', type=str,
                     help='print out instances of a given sequence')
 
@@ -94,7 +96,7 @@ def get_sequences(log_content: str):
 
 
 seq_count = defaultdict(int)
-for file in (Path('output') / args.modules).glob(args.logs):
+for file in (Path('output') / (args.modules + (f".{args.variant}" if args.variant else ""))).glob(args.logs):
     if args.skip and args.skip in str(file):
         continue
 
@@ -121,20 +123,26 @@ def mktable(data):
 # P and C seqs
 p_count = defaultdict(int)
 for seq, count in seq_count.items():
-    if seq[0] == 'P': p_count[seq] += count
+    if seq[0] == 'P':
+        if seq[-1] in ('-', 'T', 'M'):
+            seq = seq[0] + '..' + seq[-1]
+        p_count[seq] += count
 print('')
 print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
 
 c_count = defaultdict(int)
 for seq, count in seq_count.items():
-    if seq[0] == 'C': c_count[seq] += count
+    if seq[0] == 'C':
+        if seq[-1] in ('-', 'T', 'M'):
+            seq = seq[0] + '..' + seq[-1]
+        c_count[seq] += count
 print('')
 print(tabulate(mktable(c_count), headers=["seq", "count", "%"]))
 
 # final states
 end_count = defaultdict(int)
 for seq, count in seq_count.items():
-    end_count[seq[-1]] += count
+    end_count[seq[0] + ".." + seq[-1]] += count
 
 print('')
 print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))

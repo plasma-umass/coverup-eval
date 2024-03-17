@@ -2,6 +2,7 @@
 
 SRC=$1; shift
 PKG=$1; shift
+OPTS=$1; shift
 FILES=$@
 REPEAT=false
 
@@ -40,7 +41,7 @@ if $REPEAT; then
 fi
 
 SLIPCOVER_ARGS="--source $SRC/$PKG --branch --json"
-COVERUP_ARGS="--write-requirements-to requirements.txt --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
+COVERUP_ARGS="--write-requirements-to requirements.txt --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\" $OPTS"
 
 [ -d coverup-tests ] || mkdir coverup-tests
 
