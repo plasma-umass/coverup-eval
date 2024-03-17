@@ -29,6 +29,7 @@ def parse_args():
 args = parse_args()
 
 modules_csv = replication / "test-apps" / f"{args.modules}_modules.csv"
+coverup_orig_output = coverup_output / args.modules 
 coverup_output = coverup_output / (args.modules + (f".{args.variant}" if args.variant else ""))
 
 modules_list = []
@@ -44,35 +45,48 @@ with modules_csv.open() as f:
             'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
         })
 
-coverup = defaultdict(lambda: [0])
-
 cache = dict()
+def get_summ(path, m, run):
+    ckpt_file  = path / m['base_module'] / f"coverup-ckpt-{run}.json"
+    if not (cov := cache.get(ckpt_file)):
+        with ckpt_file.open() as jsonf:
+            ckpt = json.load(jsonf)
+        cov = ckpt.get('final_coverage')
+        cache[ckpt_file] = cov
+
+    file = m['source_dir'] + m['name'].replace('.','/') + ".py"
+    return cov['files'][file]['summary']
+
+coverup = defaultdict(lambda: [0])
+coverup_orig = defaultdict(lambda: [0])
+
 for m in modules_list:
-    m_name = m['name']
     base_module = m['base_module']
 
-    if args.only and args.only not in base_module:
-        continue
+    if args.only and args.only not in base_module: continue
+    if not (coverup_output / base_module).exists(): continue
 
     for run in range(1, RUNS+1):
-        ckpt_file  = coverup_output / base_module / f"coverup-ckpt-{run}.json"
-        if not (cov := cache.get(ckpt_file)):
-            with ckpt_file.open() as jsonf:
-                ckpt = json.load(jsonf)
-            cov = ckpt.get('final_coverage')
-            cache[ckpt_file] = cov
+        coverup[m['name']].append(get_summ(coverup_output, m, run)['percent_covered'])
 
-        file = m['source_dir'] + m_name.replace('.','/') + ".py"
-        if file in cov['files']:
-            summ = cov['files'][file]['summary']
-            coverup[m_name].append(summ['percent_covered'])
+        if args.variant:
+            coverup_orig[m['name']].append(get_summ(coverup_orig_output, m, run)['percent_covered'])
 
 for m in sorted(coverup.keys()):
     print(f"{m:45} {[round(v,2) for v in coverup[m]]}")
 
 print('')
+print(len(coverup), "module(s)")
+
+print('')
 print('median: ', [round(median(coverup[m][r] for m in coverup), 2) for r in range(1,RUNS+1)])
 print('mean:   ', [round(mean(coverup[m][r] for m in coverup), 2) for r in range(1,RUNS+1)])
+
+if args.variant:
+    print('')
+    print('original:')
+    print('median: ', [round(median(coverup_orig[m][r] for m in coverup_orig), 2) for r in range(1,RUNS+1)])
+    print('mean:   ', [round(mean(coverup_orig[m][r] for m in coverup_orig), 2) for r in range(1,RUNS+1)])
 
 if args.plot:
     import matplotlib.pyplot as plt
