@@ -241,5 +241,4 @@ else:
 
     print('')
     print(f"improvement: +{better_count} ({100*better_count/len(cov_delta):.1f}%)/" +\
-                       f"-{worse_count}/{len(cov_delta):3} benchmarks, "+\
-          f"{mean(cov_delta):.1f}% mean, {median(cov_delta):.1f}% median, {max(cov_delta):.1f}% max;")
+                       f"-{worse_count}/{len(cov_delta):3} benchmarks")
