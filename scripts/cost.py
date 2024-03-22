@@ -7,7 +7,7 @@ from collections import defaultdict
 from tabulate import tabulate
 
 MODEL='gpt-4-1106-preview'
-codamosa = Path("/home/juan") / "codamosa" # FIXME
+codamosa = Path("codamosa")
 
 def get_usage():
     coverup_output = Path("output")

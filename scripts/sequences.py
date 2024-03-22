@@ -1,7 +1,6 @@
 from pathlib import Path
 import re
 from collections import defaultdict
-from tabulate import tabulate
 
 def parse_args():
     import argparse
@@ -21,9 +20,6 @@ def parse_args():
     ap.add_argument('logs', type=str, help='log files to process')
     return ap.parse_args()
 
-args = parse_args()
-
-
 TERMINAL_EVENTS=('G', 'M', 'T', '-', '*')
 
 def parse_log(log_content: str):
@@ -31,7 +27,7 @@ def parse_log(log_content: str):
         timestamp, event, content = m.groups()
 
         if event == 'startup':
-            yield timestamp, 'startup', None
+            yield timestamp, 'startup', None, content
             continue
 
         if not (m := re.match('(\S+):(\d+)-(\d+)', event)):
@@ -67,11 +63,12 @@ def parse_log(log_content: str):
 
 #        if what() == '?': print(content)
 
-        yield timestamp, what(), (py, int(begin), int(end))
+        yield timestamp, what(), (py, int(begin), int(end)), content
 
 
 def get_sequences(log_content: str):
     seqs = defaultdict(str)
+    seq_ts = defaultdict(lambda:[])
 
     def yield_sequences():
         for seg, seq in seqs.items():
@@ -79,10 +76,10 @@ def get_sequences(log_content: str):
             # state, or else we'd count partial executions,
             # when CoverUp gets interrupted.
             if seq[-1] in TERMINAL_EVENTS:
-                yield seg, seq
+                yield seg, seq, seq_ts[seg]
         seqs.clear()
 
-    for ts, ev, details in parse_log(log_content):
+    for ts, ev, details, _ in parse_log(log_content):
         if ev == 'startup':
             yield from yield_sequences()
             continue
@@ -90,86 +87,98 @@ def get_sequences(log_content: str):
         (py, begin, end) = details
 
         if ev not in ('R', '?'):
-            seqs[f"{py}:{begin}-{end}"] += ev
+            seg = f"{py}:{begin}-{end}"
+            seqs[seg] += ev
+            seq_ts[seg].append(ts)
 
     yield from yield_sequences()
 
 
-seq_count = defaultdict(int)
-for file in (Path('output') / (args.modules + (f".{args.variant}" if args.variant else ""))).glob(args.logs):
-    if args.skip and args.skip in str(file):
-        continue
+if __name__ == '__main__':
+    from tabulate import tabulate
 
-    for seg, seq in get_sequences(file.read_text()):
-        if args.show and args.show == seq:
-            print(f"{seg} {seq}")
+    args = parse_args()
 
-        seq_count[seq] += 1
+    seq_count = defaultdict(int)
+    for file in (Path('output') / (args.modules + (f".{args.variant}" if args.variant else ""))).glob(args.logs):
+        if '.' in file.name: # "foobar.failed" and such
+            continue
 
-total_seq = sum(seq_count.values())
+        if args.skip and args.skip in str(file):
+            continue
+
+        for seg, seq, _ in get_sequences(file.read_text()):
+            if args.show and args.show == seq:
+                print(f"{seg} {seq}")
+
+            seq_count[seq] += 1
+
+    total_seq = sum(seq_count.values())
 
 
-def mktable(data):
-    row_total = 0
-    for seq, count in sorted(data.items(), key=lambda item: item[1], reverse=True):
-        row_total += count
-        yield seq, count, round(100*count/total_seq, 2)
+    def mktable(data):
+        row_total = 0
+        for seq, count in sorted(data.items(), key=lambda item: item[1], reverse=True):
+            row_total += count
+            yield seq, count, round(100*count/total_seq, 1)
 
-    yield '(total)', row_total, round(100*row_total/total_seq, 2)
+        yield '(total)', row_total, round(100*row_total/total_seq, 1)
 
 # all sequences
-#print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
+#    print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
 
-# P and C seqs
-p_count = defaultdict(int)
-for seq, count in seq_count.items():
-    if seq[0] == 'P':
-        if seq[-1] in ('-', 'T', 'M'):
-            seq = seq[0] + '..' + seq[-1]
-        p_count[seq] += count
-print('')
-print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
-
-c_count = defaultdict(int)
-for seq, count in seq_count.items():
-    if seq[0] == 'C':
-        if seq[-1] in ('-', 'T', 'M'):
-            seq = seq[0] + '..' + seq[-1]
-        c_count[seq] += count
-print('')
-print(tabulate(mktable(c_count), headers=["seq", "count", "%"]))
-
+## P and C seqs
+#    p_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if seq[0] == 'P':
+#            if seq[-1] in ('-', 'T', 'M'):
+#                seq = seq[0] + '..' + seq[-1]
+#            p_count[seq] += count
+#    print('')
+#    print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
+#
+#    c_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if seq[-1] in ('-', 'T', 'M'):
+#            seq = seq[0] + '..' + seq[-1]
+#        c_count[seq] += count
+#    print('')
+#    print(tabulate(mktable(c_count), headers=["seq", "count", "%"]))
+#
 # final states
-end_count = defaultdict(int)
-for seq, count in seq_count.items():
-    end_count[seq[0] + ".." + seq[-1]] += count
+    end_count = defaultdict(int)
+    for seq, count in seq_count.items():
+        if seq[-1] == 'G':
+            end_count[('.' * (len(seq)-1)) + 'G'] += count
 
-print('')
-print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
+    print('')
+    total_seq = sum(end_count.values())
+    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
-# coverage prompts
-cov_count = defaultdict(int)
-for seq, count in seq_count.items():
-    if seq[0] == 'C':
-        cov_count[seq] += count
 
-print('')
-print(tabulate(mktable(cov_count), headers=["seq", "count", "%"]))
-
-# where 'U' was followed by success
-pug_count = defaultdict(int)
-for seq, count in seq_count.items():
-    if 'U' in seq and seq[-1] == 'G':
-        pug_count[seq] += count
-
-print('')
-print(tabulate(mktable(pug_count), headers=["seq", "count", "%"]))
-
-# where 'U' was followed by failure
-pux_count = defaultdict(int)
-for seq, count in seq_count.items():
-    if 'U' in seq and seq[-1] != 'G':
-        pux_count[seq] += count
-
-print('')
-print(tabulate(mktable(pux_count), headers=["seq", "count", "%"]))
+## coverage prompts
+#    cov_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if seq[0] == 'C':
+#            cov_count[seq] += count
+#
+#    print('')
+#    print(tabulate(mktable(cov_count), headers=["seq", "count", "%"]))
+#
+## where 'U' was followed by success
+#    pug_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if 'U' in seq and seq[-1] == 'G':
+#            pug_count[seq] += count
+#
+#    print('')
+#    print(tabulate(mktable(pug_count), headers=["seq", "count", "%"]))
+#
+## where 'U' was followed by failure
+#    pux_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if 'U' in seq and seq[-1] != 'G':
+#            pux_count[seq] += count
+#
+#    print('')
+#    print(tabulate(mktable(pux_count), headers=["seq", "count", "%"]))

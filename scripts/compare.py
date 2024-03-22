@@ -27,6 +27,8 @@ def parse_args():
     ap.add_argument('--histogram', choices=['coverage', 'delta', 'lines', 'lines+branches'],
                     help='draw a histogram')
 
+    ap.add_argument('--coverup-name', default='CoverUp', help="set CoverUp's name")
+
     return ap.parse_args()
 
 args = parse_args()
@@ -35,7 +37,18 @@ modules_csv = replication / "test-apps" / f"{args.modules}_modules.csv"
 coverup_output = coverup_output / (args.modules + (f".{args.variant}" if args.variant else ""))
 codamosa_output = replication / f"output-{args.codamosa_results}"
 
-codamosa = defaultdict(list)
+modules_list = []
+with modules_csv.open() as f:
+    reader = csv.reader(f)
+    for d, m in reader:
+        dp = Path(d)
+        assert dp.parts[0] == 'test-apps'
+
+        modules_list.append({
+            'name': m,
+            'base_module': m.split('.')[0],
+            'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
+        })
 
 by_module = defaultdict(dict)
 coverup_totals = defaultdict(int)
@@ -60,22 +73,22 @@ def add_to_totals(totals, module, summ):
     by_module[module]['branches'] = branches
 
 
-modules_list = []
-with modules_csv.open() as f:
-    reader = csv.reader(f)
-    for d, m in reader:
-        dp = Path(d)
-        assert dp.parts[0] == 'test-apps'
+codamosa = defaultdict(list)
+coverup = dict()
+codamosa_metrics = defaultdict(lambda: {'lines': [], 'branches': [], 'lines+branches': []})
+coverup_metrics = defaultdict(dict)
 
-        modules_list.append({
-            'name': m,
-            'base_module': m.split('.')[0],
-            'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
-        })
+def cover_pct(summ, cov_types, context):
+    nom = sum(summ[f"covered_{c}"] for c in cov_types)
+    den = nom + sum(summ[f"missing_{c}"] for c in cov_types)
+    return 100*nom/den if den > 0 else None
 
 if args.modules == '1_0':
     for m in modules_list:
         codamosa[m['name']] = [100.0]
+        codamosa_metrics[m['name']]['lines'] = [100.0]
+        codamosa_metrics[m['name']]['branches'] = [100.0]
+        codamosa_metrics[m['name']]['lines+branches'] = [100.0]
 
 else:
     assert args.modules == 'good'
@@ -97,7 +110,13 @@ else:
             codamosa[module].append(summ['percent_covered'])
             add_to_totals(codamosa_totals, module, summ)
 
-coverup = dict()
+            pct = cover_pct(summ, ['lines'], f.name)
+            if pct is not None: codamosa_metrics[module]['lines'].append(pct)
+            pct = cover_pct(summ, ['branches'], f.name)
+            if pct is not None: codamosa_metrics[module]['branches'].append(pct)
+            pct = cover_pct(summ, ['lines','branches'], f.name)
+            if pct is not None: codamosa_metrics[module]['lines+branches'].append(pct)
+
 
 for m in modules_list:
     m_name = m['name']
@@ -125,11 +144,22 @@ for m in modules_list:
         coverup[m_name] = summ['percent_covered']
         add_to_totals(coverup_totals, m_name, summ)
 
+        pct = cover_pct(summ, ['lines'], m_name)
+        if pct is not None: coverup_metrics[m_name]['lines'] = pct
+        pct = cover_pct(summ, ['branches'], m_name)
+        if pct is not None: coverup_metrics[m_name]['branches'] = pct
+        pct = cover_pct(summ, ['lines','branches'], m_name)
+        if pct is not None: coverup_metrics[m_name]['lines+branches'] = pct
 
 module_names = sorted(codamosa.keys()|coverup.keys())
 cov_codamosa = [mean(codamosa[m]) if codamosa[m] else None for m in module_names]
 cov_coverup = [coverup[m] if m in coverup else None for m in module_names]
 cov_delta = [cu - cm for cu, cm in zip(cov_coverup, cov_codamosa) if cu is not None and cm is not None]
+
+cov_codamosa_l = [mean(codamosa_metrics[m]['lines']) for m in module_names if codamosa_metrics[m]['lines']]
+cov_codamosa_b = [mean(codamosa_metrics[m]['branches']) for m in module_names if codamosa_metrics[m]['branches']]
+cov_coverup_l = [coverup_metrics[m]['lines'] for m in module_names if 'lines' in coverup_metrics[m]]
+cov_coverup_b = [coverup_metrics[m]['branches'] for m in module_names if 'branches' in coverup_metrics[m]]
 
 
 if args.plot or args.histogram:
@@ -141,24 +171,29 @@ if args.plot or args.histogram:
         'pdf.fonttype': 42  # output TrueType; bigger but scalable
     })
 
-    codamosa_label = "CodaMosa " + ("(orig.)" if args.codamosa_results == 'codex' else '(GPT-4)')
+    codamosa_label = f"CodaMosa ({args.codamosa_results})"
 
     if args.histogram:
         fig, ax = plt.subplots()
         ax.set_ylabel('Frequency', size=18)
 
+        fig.set_size_inches(16, 8)
+
         if args.histogram == 'coverage':
-            ax.set_title('Coverage Histogram', size=20)
+            ax.set_title('Combined (translucent) Lines+Branches Coverage Histogram', size=20)
             ax.set_xlabel('% Coverage', size=18)
 
             bins = 40
-            ax.hist(cov_coverup, bins=bins, alpha=.5, label='CoverUp', color='blue')
+            ax.hist(cov_coverup, bins=bins, alpha=.5, label=args.coverup_name, color='blue')
             ax.hist(cov_codamosa, bins=bins, alpha=.5, label=codamosa_label, color='yellow')
-            fig.legend()
+
+            ax.legend(loc='upper left', fontsize=15)
+
+            fig.tight_layout()
 
         elif args.histogram == 'delta':
             ax.set_title('Delta Coverage Histogram', size=20)
-            ax.set_xlabel('(CoverUp - CodaMosa) % Coverage', size=18)
+            ax.set_xlabel(f'({args.coverup_name} - {codamosa_label}) % Coverage', size=18)
             ax.hist(cov_delta, bins=40)
 
         elif args.histogram == 'lines':
@@ -171,11 +206,10 @@ if args.plot or args.histogram:
             ax.set_xlabel('# Lines + # Branches in Module', size=18)
             ax.hist([by_module[m]['lines']+by_module[m]['branches'] for m in module_names], bins=100)
 
-        fig.set_size_inches(16, 8)
-        fig.savefig('histogram.png')
+        fig.savefig('histogram.pdf')
     else:
         fig, ax = plt.subplots()
-        ax.set_title('Coverage increase (larger is better)', size=20)
+        ax.set_title(f'Coverage increase {args.coverup_name} vs. {codamosa_label} (larger is better)', size=20)
         ax.set_ylabel('% coverage increase', size=18)
 
         colors = ['green' if d>0 else 'black' for d in cov_delta]
@@ -187,7 +221,7 @@ if args.plot or args.histogram:
         fig.set_size_inches(16, 8)
         fig.tight_layout()
 
-        fig.savefig('plot.png')
+        fig.savefig('plot.pdf')
 
 else:
     from tabulate import tabulate
@@ -220,7 +254,13 @@ else:
     cov_codamosa = [c for c in cov_codamosa if c is not None]
 
     print("")
-    print(f"coverup:               {len(cov_coverup):3} benchmarks, {mean(cov_coverup):.1f}% mean, " +\
+    print(f"coverup l:             {len(cov_coverup_l):3} benchmarks, {mean(cov_coverup_l):.1f}% mean, " +\
+          f"{median(cov_coverup_l):.1f}% median, {min(cov_coverup_l):.1f}% min, {max(cov_coverup_l):.1f}% max, " +\
+          f"{sum(c==100 for c in cov_coverup_l)} @ 100%")
+    print(f"coverup b:             {len(cov_coverup_b):3} benchmarks, {mean(cov_coverup_l):.1f}% mean, " +\
+          f"{median(cov_coverup_b):.1f}% median, {min(cov_coverup_l):.1f}% min, {max(cov_coverup_l):.1f}% max, " +\
+          f"{sum(c==100 for c in cov_coverup_b)} @ 100%")
+    print(f"coverup l+b:           {len(cov_coverup):3} benchmarks, {mean(cov_coverup):.1f}% mean, " +\
           f"{median(cov_coverup):.1f}% median, {min(cov_coverup):.1f}% min, {max(cov_coverup):.1f}% max, " +\
           f"{sum(c==100 for c in cov_coverup)} @ 100%")
     print(f"   overall line cov.:     {pct_cover(coverup_totals, ['lines'])}")
@@ -228,7 +268,16 @@ else:
     print(f"   overall l+b cov.:      {pct_cover(coverup_totals, ['lines','branches'])}")
 
     print("")
-    print(f"codamosa:              {len(cov_codamosa):3} benchmarks, {mean(cov_codamosa):.1f}% mean, " +\
+    codamosa_hdr = f"codamosa ({args.codamosa_results}) l:"
+    print(f"{codamosa_hdr:22} {len(cov_codamosa_l):3} benchmarks, {mean(cov_codamosa_l):.1f}% mean, " +\
+          f"{median(cov_codamosa_l):.1f}% median, {min(cov_codamosa_l):.1f}% min, {max(cov_codamosa_l):.1f}% max, " +\
+          f"{sum(c==100 for c in cov_codamosa_l)} @ 100%")
+    codamosa_hdr = f"codamosa ({args.codamosa_results}) b:"
+    print(f"{codamosa_hdr:22} {len(cov_codamosa_b):3} benchmarks, {mean(cov_codamosa_b):.1f}% mean, " +\
+          f"{median(cov_codamosa_b):.1f}% median, {min(cov_codamosa_b):.1f}% min, {max(cov_codamosa_b):.1f}% max, " +\
+          f"{sum(c==100 for c in cov_codamosa_b)} @ 100%")
+    codamosa_hdr = f"codamosa ({args.codamosa_results}) l+b:"
+    print(f"{codamosa_hdr:22} {len(cov_codamosa):3} benchmarks, {mean(cov_codamosa):.1f}% mean, " +\
           f"{median(cov_codamosa):.1f}% median, {min(cov_codamosa):.1f}% min, {max(cov_codamosa):.1f}% max, " +\
           f"{sum(c==100 for c in cov_codamosa)} @ 100%")
     if codamosa_totals:

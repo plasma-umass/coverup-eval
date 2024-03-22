@@ -4,7 +4,7 @@ from collections import defaultdict
 import subprocess
 import os
 
-test_apps = Path("test-apps")  # linked to codamosa/replication/test-apps
+test_apps = Path("codamosa/replication/test-apps")
 pip_cache = Path("pip-cache")  # set to None to disable
 
 def parse_args():
