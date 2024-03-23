@@ -1,3 +1,6 @@
+#
+# FIXME FIXME This script is out of date!!
+# 
 from pathlib import Path
 import ast
 import re

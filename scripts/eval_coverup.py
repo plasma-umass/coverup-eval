@@ -75,7 +75,7 @@ for d in pkg:
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
            "-v ./pip-cache:/root/.cache/pip " +\
           ("-ti " if args.interactive else "-t ") +\
-           "slipcover-runner bash " +\
+           "coverup-runner bash " +\
           (f"/eval/scripts/run_coverup.sh {src} {package} \"{options}\" {' '.join(files)}" if not args.interactive else "")
 
     print(cmd)
