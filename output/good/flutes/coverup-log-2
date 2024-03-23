@@ -1,0 +1,675 @@
+---- 2024-02-29T00:53:58 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./flutes --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json flutes/iterator.py flutes/structure.py flutes/timing.py
+---- 2024-02-29T00:54:02 flutes/structure.py:74-96 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutes/structure.py, module flutes.structure, does not achieve full coverage:
+when tested, lines 83, 85, 90 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @no_type_check
+            def map_structure(fn: Callable[[T], R], obj: Collection[T]) -> Collection[R]:
+                r"""Map a function over all elements in a (possibly nested) collection.
+            
+                :param fn: The function to call on elements.
+                :param obj: The collection to map function over.
+                :return: The collection in the same structure, with elements mapped.
+                """
+        82:     if obj.__class__ in _NO_MAP_TYPES or hasattr(obj, _NO_MAP_INSTANCE_ATTR):
+        83:         return fn(obj)
+        84:     if isinstance(obj, list):
+        85:         return [map_structure(fn, x) for x in obj]
+                if isinstance(obj, tuple):
+        87:         if hasattr(obj, '_fields'):  # namedtuple
+                        return type(obj)(*[map_structure(fn, x) for x in obj])
+                    else:
+        90:             return tuple(map_structure(fn, x) for x in obj)
+                if isinstance(obj, dict):
+                    # could be `OrderedDict`
+                    return type(obj)((k, map_structure(fn, v)) for k, v in obj.items())
+                if isinstance(obj, set):
+                    return {map_structure(fn, x) for x in obj}
+                return fn(obj)
+
+```
+
+---- 2024-02-29T00:54:02 flutes/structure.py:99-127 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutes/structure.py, module flutes.structure, does not achieve full coverage:
+when tested, lines 114, 116, 121 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @no_type_check
+            def map_structure_zip(fn: Callable[..., R], objs: Sequence[Collection[T]]) -> Collection[R]:
+                r"""Map a function over tuples formed by taking one elements from each (possibly nested) collection. Each collection
+                must have identical structures.
+            
+                .. note::
+                    Although identical structures are required, it is not enforced by assertions. The structure of the first
+                    collection is assumed to be the structure for all collections.
+            
+                :param fn: The function to call on elements.
+                :param objs: The list of collections to map function over.
+                :return: A collection with the same structure, with elements mapped.
+                """
+                obj = objs[0]
+       113:     if obj.__class__ in _NO_MAP_TYPES or hasattr(obj, _NO_MAP_INSTANCE_ATTR):
+       114:         return fn(*objs)
+       115:     if isinstance(obj, list):
+       116:         return [map_structure_zip(fn, xs) for xs in zip(*objs)]
+                if isinstance(obj, tuple):
+       118:         if hasattr(obj, '_fields'):  # namedtuple
+                        return type(obj)(*[map_structure_zip(fn, xs) for xs in zip(*objs)])
+                    else:
+       121:             return tuple(map_structure_zip(fn, xs) for xs in zip(*objs))
+                if isinstance(obj, dict):
+                    # could be `OrderedDict`
+                    return type(obj)((k, map_structure_zip(fn, [o[k] for o in objs])) for k in obj.keys())
+                if isinstance(obj, set):
+                    raise ValueError("Structures cannot contain `set` because it's unordered")
+                return fn(*objs)
+
+```
+
+---- 2024-02-29T00:54:02 flutes/structure.py:60-71 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutes/structure.py, module flutes.structure, does not achieve full coverage:
+when tested, lines 67-71 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @no_type_check
+            def no_map_instance(instance: T) -> T:
+                r"""Register a container instance as `non-mappable`, i.e., it will be treated as a singleton object in
+                :func:`map_structure` and :func:`map_structure_zip`, its contents will not be traversed.
+            
+                :param instance: The container instance.
+                """
+        67:     try:
+        68:         setattr(instance, _NO_MAP_INSTANCE_ATTR, True)
+        69:         return instance
+        70:     except AttributeError:
+        71:         return _no_map_type(type(instance))(instance)
+
+```
+
+---- 2024-02-29T00:54:02 flutes/iterator.py:124-157 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutes/iterator.py, module flutes.iterator, does not achieve full coverage:
+when tested, line 145 and branches 146->148, 153->155 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def split_by(iterable: Iterable[A], empty_segments: bool = False, *, criterion=None, separator=None) \
+                    -> Iterator[List[A]]:
+                r"""Split a list into sub-lists by dropping certain elements. Exactly one of ``criterion`` and ``separator`` must be
+                specified. For example:
+            
+                .. code:: python
+            
+                    >>> list(split_by(range(10), criterion=lambda x: x % 3 == 0))
+                    [[1, 2], [4, 5], [7, 8]]
+            
+                    >>> list(split_by(" Split by: ", empty_segments=True, separator='.'))
+                    [[], ['S', 'p', 'l', 'i', 't'], ['b', 'y', ':'], []]
+            
+                :param iterable: The list to split.
+                :param empty_segments: If ``True``, include an empty list in cases where two adjacent elements satisfy
+                    the criterion.
+                :param criterion: The criterion to decide whether to drop an element.
+                :param separator: The separator for sub-lists. An element is dropped if it is equal to ``parameter``.
+                :return: List of sub-lists.
+                """
+       144:     if not ((criterion is None) ^ (separator is None)):
+       145:         raise ValueError("Exactly one of `criterion` and `separator` should be specified")
+       146:     if criterion is None:
+                    criterion = lambda x: x == separator
+       148:     group = []
+                for x in iterable:
+                    if not criterion(x):
+                        group.append(x)
+                    else:
+       153:             if len(group) > 0 or empty_segments:
+                            yield group
+       155:             group = []
+                if len(group) > 0 or empty_segments:
+                    yield group
+
+```
+
+---- 2024-02-29T00:54:10 flutes/structure.py:60-71 ----
+```python
+import pytest
+from flutes.structure import no_map_instance
+
+class ImmutableClass:
+    __slots__ = ['value']
+
+    def __init__(self, value):
+        self.value = value
+
+@pytest.fixture
+def cleanup_immutable_class():
+    yield
+    delattr(ImmutableClass, '_NO_MAP_INSTANCE_ATTR')
+
+def test_no_map_instance_with_immutable_class(mocker, cleanup_immutable_class):
+    obj = ImmutableClass(10)
+    mocker.patch.object(obj, '__setattr__', side_effect=AttributeError("Cannot set attribute"))
+    result = no_map_instance(obj)
+    assert result is not obj, "The result should be a new instance, not the original one"
+    assert hasattr(result, 'value') and result.value == 10, "The new instance should have the same value"
+```
+---- 2024-02-29T00:54:10 flutes/structure.py:60-71 ----
+total usage: {'prompt_tokens': 328, 'completion_tokens': 166}
+---- 2024-02-29T00:54:12 flutes/structure.py:60-71 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def cleanup_immutable_class():
+        yield
+>       delattr(ImmutableClass, '_NO_MAP_INSTANCE_ATTR')
+E       AttributeError: _NO_MAP_INSTANCE_ATTR
+
+coverup-tests/tmp_test_x0ju4q_u.py:13: AttributeError
+=================================== FAILURES ===================================
+__________________ test_no_map_instance_with_immutable_class ___________________
+
+self = <unittest.mock._patch object at 0x7fb87cbbe440>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 'ImmutableClass' object attribute '__setattr__' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fb87cbbdcc0>
+cleanup_immutable_class = None
+
+    def test_no_map_instance_with_immutable_class(mocker, cleanup_immutable_class):
+        obj = ImmutableClass(10)
+>       mocker.patch.object(obj, '__setattr__', side_effect=AttributeError("Cannot set attribute"))
+
+coverup-tests/tmp_test_x0ju4q_u.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:264: in object
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fb87cbbe440>
+exc_info = (<class 'AttributeError'>, AttributeError("'ImmutableClass' object attribute '__setattr__' is read-only"), <traceback object at 0x7fb87bb2efc0>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 'ImmutableClass' object attribute '__setattr__' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-02-29T00:54:15 flutes/structure.py:74-96 ----
+```python
+import pytest
+from flutes.structure import map_structure
+
+class NoMapType:
+    pass
+
+_NO_MAP_TYPES = {NoMapType}
+_NO_MAP_INSTANCE_ATTR = "_no_map"
+
+def test_map_structure_no_map_types_and_attributes(mocker):
+    # Mock the function to be used in map_structure
+    mock_fn = mocker.Mock(return_value="mapped")
+
+    # Test for _NO_MAP_TYPES
+    no_map_type_instance = NoMapType()
+    result = map_structure(mock_fn, no_map_type_instance)
+    mock_fn.assert_called_once_with(no_map_type_instance)
+    assert result == "mapped"
+
+    # Reset mock for next test
+    mock_fn.reset_mock()
+
+    # Test for _NO_MAP_INSTANCE_ATTR
+    class WithNoMapAttr:
+        _no_map = True
+
+    with_no_map_attr_instance = WithNoMapAttr()
+    result = map_structure(mock_fn, with_no_map_attr_instance)
+    mock_fn.assert_called_once_with(with_no_map_attr_instance)
+    assert result == "mapped"
+
+    # Reset mock for next test
+    mock_fn.reset_mock()
+
+    # Test for list
+    list_instance = [1, 2, 3]
+    result = map_structure(mock_fn, list_instance)
+    assert mock_fn.call_count == 3
+    assert result == ["mapped", "mapped", "mapped"]
+
+    # Reset mock for next test
+    mock_fn.reset_mock()
+
+    # Test for tuple
+    tuple_instance = (1, 2, 3)
+    result = map_structure(mock_fn, tuple_instance)
+    assert mock_fn.call_count == 3
+    assert result == ("mapped", "mapped", "mapped")
+```
+---- 2024-02-29T00:54:15 flutes/structure.py:74-96 ----
+total usage: {'prompt_tokens': 799, 'completion_tokens': 511}
+---- 2024-02-29T00:54:17 flutes/structure.py:74-96 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:54:17 flutes/structure.py:74-96 ----
+Saved as coverup-tests/test_coverup_35.py
+
+---- 2024-02-29T00:54:18 flutes/structure.py:99-127 ----
+```python
+import pytest
+from flutes.structure import map_structure_zip
+
+_NO_MAP_TYPES = (int, float, str, bytes)
+_NO_MAP_INSTANCE_ATTR = "_no_map"
+
+class NoMapClass:
+    _no_map = True
+
+def test_map_structure_zip():
+    # Test for line 114
+    def fn(*args):
+        return sum(args)
+
+    no_map_instance = NoMapClass()
+    result = map_structure_zip(fn, [no_map_instance, no_map_instance])
+    assert result == 2 * no_map_instance
+
+    # Test for line 116
+    result = map_structure_zip(fn, [[1, 2], [3, 4]])
+    assert result == [4, 6]
+
+    # Test for line 121
+    result = map_structure_zip(fn, [(1, 2), (3, 4)])
+    assert result == (4, 6)
+
+@pytest.fixture
+def mock_hasattr(mocker):
+    mocker.patch('flutes.structure.hasattr', return_value=True)
+
+def test_map_structure_zip_with_mock_hasattr(mock_hasattr):
+    # Test for line 114 with mock
+    def fn(*args):
+        return sum(args)
+
+    result = map_structure_zip(fn, [1, 2])
+    assert result == 3
+```
+---- 2024-02-29T00:54:18 flutes/structure.py:99-127 ----
+total usage: {'prompt_tokens': 1349, 'completion_tokens': 778}
+---- 2024-02-29T00:54:18 flutes/iterator.py:124-157 ----
+```python
+import pytest
+from flutes.iterator import split_by
+
+def test_split_by_coverage():
+    # Test the case where both criterion and separator are None
+    with pytest.raises(ValueError):
+        next(split_by(range(10)))
+
+    # Test the case where criterion is None and separator is provided
+    result = list(split_by(" Split by: ", empty_segments=True, separator=' '))
+    assert result == [[], ['S', 'p', 'l', 'i', 't'], ['b', 'y', ':'], []]
+
+    # Test the case where criterion is provided and separator is None
+    result = list(split_by(range(10), criterion=lambda x: x % 3 == 0))
+    assert result == [[1, 2], [4, 5], [7, 8]]
+
+    # Test the case where empty_segments is False and the last segment is empty
+    result = list(split_by([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3], criterion=lambda x: x % 3 == 0))
+    assert result == [[1, 2], [4, 5], [7, 8], [10]]
+
+    # Test the case where empty_segments is True and the last segment is empty
+    result = list(split_by([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 3], empty_segments=True, criterion=lambda x: x % 3 == 0))
+    assert result == [[1, 2], [4, 5], [7, 8], [10], []]
+```
+---- 2024-02-29T00:54:18 flutes/iterator.py:124-157 ----
+total usage: {'prompt_tokens': 1935, 'completion_tokens': 1139}
+---- 2024-02-29T00:54:19 flutes/structure.py:99-127 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_map_structure_zip():
+        # Test for line 114
+        def fn(*args):
+            return sum(args)
+    
+        no_map_instance = NoMapClass()
+>       result = map_structure_zip(fn, [no_map_instance, no_map_instance])
+
+coverup-tests/tmp_test_z1rl4b8k.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+flutes/structure.py:127: in map_structure_zip
+    return fn(*objs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<tmp_test_z1rl4b8k.NoMapClass object at 0x7fee147603a0>, <tmp_test_z1rl4b8k.NoMapClass object at 0x7fee147603a0>)
+
+    def fn(*args):
+>       return sum(args)
+E       TypeError: unsupported operand type(s) for +: 'int' and 'NoMapClass'
+
+coverup-tests/tmp_test_z1rl4b8k.py:13: TypeError
+
+---- 2024-02-29T00:54:19 flutes/iterator.py:124-157 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:54:19 flutes/iterator.py:124-157 ----
+Saved as coverup-tests/test_coverup_36.py
+
+---- 2024-02-29T00:54:20 flutes/structure.py:60-71 ----
+```python
+import pytest
+from flutes.structure import no_map_instance, _NO_MAP_INSTANCE_ATTR
+
+class ImmutableClass:
+    __slots__ = ['value', _NO_MAP_INSTANCE_ATTR]
+
+    def __init__(self, value):
+        self.value = value
+
+@pytest.fixture
+def cleanup_immutable_class():
+    yield
+    if hasattr(ImmutableClass, _NO_MAP_INSTANCE_ATTR):
+        delattr(ImmutableClass, _NO_MAP_INSTANCE_ATTR)
+
+def test_no_map_instance_with_immutable_class(cleanup_immutable_class):
+    obj = ImmutableClass(10)
+    result = no_map_instance(obj)
+    assert result is obj, "The result should be the original instance"
+    assert getattr(obj, _NO_MAP_INSTANCE_ATTR) is True, "The _NO_MAP_INSTANCE_ATTR should be set to True"
+```
+---- 2024-02-29T00:54:20 flutes/structure.py:60-71 ----
+total usage: {'prompt_tokens': 4133, 'completion_tokens': 1305}
+---- 2024-02-29T00:54:22 flutes/structure.py:60-71 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+coverup-tests/tmp_test_v5un5asy.py:4: in <module>
+    class ImmutableClass:
+E   TypeError: __slots__ must be identifiers
+
+---- 2024-02-29T00:54:29 flutes/structure.py:60-71 ----
+```python
+import pytest
+from flutes.structure import no_map_instance
+
+_NO_MAP_INSTANCE_ATTR = '_no_map_instance'
+
+class ImmutableClass:
+    __slots__ = ['value', _NO_MAP_INSTANCE_ATTR]
+
+    def __init__(self, value):
+        self.value = value
+
+@pytest.fixture
+def cleanup_immutable_class():
+    yield
+    if hasattr(ImmutableClass, _NO_MAP_INSTANCE_ATTR):
+        delattr(ImmutableClass, _NO_MAP_INSTANCE_ATTR)
+
+def test_no_map_instance_with_immutable_class(cleanup_immutable_class):
+    obj = ImmutableClass(10)
+    result = no_map_instance(obj)
+    assert result is obj, "The result should be the original instance"
+    assert getattr(obj, _NO_MAP_INSTANCE_ATTR) is True, "The _NO_MAP_INSTANCE_ATTR should be set to True"
+```
+---- 2024-02-29T00:54:29 flutes/structure.py:60-71 ----
+total usage: {'prompt_tokens': 6567, 'completion_tokens': 1475}
+---- 2024-02-29T00:54:30 flutes/structure.py:60-71 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+cleanup_immutable_class = None
+
+    def test_no_map_instance_with_immutable_class(cleanup_immutable_class):
+        obj = ImmutableClass(10)
+        result = no_map_instance(obj)
+>       assert result is obj, "The result should be the original instance"
+E       AssertionError: The result should be the original instance
+E       assert <flutes.structure._no_mapImmutableClass object at 0x7f5f7b550080> is <tmp_test_6vcah637.ImmutableClass object at 0x7f5f7ca098d0>
+
+coverup-tests/tmp_test_6vcah637.py:21: AssertionError
+
+---- 2024-02-29T00:54:30 flutes/structure.py:60-71 ----
+Too many attempts, giving up
+---- 2024-02-29T00:54:32 flutes/structure.py:99-127 ----
+```python
+import pytest
+from flutes.structure import map_structure_zip
+
+_NO_MAP_TYPES = (int, float, str, bytes)
+_NO_MAP_INSTANCE_ATTR = "_no_map"
+
+class NoMapClass:
+    _no_map = True
+
+def test_map_structure_zip():
+    # Test for line 114
+    def fn(*args):
+        return args[0]  # Return the first argument to avoid TypeError
+
+    no_map_instance = NoMapClass()
+    result = map_structure_zip(fn, [no_map_instance, no_map_instance])
+    assert result == no_map_instance
+
+    # Test for line 116
+    def sum_fn(*args):
+        return sum(args)
+
+    result = map_structure_zip(sum_fn, [[1, 2], [3, 4]])
+    assert result == [4, 6]
+
+    # Test for line 121
+    result = map_structure_zip(sum_fn, [(1, 2), (3, 4)])
+    assert result == (4, 6)
+
+@pytest.fixture
+def mock_hasattr(mocker):
+    mocker.patch('flutes.structure.hasattr', return_value=True)
+
+def test_map_structure_zip_with_mock_hasattr(mock_hasattr):
+    # Test for line 114 with mock
+    def fn(*args):
+        return sum(args)
+
+    result = map_structure_zip(fn, [1, 2])
+    assert result == 3
+```
+---- 2024-02-29T00:54:32 flutes/structure.py:99-127 ----
+total usage: {'prompt_tokens': 7696, 'completion_tokens': 1764}
+---- 2024-02-29T00:54:33 flutes/structure.py:99-127 ----
+..                                                                       [100%]
+
+---- 2024-02-29T00:54:33 flutes/structure.py:99-127 ----
+Saved as coverup-tests/test_coverup_37.py
+

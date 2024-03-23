@@ -1,0 +1,754 @@
+---- 2024-02-28T20:08:29 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./codetiming --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-1 --checkpoint coverup-ckpt.json codetiming/_timer.py
+---- 2024-02-28T20:08:31 codetiming/_timer.py:40-65 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from codetiming/_timer.py, module codetiming._timer, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @dataclass
+            class Timer(ContextDecorator):
+                def stop(self) -> float:
+                    """Stop the timer, and report the elapsed time"""
+                    if self._start_time is None:
+                        raise TimerError("Timer is not running. Use .start() to start it")
+            
+                    # Calculate elapsed time
+                    self.last = time.perf_counter() - self._start_time
+                    self._start_time = None
+            
+                    # Report elapsed time
+                    if self.logger:
+                        if callable(self.text):
+                            text = self.text(self.last)
+                        else:
+                            attributes = {
+                                "name": self.name,
+                                "milliseconds": self.last * 1000,
+                                "seconds": self.last,
+                                "minutes": self.last / 60,
+                            }
+                            text = self.text.format(self.last, **attributes)
+                        self.logger(text)
+                    if self.name:
+                        self.timers.add(self.name, self.last)
+            
+                    return self.last
+
+```
+
+---- 2024-02-28T20:08:32 codetiming/_timer.py:22-32 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from codetiming/_timer.py, module codetiming._timer, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @dataclass
+            class Timer(ContextDecorator):
+                """Time your code using a class, context manager, or decorator"""
+            
+                timers: ClassVar[Timers] = Timers()
+                _start_time: Optional[float] = field(default=None, init=False, repr=False)
+                name: Optional[str] = None
+                text: Union[str, Callable[[float], str]] = "Elapsed time: {:0.4f} seconds"
+                logger: Optional[Callable[[str], None]] = print
+                last: float = field(default=math.nan, init=False, repr=False)
+            
+
+```
+
+---- 2024-02-28T20:08:32 codetiming/_timer.py:33-38 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from codetiming/_timer.py, module codetiming._timer, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @dataclass
+            class Timer(ContextDecorator):
+                def start(self) -> None:
+                    """Start a new timer"""
+                    if self._start_time is not None:
+                        raise TimerError("Timer is running. Use .stop() to stop it")
+            
+                    self._start_time = time.perf_counter()
+
+```
+
+---- 2024-02-28T20:08:32 codetiming/_timer.py:67-70 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from codetiming/_timer.py, module codetiming._timer, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @dataclass
+            class Timer(ContextDecorator):
+                def __enter__(self) -> "Timer":
+                    """Start a new timer as a context manager"""
+                    self.start()
+                    return self
+
+```
+
+---- 2024-02-28T20:08:32 codetiming/_timer.py:18-19 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from codetiming/_timer.py, module codetiming._timer, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class TimerError(Exception):
+                """A custom exception used to report errors in use of Timer class"""
+
+```
+
+---- 2024-02-28T20:08:32 codetiming/_timer.py:72-74 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from codetiming/_timer.py, module codetiming._timer, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @dataclass
+            class Timer(ContextDecorator):
+                def __exit__(self, *exc_info: Any) -> None:
+                    """Stop the context manager timer"""
+                    self.stop()
+
+```
+
+---- 2024-02-28T20:08:34 codetiming/_timer.py:18-19 ----
+```python
+import pytest
+from codetiming import Timer
+from codetiming._timer import TimerError
+
+def test_timer_error():
+    with pytest.raises(TimerError):
+        raise TimerError("This is a TimerError test.")
+```
+---- 2024-02-28T20:08:34 codetiming/_timer.py:18-19 ----
+total usage: {'prompt_tokens': 215, 'completion_tokens': 49}
+---- 2024-02-28T20:08:35 codetiming/_timer.py:18-19 ----
+.                                                                        [100%]
+
+---- 2024-02-28T20:08:35 codetiming/_timer.py:18-19 ----
+Saved as coverup-tests/test_coverup_1.py
+
+---- 2024-02-28T20:08:40 codetiming/_timer.py:67-70 ----
+```python
+import pytest
+from codetiming import Timer
+
+def test_timer_context_manager():
+    with Timer() as t:
+        assert hasattr(t, "_start_time"), "Timer should have '_start_time' attribute after entering context"
+        assert t._start_time is not None, "_start_time should not be None after timer starts"
+
+    assert hasattr(t, "_end_time"), "Timer should have '_end_time' attribute after exiting context"
+    assert t._end_time is not None, "_end_time should not be None after timer ends"
+```
+---- 2024-02-28T20:08:40 codetiming/_timer.py:67-70 ----
+total usage: {'prompt_tokens': 450, 'completion_tokens': 162}
+---- 2024-02-28T20:08:40 codetiming/_timer.py:72-74 ----
+```python
+import pytest
+from codetiming import Timer
+from unittest.mock import patch
+
+def test_timer_context_manager():
+    with patch.object(Timer, 'stop') as mock_stop:
+        with Timer():
+            pass
+        mock_stop.assert_called_once()
+
+def test_timer_context_manager_with_exception():
+    with patch.object(Timer, 'stop') as mock_stop:
+        with pytest.raises(ZeroDivisionError):
+            with Timer():
+                1 / 0  # This will raise a ZeroDivisionError
+        mock_stop.assert_called_once()
+```
+---- 2024-02-28T20:08:40 codetiming/_timer.py:72-74 ----
+total usage: {'prompt_tokens': 683, 'completion_tokens': 274}
+---- 2024-02-28T20:08:41 codetiming/_timer.py:72-74 ----
+..                                                                       [100%]
+
+---- 2024-02-28T20:08:41 codetiming/_timer.py:72-74 ----
+Saved as coverup-tests/test_coverup_2.py
+
+---- 2024-02-28T20:08:41 codetiming/_timer.py:67-70 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_timer_context_manager():
+        with Timer() as t:
+            assert hasattr(t, "_start_time"), "Timer should have '_start_time' attribute after entering context"
+            assert t._start_time is not None, "_start_time should not be None after timer starts"
+    
+>       assert hasattr(t, "_end_time"), "Timer should have '_end_time' attribute after exiting context"
+E       AssertionError: Timer should have '_end_time' attribute after exiting context
+E       assert False
+E        +  where False = hasattr(Timer(name=None, text='Elapsed time: {:0.4f} seconds', logger=<built-in function print>), '_end_time')
+
+coverup-tests/tmp_test_cg87kxr5.py:9: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Elapsed time: 0.0000 seconds
+
+---- 2024-02-28T20:08:42 codetiming/_timer.py:33-38 ----
+```python
+import pytest
+from codetiming import Timer
+from codetiming._timer import TimerError
+
+def test_timer_start_when_already_started(mocker):
+    mocker.patch('time.perf_counter', return_value=123.456)
+    timer = Timer()
+    timer.start()  # Start the timer for the first time
+
+    with pytest.raises(TimerError) as exc_info:
+        timer.start()  # Attempt to start the timer again without stopping should raise TimerError
+
+    assert str(exc_info.value) == "Timer is running. Use .stop() to stop it"
+    assert timer._start_time == 123.456  # Ensure the start time was set by the first start call
+```
+---- 2024-02-28T20:08:42 codetiming/_timer.py:33-38 ----
+total usage: {'prompt_tokens': 942, 'completion_tokens': 420}
+---- 2024-02-28T20:08:43 codetiming/_timer.py:33-38 ----
+.                                                                        [100%]
+
+---- 2024-02-28T20:08:43 codetiming/_timer.py:33-38 ----
+Saved as coverup-tests/test_coverup_3.py
+
+---- 2024-02-28T20:08:47 codetiming/_timer.py:67-70 ----
+```python
+import pytest
+from codetiming import Timer
+
+def test_timer_context_manager(mocker):
+    mocker.patch('codetiming._timer.Timer._end_time', new_callable=mocker.PropertyMock)
+    with Timer() as t:
+        assert hasattr(t, "_start_time"), "Timer should have '_start_time' attribute after entering context"
+        assert t._start_time is not None, "_start_time should not be None after timer starts"
+```
+---- 2024-02-28T20:08:47 codetiming/_timer.py:67-70 ----
+total usage: {'prompt_tokens': 1500, 'completion_tokens': 513}
+---- 2024-02-28T20:08:49 codetiming/_timer.py:67-70 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7ff0f9716920>
+
+    def test_timer_context_manager(mocker):
+>       mocker.patch('codetiming._timer.Timer._end_time', new_callable=mocker.PropertyMock)
+
+coverup-tests/tmp_test_jfc2nhd1.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7ff0f9715390>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <class 'codetiming._timer.Timer'> does not have the attribute '_end_time'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-02-28T20:08:49 codetiming/_timer.py:40-65 ----
+```python
+import pytest
+from codetiming import Timer
+from unittest.mock import Mock
+
+def test_timer_stop_without_start():
+    timer = Timer()
+    with pytest.raises(RuntimeError):
+        timer.stop()
+
+def test_timer_stop_with_logger_and_custom_text_function(mocker):
+    mock_logger = Mock()
+    custom_text_function = lambda x: f"Elapsed time: {x:.2f} seconds"
+    timer = Timer(logger=mock_logger, text=custom_text_function)
+    timer._start_time = mocker.patch('time.perf_counter', return_value=0)
+    mocker.patch('time.perf_counter', return_value=1)  # Simulate 1 second elapsed
+
+    elapsed_time = timer.stop()
+
+    assert elapsed_time == 1
+    mock_logger.assert_called_once_with("Elapsed time: 1.00 seconds")
+
+def test_timer_stop_with_logger_and_format_string(mocker):
+    mock_logger = Mock()
+    timer = Timer(logger=mock_logger, text="{seconds:.2f} seconds elapsed")
+    timer._start_time = mocker.patch('time.perf_counter', return_value=0)
+    mocker.patch('time.perf_counter', return_value=2)  # Simulate 2 seconds elapsed
+
+    elapsed_time = timer.stop()
+
+    assert elapsed_time == 2
+    mock_logger.assert_called_once_with("2.00 seconds elapsed")
+
+def test_timer_stop_with_name_and_timers_collection(mocker):
+    mock_timers_add = Mock()
+    timer = Timer(name="test_timer")
+    timer.timers = mocker.Mock(add=mock_timers_add)
+    timer._start_time = mocker.patch('time.perf_counter', return_value=0)
+    mocker.patch('time.perf_counter', return_value=3)  # Simulate 3 seconds elapsed
+
+    elapsed_time = timer.stop()
+
+    assert elapsed_time == 3
+    mock_timers_add.assert_called_once_with("test_timer", 3)
+```
+---- 2024-02-28T20:08:49 codetiming/_timer.py:40-65 ----
+total usage: {'prompt_tokens': 1890, 'completion_tokens': 910}
+---- 2024-02-28T20:08:51 codetiming/_timer.py:40-65 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_timer_stop_without_start():
+        timer = Timer()
+        with pytest.raises(RuntimeError):
+>           timer.stop()
+
+coverup-tests/tmp_test_6_6rt4se.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Timer(name=None, text='Elapsed time: {:0.4f} seconds', logger=<built-in function print>)
+
+    def stop(self) -> float:
+        """Stop the timer, and report the elapsed time"""
+        if self._start_time is None:
+>           raise TimerError("Timer is not running. Use .start() to start it")
+E           codetiming._timer.TimerError: Timer is not running. Use .start() to start it
+
+codetiming/_timer.py:43: TimerError
+_____________ test_timer_stop_with_logger_and_custom_text_function _____________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fd395b8c550>
+
+    def test_timer_stop_with_logger_and_custom_text_function(mocker):
+        mock_logger = Mock()
+        custom_text_function = lambda x: f"Elapsed time: {x:.2f} seconds"
+        timer = Timer(logger=mock_logger, text=custom_text_function)
+        timer._start_time = mocker.patch('time.perf_counter', return_value=0)
+        mocker.patch('time.perf_counter', return_value=1)  # Simulate 1 second elapsed
+    
+>       elapsed_time = timer.stop()
+
+coverup-tests/tmp_test_6_6rt4se.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+codetiming/_timer.py:52: in stop
+    text = self.text(self.last)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+x = <MagicMock name='perf_counter.__rsub__()' id='140546711978768'>
+
+>   custom_text_function = lambda x: f"Elapsed time: {x:.2f} seconds"
+E   TypeError: unsupported format string passed to MagicMock.__format__
+
+coverup-tests/tmp_test_6_6rt4se.py:12: TypeError
+________________ test_timer_stop_with_logger_and_format_string _________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fd395d19e70>
+
+    def test_timer_stop_with_logger_and_format_string(mocker):
+        mock_logger = Mock()
+        timer = Timer(logger=mock_logger, text="{seconds:.2f} seconds elapsed")
+        timer._start_time = mocker.patch('time.perf_counter', return_value=0)
+        mocker.patch('time.perf_counter', return_value=2)  # Simulate 2 seconds elapsed
+    
+>       elapsed_time = timer.stop()
+
+coverup-tests/tmp_test_6_6rt4se.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Timer(name=None, text='{seconds:.2f} seconds elapsed', logger=<Mock id='140546728372896'>)
+
+    def stop(self) -> float:
+        """Stop the timer, and report the elapsed time"""
+        if self._start_time is None:
+            raise TimerError("Timer is not running. Use .start() to start it")
+    
+        # Calculate elapsed time
+        self.last = time.perf_counter() - self._start_time
+        self._start_time = None
+    
+        # Report elapsed time
+        if self.logger:
+            if callable(self.text):
+                text = self.text(self.last)
+            else:
+                attributes = {
+                    "name": self.name,
+                    "milliseconds": self.last * 1000,
+                    "seconds": self.last,
+                    "minutes": self.last / 60,
+                }
+>               text = self.text.format(self.last, **attributes)
+E               TypeError: unsupported format string passed to MagicMock.__format__
+
+codetiming/_timer.py:60: TypeError
+_______________ test_timer_stop_with_name_and_timers_collection ________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fd39574cbe0>
+
+    def test_timer_stop_with_name_and_timers_collection(mocker):
+        mock_timers_add = Mock()
+        timer = Timer(name="test_timer")
+        timer.timers = mocker.Mock(add=mock_timers_add)
+        timer._start_time = mocker.patch('time.perf_counter', return_value=0)
+        mocker.patch('time.perf_counter', return_value=3)  # Simulate 3 seconds elapsed
+    
+>       elapsed_time = timer.stop()
+
+coverup-tests/tmp_test_6_6rt4se.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Timer(name='test_timer', text='Elapsed time: {:0.4f} seconds', logger=<built-in function print>)
+
+    def stop(self) -> float:
+        """Stop the timer, and report the elapsed time"""
+        if self._start_time is None:
+            raise TimerError("Timer is not running. Use .start() to start it")
+    
+        # Calculate elapsed time
+        self.last = time.perf_counter() - self._start_time
+        self._start_time = None
+    
+        # Report elapsed time
+        if self.logger:
+            if callable(self.text):
+                text = self.text(self.last)
+            else:
+                attributes = {
+                    "name": self.name,
+                    "milliseconds": self.last * 1000,
+                    "seconds": self.last,
+                    "minutes": self.last / 60,
+                }
+>               text = self.text.format(self.last, **attributes)
+E               TypeError: unsupported format string passed to MagicMock.__format__
+
+codetiming/_timer.py:60: TypeError
+
+---- 2024-02-28T20:08:52 codetiming/_timer.py:67-70 ----
+```python
+import pytest
+from codetiming import Timer
+
+def test_timer_context_manager():
+    with Timer() as t:
+        assert hasattr(t, "_start_time"), "Timer should have '_start_time' attribute after entering context"
+        assert t._start_time is not None, "_start_time should not be None after timer starts"
+    # No need to check for _end_time as it is not an attribute of Timer class
+```
+---- 2024-02-28T20:08:52 codetiming/_timer.py:67-70 ----
+total usage: {'prompt_tokens': 3022, 'completion_tokens': 1000}
+---- 2024-02-28T20:08:53 codetiming/_timer.py:67-70 ----
+.                                                                        [100%]
+
+---- 2024-02-28T20:08:53 codetiming/_timer.py:67-70 ----
+Saved as coverup-tests/test_coverup_4.py
+
+---- 2024-02-28T20:09:09 codetiming/_timer.py:22-32 ----
+```python
+import math
+from codetiming import Timer
+import pytest
+from unittest.mock import Mock
+
+# Test function to cover missing branches
+def test_timer_context_manager_with_logger(mocker):
+    # Mock the logger to ensure it's called without affecting other tests
+    mock_logger = Mock()
+
+    # Use the Timer as a context manager with a custom logger
+    with Timer(logger=mock_logger):
+        pass  # Simulate quick operation
+
+    # Assert that the logger was called once
+    mock_logger.assert_called_once()
+
+    # Assert that the logger was called with a string containing the expected text
+    args, _ = mock_logger.call_args
+    assert isinstance(args[0], str)
+    assert "Elapsed time:" in args[0]
+
+# Test function to cover missing branches with a custom text callable
+def test_timer_context_manager_with_text_callable(mocker):
+    # Mock the logger to ensure it's called without affecting other tests
+    mock_logger = Mock()
+
+    # Define a custom text callable
+    def custom_text(elapsed: float) -> str:
+        return f"Custom text: {elapsed:.2f}"
+
+    # Use the Timer with a custom text callable and a custom logger
+    with Timer(text=custom_text, logger=mock_logger):
+        pass  # Simulate quick operation
+
+    # Assert that the logger was called once
+    mock_logger.assert_called_once()
+
+    # Assert that the logger was called with a string containing the expected custom text
+    args, _ = mock_logger.call_args
+    assert isinstance(args[0], str)
+    assert "Custom text:" in args[0]
+
+# Test function to cover missing branches with a name
+def test_timer_context_manager_with_name(mocker):
+    # Mock the logger to ensure it's called without affecting other tests
+    mock_logger = Mock()
+
+    # Use the Timer with a name and a custom logger
+    with Timer(name="test_timer", logger=mock_logger):
+        pass  # Simulate quick operation
+
+    # Assert that the logger was called once
+    mock_logger.assert_called_once()
+
+    # Assert that the logger was called with a string containing the expected text and name
+    args, _ = mock_logger.call_args
+    assert isinstance(args[0], str)
+    assert "Elapsed time:" in args[0]
+    assert "test_timer" in args[0]
+```
+---- 2024-02-28T20:09:09 codetiming/_timer.py:22-32 ----
+total usage: {'prompt_tokens': 3341, 'completion_tokens': 1488}
+---- 2024-02-28T20:09:11 codetiming/_timer.py:22-32 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fad40cf59c0>
+
+    def test_timer_context_manager_with_name(mocker):
+        # Mock the logger to ensure it's called without affecting other tests
+        mock_logger = Mock()
+    
+        # Use the Timer with a name and a custom logger
+        with Timer(name="test_timer", logger=mock_logger):
+            pass  # Simulate quick operation
+    
+        # Assert that the logger was called once
+        mock_logger.assert_called_once()
+    
+        # Assert that the logger was called with a string containing the expected text and name
+        args, _ = mock_logger.call_args
+        assert isinstance(args[0], str)
+        assert "Elapsed time:" in args[0]
+>       assert "test_timer" in args[0]
+E       AssertionError: assert 'test_timer' in 'Elapsed time: 0.0000 seconds'
+
+coverup-tests/tmp_test_3my5i25c.py:60: AssertionError
+
+---- 2024-02-28T20:09:22 codetiming/_timer.py:40-65 ----
+```python
+import pytest
+from codetiming import Timer
+from codetiming._timer import TimerError
+from unittest.mock import Mock
+
+def test_timer_stop_without_start():
+    timer = Timer()
+    with pytest.raises(TimerError):
+        timer.stop()
+
+def test_timer_stop_with_logger_and_custom_text_function(mocker):
+    mock_logger = Mock()
+    custom_text_function = lambda x: f"Elapsed time: {x:.2f} seconds"
+    timer = Timer(logger=mock_logger, text=custom_text_function)
+    mocker.patch('time.perf_counter', return_value=1)  # Simulate 1 second elapsed
+    timer._start_time = 0
+
+    elapsed_time = timer.stop()
+
+    assert elapsed_time == 1
+    mock_logger.assert_called_once_with("Elapsed time: 1.00 seconds")
+
+def test_timer_stop_with_logger_and_format_string(mocker):
+    mock_logger = Mock()
+    timer = Timer(logger=mock_logger, text="{seconds:.2f} seconds elapsed")
+    mocker.patch('time.perf_counter', return_value=2)  # Simulate 2 seconds elapsed
+    timer._start_time = 0
+
+    elapsed_time = timer.stop()
+
+    assert elapsed_time == 2
+    mock_logger.assert_called_once_with("2.00 seconds elapsed")
+
+def test_timer_stop_with_name_and_timers_collection(mocker):
+    mock_timers_add = Mock()
+    timer = Timer(name="test_timer")
+    timer.timers = mocker.Mock(add=mock_timers_add)
+    mocker.patch('time.perf_counter', return_value=3)  # Simulate 3 seconds elapsed
+    timer._start_time = 0
+
+    elapsed_time = timer.stop()
+
+    assert elapsed_time == 3
+    mock_timers_add.assert_called_once_with("test_timer", 3)
+```
+---- 2024-02-28T20:09:22 codetiming/_timer.py:40-65 ----
+total usage: {'prompt_tokens': 5488, 'completion_tokens': 1866}
+---- 2024-02-28T20:09:24 codetiming/_timer.py:40-65 ----
+....                                                                     [100%]
+
+---- 2024-02-28T20:09:24 codetiming/_timer.py:40-65 ----
+Saved as coverup-tests/test_coverup_5.py
+
+---- 2024-02-28T20:09:38 codetiming/_timer.py:22-32 ----
+```python
+import math
+from codetiming import Timer
+import pytest
+from unittest.mock import Mock
+
+# Test function to cover missing branches
+def test_timer_context_manager_with_logger(mocker):
+    # Mock the logger to ensure it's called without affecting other tests
+    mock_logger = mocker.Mock()
+
+    # Use the Timer as a context manager with a custom logger
+    with Timer(logger=mock_logger):
+        pass  # Simulate quick operation
+
+    # Assert that the logger was called once
+    mock_logger.assert_called_once()
+
+    # Assert that the logger was called with a string containing the expected text
+    args, _ = mock_logger.call_args
+    assert isinstance(args[0], str)
+    assert "Elapsed time:" in args[0]
+
+# Test function to cover missing branches with a custom text callable
+def test_timer_context_manager_with_text_callable(mocker):
+    # Mock the logger to ensure it's called without affecting other tests
+    mock_logger = mocker.Mock()
+
+    # Define a custom text callable
+    def custom_text(elapsed: float) -> str:
+        return f"Custom text: {elapsed:.2f}"
+
+    # Use the Timer with a custom text callable and a custom logger
+    with Timer(text=custom_text, logger=mock_logger):
+        pass  # Simulate quick operation
+
+    # Assert that the logger was called once
+    mock_logger.assert_called_once()
+
+    # Assert that the logger was called with a string containing the expected custom text
+    args, _ = mock_logger.call_args
+    assert isinstance(args[0], str)
+    assert "Custom text:" in args[0]
+
+# Test function to cover missing branches with a name
+def test_timer_context_manager_with_name(mocker):
+    # Mock the logger to ensure it's called without affecting other tests
+    mock_logger = mocker.Mock()
+
+    # Use the Timer with a name and a custom logger
+    with Timer(name="test_timer", logger=mock_logger):
+        pass  # Simulate quick operation
+
+    # Assert that the logger was called once
+    mock_logger.assert_called_once()
+
+    # Assert that the logger was called with a string containing the expected text
+    args, _ = mock_logger.call_args
+    assert isinstance(args[0], str)
+    assert "Elapsed time:" in args[0]
+    # The name is not included in the default text, so we should not assert its presence
+```
+---- 2024-02-28T20:09:38 codetiming/_timer.py:22-32 ----
+total usage: {'prompt_tokens': 6539, 'completion_tokens': 2364}
+---- 2024-02-28T20:09:39 codetiming/_timer.py:22-32 ----
+...                                                                      [100%]
+
+---- 2024-02-28T20:09:39 codetiming/_timer.py:22-32 ----
+Saved as coverup-tests/test_coverup_6.py
+

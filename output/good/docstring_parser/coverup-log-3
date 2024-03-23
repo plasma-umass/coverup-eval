@@ -1,0 +1,2600 @@
+---- 2024-02-29T00:50:40 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./docstring_parser --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-3 --checkpoint coverup-ckpt.json docstring_parser/common.py docstring_parser/google.py docstring_parser/numpydoc.py docstring_parser/parser.py docstring_parser/rest.py
+---- 2024-02-29T00:50:42 docstring_parser/rest.py:86-132 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/rest.py, module docstring_parser.rest, does not achieve full coverage:
+when tested, lines 93, 98-99, 115-130 and branch 106->112 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def parse(text: str) -> Docstring:
+                """Parse the ReST-style docstring into its components.
+            
+                :returns: parsed docstring
+                """
+                ret = Docstring()
+        92:     if not text:
+        93:         return ret
+            
+                text = inspect.cleandoc(text)
+                match = re.search("^:", text, flags=re.M)
+        97:     if match:
+        98:         desc_chunk = text[: match.start()]
+        99:         meta_chunk = text[match.start() :]
+                else:
+                    desc_chunk = text
+                    meta_chunk = ""
+            
+                parts = desc_chunk.split("\n", 1)
+                ret.short_description = parts[0] or None
+       106:     if len(parts) > 1:
+                    long_desc_chunk = parts[1] or ""
+                    ret.blank_after_short_description = long_desc_chunk.startswith("\n")
+                    ret.blank_after_long_description = long_desc_chunk.endswith("\n\n")
+                    ret.long_description = long_desc_chunk.strip() or None
+            
+       112:     for match in re.finditer(
+                    r"(^:.*?)(?=^:|\Z)", meta_chunk, flags=re.S | re.M
+                ):
+       115:         chunk = match.group(0)
+       116:         if not chunk:
+       117:             continue
+       118:         try:
+       119:             args_chunk, desc_chunk = chunk.lstrip(":").split(":", 1)
+       120:         except ValueError:
+       121:             raise ParseError(
+       122:                 'Error parsing meta information near "{}".'.format(chunk)
+                        )
+       124:         args = args_chunk.split()
+       125:         desc = desc_chunk.strip()
+       126:         if "\n" in desc:
+       127:             first_line, rest = desc.split("\n", 1)
+       128:             desc = first_line + "\n" + inspect.cleandoc(rest)
+            
+       130:         ret.meta.append(_build_meta(args, desc))
+            
+                return ret
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/google.py:132-173 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/google.py, module docstring_parser.google, does not achieve full coverage:
+when tested, lines 140-141, 143-144, 148-149, 169-173 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class GoogleParser:
+                def _build_multi_meta(
+                    self, section: Section, before: str, desc: str
+                ) -> DocstringMeta:
+                    if section.key in PARAM_KEYWORDS:
+                        m = GOOGLE_TYPED_ARG_REGEX.match(before)
+       137:             if m:
+                            arg_name, type_name = m.group(1, 2)
+       139:                 if type_name.endswith(", optional"):
+       140:                     is_optional = True
+       141:                     type_name = type_name[:-10]
+       142:                 elif type_name.endswith("?"):
+       143:                     is_optional = True
+       144:                     type_name = type_name[:-1]
+                            else:
+                                is_optional = False
+                        else:
+       148:                 arg_name, type_name = before, None
+       149:                 is_optional = None
+            
+                        m = GOOGLE_ARG_DESC_REGEX.match(desc)
+                        default = m.group(1) if m else None
+            
+                        return DocstringParam(
+                            args=[section.key, before],
+                            description=desc,
+                            arg_name=arg_name,
+                            type_name=type_name,
+                            is_optional=is_optional,
+                            default=default,
+                        )
+       162:         if section.key in RETURNS_KEYWORDS | YIELDS_KEYWORDS:
+                        return DocstringReturns(
+                            args=[section.key, before],
+                            description=desc,
+                            type_name=before,
+                            is_generator=section.key in YIELDS_KEYWORDS,
+                        )
+       169:         if section.key in RAISES_KEYWORDS:
+       170:             return DocstringRaises(
+       171:                 args=[section.key, before], description=desc, type_name=before
+                        )
+       173:         return DocstringMeta(args=[section.key, before], description=desc)
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/common.py:113-146 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/common.py, module docstring_parser.common, does not achieve full coverage:
+when tested, lines 130-131, 139, 143-146 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Docstring:
+                """Docstring object representation."""
+            
+                def __init__(self) -> None:
+                    """Initialize self."""
+                    self.short_description = None  # type: T.Optional[str]
+                    self.long_description = None  # type: T.Optional[str]
+                    self.blank_after_short_description = False
+                    self.blank_after_long_description = False
+                    self.meta = []  # type: T.List[DocstringMeta]
+            
+                @property
+                def params(self) -> T.List[DocstringParam]:
+                    return [item for item in self.meta if isinstance(item, DocstringParam)]
+            
+                @property
+                def raises(self) -> T.List[DocstringRaises]:
+       130:         return [
+       131:             item for item in self.meta if isinstance(item, DocstringRaises)
+                    ]
+            
+                @property
+                def returns(self) -> T.Optional[DocstringReturns]:
+       136:         for item in self.meta:
+                        if isinstance(item, DocstringReturns):
+                            return item
+       139:         return None
+            
+                @property
+                def deprecation(self) -> T.Optional[DocstringDeprecated]:
+       143:         for item in self.meta:
+       144:             if isinstance(item, DocstringDeprecated):
+       145:                 return item
+       146:         return None
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/google.py:184-266 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/google.py, module docstring_parser.google, does not achieve full coverage:
+when tested, lines 191, 229, 232, 239, 255-256 and branch 208->217 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class GoogleParser:
+                def parse(self, text: str) -> Docstring:
+                    """Parse the Google-style docstring into its components.
+            
+                    :returns: parsed docstring
+                    """
+                    ret = Docstring()
+       190:         if not text:
+       191:             return ret
+            
+                    # Clean according to PEP-0257
+                    text = inspect.cleandoc(text)
+            
+                    # Find first title and split on its position
+                    match = self.titles_re.search(text)
+                    if match:
+                        desc_chunk = text[: match.start()]
+                        meta_chunk = text[match.start() :]
+                    else:
+                        desc_chunk = text
+                        meta_chunk = ""
+            
+                    # Break description into short and long parts
+                    parts = desc_chunk.split("\n", 1)
+                    ret.short_description = parts[0] or None
+       208:         if len(parts) > 1:
+                        long_desc_chunk = parts[1] or ""
+                        ret.blank_after_short_description = long_desc_chunk.startswith(
+                            "\n"
+                        )
+                        ret.blank_after_long_description = long_desc_chunk.endswith("\n\n")
+                        ret.long_description = long_desc_chunk.strip() or None
+            
+                    # Split by sections determined by titles
+       217:         matches = list(self.titles_re.finditer(meta_chunk))
+                    if not matches:
+                        return ret
+                    splits = []
+                    for j in range(len(matches) - 1):
+                        splits.append((matches[j].end(), matches[j + 1].start()))
+                    splits.append((matches[-1].end(), len(meta_chunk)))
+            
+                    chunks = OrderedDict()
+                    for j, (start, end) in enumerate(splits):
+                        title = matches[j].group(1)
+       228:             if title not in self.sections:
+       229:                 continue
+                        chunks[title] = meta_chunk[start:end].strip("\n")
+       231:         if not chunks:
+       232:             return ret
+            
+                    # Add elements from each chunk
+                    for title, chunk in chunks.items():
+                        # Determine indent
+                        indent_match = re.search(r"^\s+", chunk)
+       238:             if not indent_match:
+       239:                 raise ParseError('Can\'t infer indent from "{}"'.format(chunk))
+                        indent = indent_match.group()
+            
+                        # Check for singular elements
+                        if self.sections[title].type in [
+                            SectionType.SINGULAR,
+                            SectionType.SINGULAR_OR_MULTIPLE,
+                        ]:
+                            part = inspect.cleandoc(chunk)
+                            ret.meta.append(self._build_meta(part, title))
+                            continue
+            
+                        # Split based on lines which have exactly that indent
+                        _re = "^" + indent + r"(?=\S)"
+                        c_matches = list(re.finditer(_re, chunk, flags=re.M))
+       254:             if not c_matches:
+       255:                 raise ParseError(
+       256:                     'No specification for "{}": "{}"'.format(title, chunk)
+                            )
+                        c_splits = []
+                        for j in range(len(c_matches) - 1):
+                            c_splits.append((c_matches[j].end(), c_matches[j + 1].start()))
+                        c_splits.append((c_matches[-1].end(), len(chunk)))
+                        for j, (start, end) in enumerate(c_splits):
+                            part = chunk[start:end].strip("\n")
+                            ret.meta.append(self._build_meta(part, title))
+            
+                    return ret
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/google.py:89-114 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/google.py, module docstring_parser.google, does not achieve full coverage:
+when tested, lines 103, 110-111 and branch 107->114 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class GoogleParser:
+                def _build_meta(self, text: str, title: str) -> DocstringMeta:
+                    """Build docstring element.
+            
+                    :param text: docstring element text
+                    :param title: title of section containing element
+                    :return:
+                    """
+            
+                    section = self.sections[title]
+            
+        99:         if (
+                        section.type == SectionType.SINGULAR_OR_MULTIPLE
+                        and not MULTIPLE_PATTERN.match(text)
+                    ) or section.type == SectionType.SINGULAR:
+       103:             return self._build_single_meta(section, text)
+            
+                    # Split spec and description
+                    before, desc = text.split(":", 1)
+       107:         if desc:
+                        desc = desc[1:] if desc[0] == " " else desc
+       109:             if "\n" in desc:
+       110:                 first_line, rest = desc.split("\n", 1)
+       111:                 desc = first_line + "\n" + inspect.cleandoc(rest)
+                        desc = desc.strip("\n")
+            
+       114:         return self._build_multi_meta(section, before, desc)
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/google.py:175-182 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/google.py, module docstring_parser.google, does not achieve full coverage:
+when tested, lines 181-182 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class GoogleParser:
+                def add_section(self, section: Section):
+                    """Add or replace a section.
+            
+                    :param section: The new section.
+                    """
+            
+       181:         self.sections[section.title] = section
+       182:         self._setup()
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/numpydoc.py:117-154 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/numpydoc.py, module docstring_parser.numpydoc, does not achieve full coverage:
+when tested, branches 131->141, 142->147 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class ParamSection(_KVSection):
+                """Parser for numpydoc parameter sections.
+            
+                E.g. any section that looks like this:
+                    arg_name
+                        arg_description
+                    arg_2 : type, optional
+                        descriptions can also span...
+                        ... multiple lines
+                """
+            
+                def _parse_item(self, key: str, value: str) -> DocstringParam:
+                    m = PARAM_KEY_REGEX.match(key)
+                    arg_name = type_name = is_optional = None
+       131:         if m is not None:
+                        arg_name, type_name = m.group("name"), m.group("type")
+                        if type_name is not None:
+                            optional_match = PARAM_OPTIONAL_REGEX.match(type_name)
+                            if optional_match is not None:
+                                type_name = optional_match.group("type")
+                                is_optional = True
+                            else:
+                                is_optional = False
+            
+       141:         default = None
+       142:         if len(value) > 0:
+                        default_match = PARAM_DEFAULT_REGEX.search(value)
+                        if default_match is not None:
+                            default = default_match.group("value")
+            
+       147:         return DocstringParam(
+                        args=[self.key, arg_name],
+                        description=_clean_str(value),
+                        arg_name=arg_name,
+                        type_name=type_name,
+                        is_optional=is_optional,
+                        default=default,
+                    )
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/numpydoc.py:173-198 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/numpydoc.py, module docstring_parser.numpydoc, does not achieve full coverage:
+when tested, line 190 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class ReturnsSection(_KVSection):
+                """Parser for numpydoc raises sections.
+            
+                E.g. any section that looks like this:
+                    return_name : type
+                        A description of this returned value
+                    another_type
+                        Return names are optional, types are required
+                """
+            
+                is_generator = False
+            
+                def _parse_item(self, key: str, value: str) -> DocstringReturns:
+                    m = RETURN_KEY_REGEX.match(key)
+       187:         if m is not None:
+                        return_name, type_name = m.group("name"), m.group("type")
+                    else:
+       190:             return_name = type_name = None
+            
+                    return DocstringReturns(
+                        args=[self.key],
+                        description=_clean_str(value),
+                        type_name=type_name,
+                        is_generator=self.is_generator,
+                        return_name=return_name,
+                    )
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/numpydoc.py:80-101 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/numpydoc.py, module docstring_parser.numpydoc, does not achieve full coverage:
+when tested, line 92 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class _KVSection(Section):
+                """Base parser for numpydoc sections with key-value syntax.
+            
+                E.g. sections that look like this:
+                    key
+                        value
+                    key2 : type
+                        values can also span...
+                        ... multiple lines
+                """
+            
+                def _parse_item(self, key: str, value: str) -> DocstringMeta:
+        92:         pass
+            
+                def parse(self, text: str) -> T.Iterable[DocstringMeta]:
+                    for match, next_match in _pairwise(KV_REGEX.finditer(text)):
+                        start = match.end()
+                        end = next_match.start() if next_match is not None else None
+                        value = text[start:end]
+                        yield self._parse_item(
+                            key=match.group(), value=inspect.cleandoc(value)
+                        )
+
+```
+
+---- 2024-02-29T00:50:42 docstring_parser/numpydoc.py:281-323 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from docstring_parser/numpydoc.py, module docstring_parser.numpydoc, does not achieve full coverage:
+when tested, branch 305->313 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class NumpydocParser:
+                def parse(self, text: str) -> Docstring:
+                    """Parse the numpy-style docstring into its components.
+            
+                    :returns: parsed docstring
+                    """
+                    ret = Docstring()
+                    if not text:
+                        return ret
+            
+                    # Clean according to PEP-0257
+                    text = inspect.cleandoc(text)
+            
+                    # Find first title and split on its position
+                    match = self.titles_re.search(text)
+                    if match:
+                        desc_chunk = text[: match.start()]
+                        meta_chunk = text[match.start() :]
+                    else:
+                        desc_chunk = text
+                        meta_chunk = ""
+            
+                    # Break description into short and long parts
+                    parts = desc_chunk.split("\n", 1)
+                    ret.short_description = parts[0] or None
+       305:         if len(parts) > 1:
+                        long_desc_chunk = parts[1] or ""
+                        ret.blank_after_short_description = long_desc_chunk.startswith(
+                            "\n"
+                        )
+                        ret.blank_after_long_description = long_desc_chunk.endswith("\n\n")
+                        ret.long_description = long_desc_chunk.strip() or None
+            
+       313:         for match, nextmatch in _pairwise(self.titles_re.finditer(meta_chunk)):
+                        title = next(g for g in match.groups() if g is not None)
+                        factory = self.sections[title]
+            
+                        # section chunk starts after the header,
+                        # ends at the start of the next header
+                        start = match.end()
+                        end = nextmatch.start() if nextmatch is not None else None
+                        ret.meta.extend(factory.parse(meta_chunk[start:end]))
+            
+                    return ret
+
+```
+
+---- 2024-02-29T00:50:48 docstring_parser/google.py:175-182 ----
+```python
+import pytest
+from docstring_parser import parse, Docstring
+from docstring_parser.common import DocstringStyle
+from docstring_parser.google import GoogleParser, Section
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_add_section_executes_missing_lines(google_parser, mocker):
+    # Mock the _setup method to ensure it is called
+    mocker.patch.object(google_parser, '_setup')
+
+    # Create a new section to add
+    new_section = Section('Parameters', 'param1: int - an integer parameter')
+
+    # Add the section to the parser
+    google_parser.add_section(new_section)
+
+    # Assert that the section was added
+    assert google_parser.sections['Parameters'] == new_section
+
+    # Assert that _setup was called
+    google_parser._setup.assert_called_once()
+```
+---- 2024-02-29T00:50:48 docstring_parser/google.py:175-182 ----
+total usage: {'prompt_tokens': 254, 'completion_tokens': 171}
+---- 2024-02-29T00:50:49 docstring_parser/numpydoc.py:80-101 ----
+```python
+import pytest
+from docstring_parser.numpydoc import _KVSection
+from docstring_parser.common import DocstringMeta
+import re
+import inspect
+
+class MockKVSection(_KVSection):
+    def _parse_item(self, key: str, value: str) -> DocstringMeta:
+        return DocstringMeta(args=[key, value])
+
+@pytest.fixture
+def mock_kv_section():
+    return MockKVSection()
+
+def test_kv_section_parse_item_executed(mock_kv_section):
+    text = "key\n    value\nkey2 : type\n    values can also span...\n    ... multiple lines"
+    items = list(mock_kv_section.parse(text))
+    assert len(items) == 2
+    assert items[0].args == ["key", "value"]
+    assert items[1].args == ["key2 : type", "values can also span...\n... multiple lines"]
+```
+---- 2024-02-29T00:50:49 docstring_parser/numpydoc.py:80-101 ----
+total usage: {'prompt_tokens': 624, 'completion_tokens': 354}
+---- 2024-02-29T00:50:49 docstring_parser/numpydoc.py:173-198 ----
+```python
+import pytest
+from docstring_parser.numpydoc import ReturnsSection
+from docstring_parser.common import DocstringReturns
+
+RETURN_KEY_REGEX = ReturnsSection._parse_item.__annotations__['key']
+
+@pytest.fixture
+def returns_section():
+    return ReturnsSection()
+
+def test_returns_section_without_name(returns_section):
+    key = "just_type"
+    value = "A description of this returned value"
+    assert not RETURN_KEY_REGEX.match(key), "The key should not match the RETURN_KEY_REGEX"
+    
+    result = returns_section._parse_item(key, value)
+    
+    assert isinstance(result, DocstringReturns), "The result should be an instance of DocstringReturns"
+    assert result.return_name is None, "The return_name should be None"
+    assert result.type_name is None, "The type_name should be None"
+    assert result.description == value.strip(), "The description should match the input value"
+```
+---- 2024-02-29T00:50:49 docstring_parser/numpydoc.py:173-198 ----
+total usage: {'prompt_tokens': 1002, 'completion_tokens': 540}
+---- 2024-02-29T00:50:50 docstring_parser/google.py:175-182 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_20u79tbu.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_20u79tbu.py:3: in <module>
+    from docstring_parser.common import DocstringStyle
+E   ImportError: cannot import name 'DocstringStyle' from 'docstring_parser.common' (/output/docstring_parser/common.py)
+
+---- 2024-02-29T00:50:51 docstring_parser/numpydoc.py:80-101 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def mock_kv_section():
+>       return MockKVSection()
+E       TypeError: Section.__init__() missing 2 required positional arguments: 'title' and 'key'
+
+coverup-tests/tmp_test_afhlfohc.py:13: TypeError
+
+---- 2024-02-29T00:50:51 docstring_parser/numpydoc.py:173-198 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def returns_section():
+>       return ReturnsSection()
+E       TypeError: Section.__init__() missing 2 required positional arguments: 'title' and 'key'
+
+coverup-tests/tmp_test_3rd1mv8m.py:9: TypeError
+
+---- 2024-02-29T00:50:55 docstring_parser/numpydoc.py:281-323 ----
+```python
+import pytest
+from docstring_parser.numpydoc import NumpydocParser
+from docstring_parser.common import Docstring
+
+@pytest.fixture
+def numpydoc_parser():
+    return NumpydocParser()
+
+def test_numpydoc_parser_no_meta_chunk(numpydoc_parser):
+    text = "Short description\n\nLong description with no meta section."
+    expected_docstring = Docstring(
+        short_description="Short description",
+        long_description="Long description with no meta section.",
+        blank_after_short_description=True,
+        blank_after_long_description=False,
+        meta=[]
+    )
+    parsed_docstring = numpydoc_parser.parse(text)
+    assert parsed_docstring.short_description == expected_docstring.short_description
+    assert parsed_docstring.long_description == expected_docstring.long_description
+    assert parsed_docstring.blank_after_short_description == expected_docstring.blank_after_short_description
+    assert parsed_docstring.blank_after_long_description == expected_docstring.blank_after_long_description
+    assert parsed_docstring.meta == expected_docstring.meta
+```
+---- 2024-02-29T00:50:55 docstring_parser/numpydoc.py:281-323 ----
+total usage: {'prompt_tokens': 1551, 'completion_tokens': 742}
+---- 2024-02-29T00:50:56 docstring_parser/common.py:113-146 ----
+```python
+import pytest
+from docstring_parser.common import Docstring, DocstringMeta, DocstringParam, DocstringRaises, DocstringReturns, DocstringDeprecated
+
+class MockDocstringMeta(DocstringMeta):
+    pass
+
+@pytest.fixture
+def docstring():
+    return Docstring()
+
+def test_docstring_properties_for_coverage(docstring):
+    # Add instances of different meta types to the docstring
+    docstring.meta.append(DocstringParam(arg_name="param", type_name="str", description="A parameter"))
+    docstring.meta.append(DocstringRaises(type_name="Exception", description="An exception"))
+    docstring.meta.append(DocstringReturns(type_name="int", description="Return value"))
+    docstring.meta.append(DocstringDeprecated(description="Deprecated feature"))
+    docstring.meta.append(MockDocstringMeta())
+
+    # Test the 'params' property
+    params = docstring.params
+    assert len(params) == 1
+    assert isinstance(params[0], DocstringParam)
+
+    # Test the 'raises' property
+    raises = docstring.raises
+    assert len(raises) == 1
+    assert isinstance(raises[0], DocstringRaises)
+
+    # Test the 'returns' property
+    returns = docstring.returns
+    assert isinstance(returns, DocstringReturns)
+
+    # Test the 'deprecation' property
+    deprecation = docstring.deprecation
+    assert isinstance(deprecation, DocstringDeprecated)
+
+    # Add a second instance of DocstringReturns and DocstringDeprecated to test the early return
+    docstring.meta.append(DocstringReturns(type_name="float", description="Another return value"))
+    docstring.meta.append(DocstringDeprecated(description="Another deprecated feature"))
+
+    # Test that 'returns' and 'deprecation' still return the first instance
+    assert docstring.returns is returns
+    assert docstring.deprecation is deprecation
+```
+---- 2024-02-29T00:50:56 docstring_parser/common.py:113-146 ----
+total usage: {'prompt_tokens': 2034, 'completion_tokens': 1134}
+---- 2024-02-29T00:50:56 docstring_parser/numpydoc.py:281-323 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+numpydoc_parser = <docstring_parser.numpydoc.NumpydocParser object at 0x7faa182c0f70>
+
+    def test_numpydoc_parser_no_meta_chunk(numpydoc_parser):
+        text = "Short description\n\nLong description with no meta section."
+>       expected_docstring = Docstring(
+            short_description="Short description",
+            long_description="Long description with no meta section.",
+            blank_after_short_description=True,
+            blank_after_long_description=False,
+            meta=[]
+        )
+E       TypeError: Docstring.__init__() got an unexpected keyword argument 'short_description'
+
+coverup-tests/tmp_test_ja8xg0zl.py:11: TypeError
+
+---- 2024-02-29T00:50:57 docstring_parser/common.py:113-146 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+docstring = <docstring_parser.common.Docstring object at 0x7f675259afe0>
+
+    def test_docstring_properties_for_coverage(docstring):
+        # Add instances of different meta types to the docstring
+>       docstring.meta.append(DocstringParam(arg_name="param", type_name="str", description="A parameter"))
+E       TypeError: DocstringParam.__init__() missing 3 required positional arguments: 'args', 'is_optional', and 'default'
+
+coverup-tests/tmp_test_oajessdy.py:13: TypeError
+
+---- 2024-02-29T00:51:01 docstring_parser/google.py:184-266 ----
+```python
+import pytest
+from docstring_parser.google import GoogleParser, ParseError, Docstring
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_google_parser_coverage(google_parser, mocker):
+    # Test empty text
+    assert google_parser.parse("") == Docstring()
+
+    # Test no sections
+    text_no_sections = "Short description\n\nLong description with no sections."
+    docstring = google_parser.parse(text_no_sections)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with no sections."
+    assert docstring.meta == []
+
+    # Test unknown section
+    text_unknown_section = """
+    Short description
+
+    Long description.
+
+    Args:
+        param1: Description of param1.
+
+    Unknown:
+        This section is unknown and should be skipped.
+    """
+    docstring = google_parser.parse(text_unknown_section)
+    assert len(docstring.meta) == 1  # Only 'Args' should be parsed
+
+    # Test no indent error
+    text_no_indent = """
+    Short description
+
+    Args:
+    No indent here, should raise ParseError.
+    """
+    with pytest.raises(ParseError, match="Can't infer indent"):
+        google_parser.parse(text_no_indent)
+
+    # Test no specification error
+    text_no_specification = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+        param2:
+    """
+    with pytest.raises(ParseError, match="No specification for"):
+        google_parser.parse(text_no_specification)
+
+    # Test singular section
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock(type='singular')})
+    text_singular_section = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+    """
+    docstring = google_parser.parse(text_singular_section)
+    assert len(docstring.meta) == 1  # 'Args' should be parsed as singular
+
+    # Test singular or multiple section
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock(type='singular_or_multiple')})
+    text_singular_or_multiple_section = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+    """
+    docstring = google_parser.parse(text_singular_or_multiple_section)
+    assert len(docstring.meta) == 1  # 'Args' should be parsed as singular or multiple
+```
+---- 2024-02-29T00:51:01 docstring_parser/google.py:184-266 ----
+total usage: {'prompt_tokens': 2975, 'completion_tokens': 1626}
+---- 2024-02-29T00:51:02 docstring_parser/numpydoc.py:117-154 ----
+```python
+import re
+import pytest
+from docstring_parser.numpydoc import DocstringParam
+
+# Assuming the regex patterns are defined somewhere in the module as follows:
+PARAM_KEY_REGEX = re.compile(r'(?P<name>\w+)(?:\s*:\s*(?P<type>[\w\[\],\s]+))?')
+PARAM_OPTIONAL_REGEX = re.compile(r'(?P<type>[\w\[\]]+)(?:,\s*optional)?')
+PARAM_DEFAULT_REGEX = re.compile(r'\[default:\s*(?P<value>.+)\]')
+
+# Assuming the _KVSection class is defined somewhere in the module as follows:
+class _KVSection:
+    def _parse_item(self, key: str, value: str):
+        pass  # Placeholder for the actual implementation
+
+# Assuming the _clean_str function is defined somewhere in the module as follows:
+def _clean_str(s: str) -> str:
+    return s.strip()
+
+# The ParamSection class as provided in the question
+class ParamSection(_KVSection):
+    def _parse_item(self, key: str, value: str) -> DocstringParam:
+        m = PARAM_KEY_REGEX.match(key)
+        arg_name = type_name = is_optional = None
+        if m is not None:
+            arg_name, type_name = m.group("name"), m.group("type")
+            if type_name is not None:
+                optional_match = PARAM_OPTIONAL_REGEX.match(type_name)
+                if optional_match is not None:
+                    type_name = optional_match.group("type")
+                    is_optional = True
+                else:
+                    is_optional = False
+
+        default = None
+        if len(value) > 0:
+            default_match = PARAM_DEFAULT_REGEX.search(value)
+            if default_match is not None:
+                default = default_match.group("value")
+
+        return DocstringParam(
+            args=[self.key, arg_name],
+            description=_clean_str(value),
+            arg_name=arg_name,
+            type_name=type_name,
+            is_optional=is_optional,
+            default=default,
+        )
+
+# Test function to cover the missing branches
+@pytest.fixture
+def param_section():
+    return ParamSection()
+
+def test_param_section_parse_item(param_section):
+    # Test case to cover branch 131->141 (type_name is None)
+    result = param_section._parse_item("param", "description")
+    assert result.arg_name is None
+    assert result.type_name is None
+    assert result.is_optional is None
+    assert result.default is None
+
+    # Test case to cover branch 142->147 (value is not empty and default is found)
+    result = param_section._parse_item("param : type, optional", "description [default: value]")
+    assert result.arg_name == "param"
+    assert result.type_name == "type"
+    assert result.is_optional is True
+    assert result.default == "value"
+```
+---- 2024-02-29T00:51:02 docstring_parser/numpydoc.py:117-154 ----
+total usage: {'prompt_tokens': 3463, 'completion_tokens': 2220}
+---- 2024-02-29T00:51:02 docstring_parser/google.py:184-266 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7f22bb9934f0>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f22bcd5d240>
+
+    def test_google_parser_coverage(google_parser, mocker):
+        # Test empty text
+>       assert google_parser.parse("") == Docstring()
+E       AssertionError: assert <docstring_parser.common.Docstring object at 0x7f22bb9939a0> == <docstring_parser.common.Docstring object at 0x7f22bb9938e0>
+E        +  where <docstring_parser.common.Docstring object at 0x7f22bb9939a0> = <bound method GoogleParser.parse of <docstring_parser.google.GoogleParser object at 0x7f22bb9934f0>>('')
+E        +    where <bound method GoogleParser.parse of <docstring_parser.google.GoogleParser object at 0x7f22bb9934f0>> = <docstring_parser.google.GoogleParser object at 0x7f22bb9934f0>.parse
+E        +  and   <docstring_parser.common.Docstring object at 0x7f22bb9938e0> = Docstring()
+
+coverup-tests/tmp_test_xye3r8hy.py:10: AssertionError
+
+---- 2024-02-29T00:51:03 docstring_parser/google.py:132-173 ----
+```python
+import pytest
+from docstring_parser import parse, DocstringParam, DocstringRaises, DocstringReturns, DocstringMeta
+from docstring_parser.parser.google import GoogleParser, Section
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_google_parser_build_multi_meta(google_parser):
+    # Test for lines 140-141
+    section_param_optional = Section('param', 'param_name: type, optional')
+    desc_optional = 'description of param with optional type'
+    meta_optional = google_parser._build_multi_meta(section_param_optional, 'param_name: type, optional', desc_optional)
+    assert isinstance(meta_optional, DocstringParam)
+    assert meta_optional.arg_name == 'param_name'
+    assert meta_optional.type_name == 'type'
+    assert meta_optional.is_optional is True
+
+    # Test for lines 143-144
+    section_param_optional_q = Section('param', 'param_name: type?')
+    desc_optional_q = 'description of param with optional type using question mark'
+    meta_optional_q = google_parser._build_multi_meta(section_param_optional_q, 'param_name: type?', desc_optional_q)
+    assert isinstance(meta_optional_q, DocstringParam)
+    assert meta_optional_q.arg_name == 'param_name'
+    assert meta_optional_q.type_name == 'type'
+    assert meta_optional_q.is_optional is True
+
+    # Test for lines 148-149
+    section_param_no_type = Section('param', 'param_name')
+    desc_no_type = 'description of param without type'
+    meta_no_type = google_parser._build_multi_meta(section_param_no_type, 'param_name', desc_no_type)
+    assert isinstance(meta_no_type, DocstringParam)
+    assert meta_no_type.arg_name == 'param_name'
+    assert meta_no_type.type_name is None
+    assert meta_no_type.is_optional is None
+
+    # Test for lines 169-173
+    section_raises = Section('raises', 'ExceptionType')
+    desc_raises = 'description of raises'
+    meta_raises = google_parser._build_multi_meta(section_raises, 'ExceptionType', desc_raises)
+    assert isinstance(meta_raises, DocstringRaises)
+    assert meta_raises.type_name == 'ExceptionType'
+    assert meta_raises.description == desc_raises
+
+    # Test for lines 162-163 (DocstringReturns)
+    section_returns = Section('returns', 'ReturnType')
+    desc_returns = 'description of returns'
+    meta_returns = google_parser._build_multi_meta(section_returns, 'ReturnType', desc_returns)
+    assert isinstance(meta_returns, DocstringReturns)
+    assert meta_returns.type_name == 'ReturnType'
+    assert meta_returns.description == desc_returns
+
+    # Test for a section that does not match any special cases
+    section_unknown = Section('unknown', 'UnknownType')
+    desc_unknown = 'description of unknown section'
+    meta_unknown = google_parser._build_multi_meta(section_unknown, 'UnknownType', desc_unknown)
+    assert isinstance(meta_unknown, DocstringMeta)
+    assert meta_unknown.description == desc_unknown
+```
+---- 2024-02-29T00:51:03 docstring_parser/google.py:132-173 ----
+total usage: {'prompt_tokens': 4049, 'completion_tokens': 2843}
+---- 2024-02-29T00:51:04 docstring_parser/numpydoc.py:117-154 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+param_section = <tmp_test_p0wj9mt1.ParamSection object at 0x7f66f5128400>
+
+    def test_param_section_parse_item(param_section):
+        # Test case to cover branch 131->141 (type_name is None)
+>       result = param_section._parse_item("param", "description")
+
+coverup-tests/tmp_test_p0wj9mt1.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tmp_test_p0wj9mt1.ParamSection object at 0x7f66f5128400>, key = 'param'
+value = 'description'
+
+    def _parse_item(self, key: str, value: str) -> DocstringParam:
+        m = PARAM_KEY_REGEX.match(key)
+        arg_name = type_name = is_optional = None
+        if m is not None:
+            arg_name, type_name = m.group("name"), m.group("type")
+            if type_name is not None:
+                optional_match = PARAM_OPTIONAL_REGEX.match(type_name)
+                if optional_match is not None:
+                    type_name = optional_match.group("type")
+                    is_optional = True
+                else:
+                    is_optional = False
+    
+        default = None
+        if len(value) > 0:
+            default_match = PARAM_DEFAULT_REGEX.search(value)
+            if default_match is not None:
+                default = default_match.group("value")
+    
+        return DocstringParam(
+>           args=[self.key, arg_name],
+            description=_clean_str(value),
+            arg_name=arg_name,
+            type_name=type_name,
+            is_optional=is_optional,
+            default=default,
+        )
+E       AttributeError: 'ParamSection' object has no attribute 'key'
+
+coverup-tests/tmp_test_p0wj9mt1.py:41: AttributeError
+
+---- 2024-02-29T00:51:05 docstring_parser/google.py:132-173 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_6bi8472w.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_6bi8472w.py:3: in <module>
+    from docstring_parser.parser.google import GoogleParser, Section
+E   ModuleNotFoundError: No module named 'docstring_parser.parser.google'; 'docstring_parser.parser' is not a package
+
+---- 2024-02-29T00:51:05 docstring_parser/google.py:175-182 ----
+```python
+import pytest
+from docstring_parser import parse
+from docstring_parser.google import GoogleParser, Section
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_add_section_executes_missing_lines(google_parser, mocker):
+    # Mock the _setup method to ensure it is called
+    mocker.patch.object(google_parser, '_setup')
+
+    # Create a new section to add
+    new_section = Section('Parameters', 'param1: int - an integer parameter')
+
+    # Add the section to the parser
+    google_parser.add_section(new_section)
+
+    # Assert that the section was added
+    assert google_parser.sections['Parameters'] == new_section
+
+    # Assert that _setup was called
+    google_parser._setup.assert_called_once()
+```
+---- 2024-02-29T00:51:05 docstring_parser/google.py:175-182 ----
+total usage: {'prompt_tokens': 4667, 'completion_tokens': 3001}
+---- 2024-02-29T00:51:06 docstring_parser/rest.py:86-132 ----
+```python
+import pytest
+from docstring_parser import parse, Docstring, ParseError
+
+def test_parse_with_various_sections():
+    text = """
+    Short description
+
+    Long description with a blank line above.
+
+    :param arg1: Description of arg1
+    :param arg2: Description of arg2
+    :raises ValueError: When something bad happens.
+    :returns: The result
+    """
+
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with a blank line above."
+    assert docstring.meta[0].args == ['param', 'arg1']
+    assert docstring.meta[0].description == "Description of arg1"
+    assert docstring.meta[1].args == ['param', 'arg2']
+    assert docstring.meta[1].description == "Description of arg2"
+    assert docstring.meta[2].args == ['raises', 'ValueError']
+    assert docstring.meta[2].description == "When something bad happens."
+    assert docstring.meta[3].args == ['returns']
+    assert docstring.meta[3].description == "The result"
+
+def test_parse_empty_docstring():
+    text = ""
+    docstring = parse(text)
+    assert docstring.short_description is None
+    assert docstring.long_description is None
+    assert len(docstring.meta) == 0
+
+def test_parse_no_meta():
+    text = "Short description\n\nLong description with a blank line above."
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with a blank line above."
+    assert len(docstring.meta) == 0
+
+def test_parse_incorrect_meta():
+    text = ":param arg1 Description without colon"
+    with pytest.raises(ParseError):
+        parse(text)
+
+def test_parse_meta_with_newlines():
+    text = """
+    Short description
+
+    :param arg1: Description
+        with newlines
+    """
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.meta[0].args == ['param', 'arg1']
+    assert docstring.meta[0].description == "Description\nwith newlines"
+
+def test_parse_meta_with_multiple_colons():
+    text = ":param arg1: Description with: colons"
+    docstring = parse(text)
+    assert docstring.meta[0].args == ['param', 'arg1']
+    assert docstring.meta[0].description == "Description with: colons"
+
+def test_parse_blank_lines_after_sections():
+    text = "Short description\n\n\nLong description with two blank lines above.\n\n"
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with two blank lines above."
+    assert docstring.blank_after_short_description is True
+    assert docstring.blank_after_long_description is True
+```
+---- 2024-02-29T00:51:06 docstring_parser/rest.py:86-132 ----
+total usage: {'prompt_tokens': 5323, 'completion_tokens': 3621}
+---- 2024-02-29T00:51:06 docstring_parser/numpydoc.py:80-101 ----
+```python
+import pytest
+from docstring_parser.numpydoc import _KVSection
+from docstring_parser.common import DocstringMeta
+import re
+import inspect
+
+class MockKVSection(_KVSection):
+    def __init__(self):
+        super().__init__("Parameters", "param")
+
+    def _parse_item(self, key: str, value: str) -> DocstringMeta:
+        return DocstringMeta(args=[key, value])
+
+@pytest.fixture
+def mock_kv_section():
+    return MockKVSection()
+
+def test_kv_section_parse_item_executed(mock_kv_section):
+    text = "key\n    value\nkey2 : type\n    values can also span...\n    ... multiple lines"
+    items = list(mock_kv_section.parse(text))
+    assert len(items) == 2
+    assert items[0].args == ["key", "value"]
+    assert items[1].args == ["key2 : type", "values can also span...\n... multiple lines"]
+```
+---- 2024-02-29T00:51:06 docstring_parser/numpydoc.py:80-101 ----
+total usage: {'prompt_tokens': 5967, 'completion_tokens': 3821}
+---- 2024-02-29T00:51:06 docstring_parser/numpydoc.py:173-198 ----
+```python
+import pytest
+from docstring_parser.numpydoc import ReturnsSection
+from docstring_parser.common import DocstringReturns
+
+RETURN_KEY_REGEX = ReturnsSection._parse_item.__annotations__['key']
+
+@pytest.fixture
+def returns_section():
+    return ReturnsSection('Returns', 'return')
+
+def test_returns_section_without_name(returns_section):
+    key = "just_type"
+    value = "A description of this returned value"
+    assert not RETURN_KEY_REGEX.match(key), "The key should not match the RETURN_KEY_REGEX"
+    
+    result = returns_section._parse_item(key, value)
+    
+    assert isinstance(result, DocstringReturns), "The result should be an instance of DocstringReturns"
+    assert result.return_name is None, "The return_name should be None"
+    assert result.type_name is None, "The type_name should be None"
+    assert result.description == value.strip(), "The description should match the input value"
+```
+---- 2024-02-29T00:51:06 docstring_parser/numpydoc.py:173-198 ----
+total usage: {'prompt_tokens': 6623, 'completion_tokens': 4012}
+---- 2024-02-29T00:51:06 docstring_parser/google.py:175-182 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7fec0b7d1450>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fec0c131780>
+
+    def test_add_section_executes_missing_lines(google_parser, mocker):
+        # Mock the _setup method to ensure it is called
+        mocker.patch.object(google_parser, '_setup')
+    
+        # Create a new section to add
+>       new_section = Section('Parameters', 'param1: int - an integer parameter')
+E       TypeError: SectionBase.__new__() missing 1 required positional argument: 'type'
+
+coverup-tests/tmp_test_0qfbdb9e.py:14: TypeError
+
+---- 2024-02-29T00:51:07 docstring_parser/numpydoc.py:281-323 ----
+```python
+import pytest
+from docstring_parser.numpydoc import NumpydocParser
+from docstring_parser.common import DocstringMeta
+
+@pytest.fixture
+def numpydoc_parser():
+    return NumpydocParser()
+
+def test_numpydoc_parser_no_meta_chunk(numpydoc_parser):
+    text = "Short description\n\nLong description with no meta section."
+    parsed_docstring = numpydoc_parser.parse(text)
+    assert parsed_docstring.short_description == "Short description"
+    assert parsed_docstring.long_description == "Long description with no meta section."
+    assert parsed_docstring.blank_after_short_description is True
+    assert parsed_docstring.blank_after_long_description is False
+    assert parsed_docstring.meta == []
+```
+---- 2024-02-29T00:51:07 docstring_parser/numpydoc.py:281-323 ----
+total usage: {'prompt_tokens': 7548, 'completion_tokens': 4154}
+---- 2024-02-29T00:51:07 docstring_parser/rest.py:86-132 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_parse_incorrect_meta():
+        text = ":param arg1 Description without colon"
+>       with pytest.raises(ParseError):
+E       Failed: DID NOT RAISE <class 'docstring_parser.common.ParseError'>
+
+coverup-tests/tmp_test_z8iic1ol.py:44: Failed
+____________________ test_parse_blank_lines_after_sections _____________________
+
+    def test_parse_blank_lines_after_sections():
+        text = "Short description\n\n\nLong description with two blank lines above.\n\n"
+        docstring = parse(text)
+        assert docstring.short_description == "Short description"
+        assert docstring.long_description == "Long description with two blank lines above."
+        assert docstring.blank_after_short_description is True
+>       assert docstring.blank_after_long_description is True
+E       assert False is True
+E        +  where False = <docstring_parser.common.Docstring object at 0x7f5f98721c30>.blank_after_long_description
+
+coverup-tests/tmp_test_z8iic1ol.py:71: AssertionError
+
+---- 2024-02-29T00:51:08 docstring_parser/numpydoc.py:80-101 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_kv_section = <tmp_test_wno93q9m.MockKVSection object at 0x7f10b9ee34c0>
+
+    def test_kv_section_parse_item_executed(mock_kv_section):
+        text = "key\n    value\nkey2 : type\n    values can also span...\n    ... multiple lines"
+>       items = list(mock_kv_section.parse(text))
+
+coverup-tests/tmp_test_wno93q9m.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docstring_parser/numpydoc.py:99: in parse
+    yield self._parse_item(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tmp_test_wno93q9m.MockKVSection object at 0x7f10b9ee34c0>, key = 'key'
+value = 'value'
+
+    def _parse_item(self, key: str, value: str) -> DocstringMeta:
+>       return DocstringMeta(args=[key, value])
+E       TypeError: DocstringMeta.__init__() missing 1 required positional argument: 'description'
+
+coverup-tests/tmp_test_wno93q9m.py:12: TypeError
+
+---- 2024-02-29T00:51:08 docstring_parser/numpydoc.py:173-198 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+returns_section = <docstring_parser.numpydoc.ReturnsSection object at 0x7fda1929f1f0>
+
+    def test_returns_section_without_name(returns_section):
+        key = "just_type"
+        value = "A description of this returned value"
+>       assert not RETURN_KEY_REGEX.match(key), "The key should not match the RETURN_KEY_REGEX"
+E       AttributeError: type object 'str' has no attribute 'match'
+
+coverup-tests/tmp_test_ee1emp3y.py:14: AttributeError
+
+---- 2024-02-29T00:51:08 docstring_parser/numpydoc.py:281-323 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:51:08 docstring_parser/numpydoc.py:281-323 ----
+
+This test still lacks coverage: branch 305->313 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T00:51:13 docstring_parser/numpydoc.py:281-323 ----
+```python
+import pytest
+from docstring_parser.numpydoc import NumpydocParser
+
+@pytest.fixture
+def numpydoc_parser():
+    return NumpydocParser()
+
+def test_numpydoc_parser_no_meta_chunk_with_blank_lines(numpydoc_parser):
+    text = "Short description\n\n\nLong description with no meta section.\n\n"
+    parsed_docstring = numpydoc_parser.parse(text)
+    assert parsed_docstring.short_description == "Short description"
+    assert parsed_docstring.long_description == "Long description with no meta section."
+    assert parsed_docstring.blank_after_short_description is True
+    assert parsed_docstring.blank_after_long_description is True
+    assert parsed_docstring.meta == []
+```
+---- 2024-02-29T00:51:13 docstring_parser/numpydoc.py:281-323 ----
+total usage: {'prompt_tokens': 8656, 'completion_tokens': 4293}
+---- 2024-02-29T00:51:14 docstring_parser/numpydoc.py:281-323 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+numpydoc_parser = <docstring_parser.numpydoc.NumpydocParser object at 0x7eff7e329000>
+
+    def test_numpydoc_parser_no_meta_chunk_with_blank_lines(numpydoc_parser):
+        text = "Short description\n\n\nLong description with no meta section.\n\n"
+        parsed_docstring = numpydoc_parser.parse(text)
+        assert parsed_docstring.short_description == "Short description"
+        assert parsed_docstring.long_description == "Long description with no meta section."
+        assert parsed_docstring.blank_after_short_description is True
+>       assert parsed_docstring.blank_after_long_description is True
+E       assert False is True
+E        +  where False = <docstring_parser.common.Docstring object at 0x7eff7d3337f0>.blank_after_long_description
+
+coverup-tests/tmp_test_6yiwkghr.py:14: AssertionError
+
+---- 2024-02-29T00:51:14 docstring_parser/numpydoc.py:281-323 ----
+Too many attempts, giving up
+---- 2024-02-29T00:51:15 docstring_parser/numpydoc.py:173-198 ----
+```python
+import re
+import pytest
+from docstring_parser.numpydoc import ReturnsSection
+from docstring_parser.common import DocstringReturns
+
+@pytest.fixture
+def returns_section():
+    return ReturnsSection('Returns', 'return')
+
+def test_returns_section_without_name(returns_section):
+    key = "just_type"
+    value = "A description of this returned value"
+    RETURN_KEY_REGEX = re.compile(r'(?P<name>[\w ]+)?\s*:\s*(?P<type>[\w\[\], ]+)')
+    assert not RETURN_KEY_REGEX.match(key), "The key should not match the RETURN_KEY_REGEX"
+    
+    result = returns_section._parse_item(key, value)
+    
+    assert isinstance(result, DocstringReturns), "The result should be an instance of DocstringReturns"
+    assert result.return_name is None, "The return_name should be None"
+    assert result.type_name is None, "The type_name should be None"
+    assert result.description == value.strip(), "The description should match the input value"
+```
+---- 2024-02-29T00:51:15 docstring_parser/numpydoc.py:173-198 ----
+total usage: {'prompt_tokens': 9648, 'completion_tokens': 4510}
+---- 2024-02-29T00:51:16 docstring_parser/numpydoc.py:173-198 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+returns_section = <docstring_parser.numpydoc.ReturnsSection object at 0x7f69955be080>
+
+    def test_returns_section_without_name(returns_section):
+        key = "just_type"
+        value = "A description of this returned value"
+        RETURN_KEY_REGEX = re.compile(r'(?P<name>[\w ]+)?\s*:\s*(?P<type>[\w\[\], ]+)')
+        assert not RETURN_KEY_REGEX.match(key), "The key should not match the RETURN_KEY_REGEX"
+    
+        result = returns_section._parse_item(key, value)
+    
+        assert isinstance(result, DocstringReturns), "The result should be an instance of DocstringReturns"
+        assert result.return_name is None, "The return_name should be None"
+>       assert result.type_name is None, "The type_name should be None"
+E       AssertionError: The type_name should be None
+E       assert 'just_type' is None
+E        +  where 'just_type' = <docstring_parser.common.DocstringReturns object at 0x7f69955bdde0>.type_name
+
+coverup-tests/tmp_test_51qgrq7_.py:20: AssertionError
+
+---- 2024-02-29T00:51:16 docstring_parser/numpydoc.py:173-198 ----
+Too many attempts, giving up
+---- 2024-02-29T00:51:16 docstring_parser/common.py:113-146 ----
+```python
+import pytest
+from docstring_parser.common import Docstring, DocstringParam, DocstringRaises, DocstringReturns, DocstringDeprecated
+
+@pytest.fixture
+def docstring():
+    return Docstring()
+
+def test_docstring_properties_for_coverage(docstring):
+    # Add instances of different meta types to the docstring
+    docstring.meta.append(DocstringParam(arg_name="param", type_name="str", description="A parameter", is_optional=False, default=None, args=[]))
+    docstring.meta.append(DocstringRaises(type_name="Exception", description="An exception"))
+    docstring.meta.append(DocstringReturns(type_name="int", description="Return value"))
+    docstring.meta.append(DocstringDeprecated(description="Deprecated feature"))
+
+    # Test the 'params' property
+    params = docstring.params
+    assert len(params) == 1
+    assert isinstance(params[0], DocstringParam)
+
+    # Test the 'raises' property
+    raises = docstring.raises
+    assert len(raises) == 1
+    assert isinstance(raises[0], DocstringRaises)
+
+    # Test the 'returns' property
+    returns = docstring.returns
+    assert isinstance(returns, DocstringReturns)
+
+    # Test the 'deprecation' property
+    deprecation = docstring.deprecation
+    assert isinstance(deprecation, DocstringDeprecated)
+
+    # Add a second instance of DocstringReturns and DocstringDeprecated to test the early return
+    docstring.meta.append(DocstringReturns(type_name="float", description="Another return value"))
+    docstring.meta.append(DocstringDeprecated(description="Another deprecated feature"))
+
+    # Test that 'returns' and 'deprecation' still return the first instance
+    assert docstring.returns is returns
+    assert docstring.deprecation is deprecation
+```
+---- 2024-02-29T00:51:16 docstring_parser/common.py:113-146 ----
+total usage: {'prompt_tokens': 10673, 'completion_tokens': 4885}
+---- 2024-02-29T00:51:18 docstring_parser/common.py:113-146 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+docstring = <docstring_parser.common.Docstring object at 0x7fe0b6005ff0>
+
+    def test_docstring_properties_for_coverage(docstring):
+        # Add instances of different meta types to the docstring
+        docstring.meta.append(DocstringParam(arg_name="param", type_name="str", description="A parameter", is_optional=False, default=None, args=[]))
+>       docstring.meta.append(DocstringRaises(type_name="Exception", description="An exception"))
+E       TypeError: DocstringRaises.__init__() missing 1 required positional argument: 'args'
+
+coverup-tests/tmp_test_lyum_gpu.py:11: TypeError
+
+---- 2024-02-29T00:51:18 docstring_parser/google.py:175-182 ----
+```python
+import pytest
+from docstring_parser.google import GoogleParser, Section, SectionType
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_add_section_executes_missing_lines(google_parser, mocker):
+    # Mock the _setup method to ensure it is called
+    mocker.patch.object(google_parser, '_setup')
+
+    # Create a new section to add
+    new_section = Section('Parameters', 'param1: int - an integer parameter', SectionType.PARAMETERS)
+
+    # Add the section to the parser
+    google_parser.add_section(new_section)
+
+    # Assert that the section was added
+    assert google_parser.sections['Parameters'] == new_section
+
+    # Assert that _setup was called
+    google_parser._setup.assert_called_once()
+```
+---- 2024-02-29T00:51:18 docstring_parser/google.py:175-182 ----
+total usage: {'prompt_tokens': 11636, 'completion_tokens': 5044}
+---- 2024-02-29T00:51:18 docstring_parser/numpydoc.py:80-101 ----
+```python
+import pytest
+from docstring_parser.numpydoc import _KVSection
+from docstring_parser.common import DocstringMeta
+import re
+import inspect
+
+class MockKVSection(_KVSection):
+    def __init__(self):
+        super().__init__("Parameters", "param")
+
+    def _parse_item(self, key: str, value: str) -> DocstringMeta:
+        return DocstringMeta(args=[key], description=value)
+
+@pytest.fixture
+def mock_kv_section():
+    return MockKVSection()
+
+def test_kv_section_parse_item_executed(mock_kv_section):
+    text = "key\n    value\nkey2 : type\n    values can also span...\n    ... multiple lines"
+    items = list(mock_kv_section.parse(text))
+    assert len(items) == 2
+    assert items[0].args == ["key"]
+    assert items[0].description == "value"
+    assert items[1].args == ["key2 : type"]
+    assert items[1].description == "values can also span...\n... multiple lines"
+```
+---- 2024-02-29T00:51:18 docstring_parser/numpydoc.py:80-101 ----
+total usage: {'prompt_tokens': 12827, 'completion_tokens': 5261}
+---- 2024-02-29T00:51:18 docstring_parser/google.py:89-114 ----
+```python
+import inspect
+import re
+import pytest
+from docstring_parser import parse, DocstringMeta, SectionType
+from docstring_parser.google import GoogleParser
+
+MULTIPLE_PATTERN = re.compile(r"(\w+: .+\n)+")
+
+class MockSection:
+    def __init__(self, section_type):
+        self.type = section_type
+
+@pytest.fixture
+def google_parser(mocker):
+    parser = GoogleParser()
+    mocker.patch.object(parser, 'sections', {
+        'Example': MockSection(SectionType.SINGULAR_OR_MULTIPLE),
+        'Parameters': MockSection(SectionType.MULTIPLE),
+        'Returns': MockSection(SectionType.SINGULAR)
+    })
+    mocker.patch.object(parser, '_build_single_meta', return_value=DocstringMeta())
+    mocker.patch.object(parser, '_build_multi_meta', return_value=DocstringMeta())
+    return parser
+
+def test_build_meta_singular_or_multiple_without_match(google_parser):
+    text = "param: description"
+    title = "Example"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_single_meta.assert_called_once_with(google_parser.sections[title], text)
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_singular(google_parser):
+    text = "description"
+    title = "Returns"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_single_meta.assert_called_once_with(google_parser.sections[title], text)
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_multiple_with_newline_and_indent(google_parser):
+    text = "param: description\n    with indent"
+    title = "Parameters"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_multi_meta.assert_called_once_with(google_parser.sections[title], 'param', 'description\nwith indent')
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_multiple_with_newline_without_indent(google_parser):
+    text = "param: description\nwithout indent"
+    title = "Parameters"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_multi_meta.assert_called_once_with(google_parser.sections[title], 'param', 'description\nwithout indent')
+    assert isinstance(result, DocstringMeta)
+```
+---- 2024-02-29T00:51:18 docstring_parser/google.py:89-114 ----
+total usage: {'prompt_tokens': 13281, 'completion_tokens': 5731}
+---- 2024-02-29T00:51:20 docstring_parser/numpydoc.py:80-101 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:51:20 docstring_parser/numpydoc.py:80-101 ----
+
+This test still lacks coverage: line 92 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T00:51:20 docstring_parser/numpydoc.py:80-101 ----
+Too many attempts, giving up
+---- 2024-02-29T00:51:20 docstring_parser/google.py:175-182 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7f3fcc9515d0>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f3fcd2aa470>
+
+    def test_add_section_executes_missing_lines(google_parser, mocker):
+        # Mock the _setup method to ensure it is called
+        mocker.patch.object(google_parser, '_setup')
+    
+        # Create a new section to add
+>       new_section = Section('Parameters', 'param1: int - an integer parameter', SectionType.PARAMETERS)
+
+coverup-tests/tmp_test_e5g80b0f.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <enum 'SectionType'>, name = 'PARAMETERS'
+
+    def __getattr__(cls, name):
+        """
+        Return the enum member matching `name`
+    
+        We use __getattr__ instead of descriptors or inserting into the enum
+        class' __dict__ in order to support `name` and `value` being both
+        properties for enum members (which live in the class' __dict__) and
+        enum members themselves.
+        """
+        if _is_dunder(name):
+            raise AttributeError(name)
+        try:
+            return cls._member_map_[name]
+        except KeyError:
+>           raise AttributeError(name) from None
+E           AttributeError: PARAMETERS
+
+/usr/local/lib/python3.10/enum.py:437: AttributeError
+
+---- 2024-02-29T00:51:20 docstring_parser/google.py:175-182 ----
+Too many attempts, giving up
+---- 2024-02-29T00:51:20 docstring_parser/google.py:89-114 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_dhsul_38.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_dhsul_38.py:4: in <module>
+    from docstring_parser import parse, DocstringMeta, SectionType
+E   ImportError: cannot import name 'SectionType' from 'docstring_parser' (/output/docstring_parser/__init__.py)
+
+---- 2024-02-29T00:51:22 docstring_parser/google.py:184-266 ----
+```python
+import pytest
+from docstring_parser.google import GoogleParser, ParseError, Docstring
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_google_parser_coverage(google_parser, mocker):
+    # Test empty text
+    empty_docstring = google_parser.parse("")
+    assert isinstance(empty_docstring, Docstring)
+    assert empty_docstring.short_description is None
+    assert empty_docstring.long_description is None
+    assert empty_docstring.meta == []
+
+    # Test no sections
+    text_no_sections = "Short description\n\nLong description with no sections."
+    docstring = google_parser.parse(text_no_sections)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with no sections."
+    assert docstring.meta == []
+
+    # Test unknown section
+    text_unknown_section = """
+    Short description
+
+    Long description.
+
+    Args:
+        param1: Description of param1.
+
+    Unknown:
+        This section is unknown and should be skipped.
+    """
+    docstring = google_parser.parse(text_unknown_section)
+    assert len(docstring.meta) == 1  # Only 'Args' should be parsed
+
+    # Test no indent error
+    text_no_indent = """
+    Short description
+
+    Args:
+    No indent here, should raise ParseError.
+    """
+    with pytest.raises(ParseError, match="Can't infer indent"):
+        google_parser.parse(text_no_indent)
+
+    # Test no specification error
+    text_no_specification = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+        param2:
+    """
+    with pytest.raises(ParseError, match="No specification for"):
+        google_parser.parse(text_no_specification)
+
+    # Test singular section
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock(type='singular')})
+    text_singular_section = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+    """
+    docstring = google_parser.parse(text_singular_section)
+    assert len(docstring.meta) == 1  # 'Args' should be parsed as singular
+
+    # Test singular or multiple section
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock(type='singular_or_multiple')})
+    text_singular_or_multiple_section = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+    """
+    docstring = google_parser.parse(text_singular_or_multiple_section)
+    assert len(docstring.meta) == 1  # 'Args' should be parsed as singular or multiple
+```
+---- 2024-02-29T00:51:22 docstring_parser/google.py:184-266 ----
+total usage: {'prompt_tokens': 15035, 'completion_tokens': 6260}
+---- 2024-02-29T00:51:23 docstring_parser/google.py:184-266 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7fb26de5fbb0>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fb26de5e9b0>
+
+    def test_google_parser_coverage(google_parser, mocker):
+        # Test empty text
+        empty_docstring = google_parser.parse("")
+        assert isinstance(empty_docstring, Docstring)
+        assert empty_docstring.short_description is None
+        assert empty_docstring.long_description is None
+        assert empty_docstring.meta == []
+    
+        # Test no sections
+        text_no_sections = "Short description\n\nLong description with no sections."
+        docstring = google_parser.parse(text_no_sections)
+        assert docstring.short_description == "Short description"
+        assert docstring.long_description == "Long description with no sections."
+        assert docstring.meta == []
+    
+        # Test unknown section
+        text_unknown_section = """
+        Short description
+    
+        Long description.
+    
+        Args:
+            param1: Description of param1.
+    
+        Unknown:
+            This section is unknown and should be skipped.
+        """
+>       docstring = google_parser.parse(text_unknown_section)
+
+coverup-tests/tmp_test__tx4s_ag.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docstring_parser/google.py:264: in parse
+    ret.meta.append(self._build_meta(part, title))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <docstring_parser.google.GoogleParser object at 0x7fb26de5fbb0>
+text = 'This section is unknown and should be skipped.', title = 'Args'
+
+    def _build_meta(self, text: str, title: str) -> DocstringMeta:
+        """Build docstring element.
+    
+        :param text: docstring element text
+        :param title: title of section containing element
+        :return:
+        """
+    
+        section = self.sections[title]
+    
+        if (
+            section.type == SectionType.SINGULAR_OR_MULTIPLE
+            and not MULTIPLE_PATTERN.match(text)
+        ) or section.type == SectionType.SINGULAR:
+            return self._build_single_meta(section, text)
+    
+        # Split spec and description
+>       before, desc = text.split(":", 1)
+E       ValueError: not enough values to unpack (expected 2, got 1)
+
+docstring_parser/google.py:106: ValueError
+
+---- 2024-02-29T00:51:28 docstring_parser/google.py:132-173 ----
+```python
+import pytest
+from docstring_parser import parse, DocstringParam, DocstringRaises, DocstringReturns, DocstringMeta
+from docstring_parser.google import GoogleParser, Section
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_google_parser_build_multi_meta(google_parser):
+    # Test for lines 140-141
+    section_param_optional = Section('param', 'param_name: type, optional')
+    desc_optional = 'description of param with optional type'
+    meta_optional = google_parser._build_multi_meta(section_param_optional, 'param_name: type, optional', desc_optional)
+    assert isinstance(meta_optional, DocstringParam)
+    assert meta_optional.arg_name == 'param_name'
+    assert meta_optional.type_name == 'type'
+    assert meta_optional.is_optional is True
+
+    # Test for lines 143-144
+    section_param_optional_q = Section('param', 'param_name: type?')
+    desc_optional_q = 'description of param with optional type using question mark'
+    meta_optional_q = google_parser._build_multi_meta(section_param_optional_q, 'param_name: type?', desc_optional_q)
+    assert isinstance(meta_optional_q, DocstringParam)
+    assert meta_optional_q.arg_name == 'param_name'
+    assert meta_optional_q.type_name == 'type'
+    assert meta_optional_q.is_optional is True
+
+    # Test for lines 148-149
+    section_param_no_type = Section('param', 'param_name')
+    desc_no_type = 'description of param without type'
+    meta_no_type = google_parser._build_multi_meta(section_param_no_type, 'param_name', desc_no_type)
+    assert isinstance(meta_no_type, DocstringParam)
+    assert meta_no_type.arg_name == 'param_name'
+    assert meta_no_type.type_name is None
+    assert meta_no_type.is_optional is None
+
+    # Test for lines 169-173
+    section_raises = Section('raises', 'ExceptionType')
+    desc_raises = 'description of raises'
+    meta_raises = google_parser._build_multi_meta(section_raises, 'ExceptionType', desc_raises)
+    assert isinstance(meta_raises, DocstringRaises)
+    assert meta_raises.type_name == 'ExceptionType'
+    assert meta_raises.description == desc_raises
+
+    # Test for lines 162-163 (DocstringReturns)
+    section_returns = Section('returns', 'ReturnType')
+    desc_returns = 'description of returns'
+    meta_returns = google_parser._build_multi_meta(section_returns, 'ReturnType', desc_returns)
+    assert isinstance(meta_returns, DocstringReturns)
+    assert meta_returns.type_name == 'ReturnType'
+    assert meta_returns.description == desc_returns
+
+    # Test for a section that does not match any special cases
+    section_unknown = Section('unknown', 'UnknownType')
+    desc_unknown = 'description of unknown section'
+    meta_unknown = google_parser._build_multi_meta(section_unknown, 'UnknownType', desc_unknown)
+    assert isinstance(meta_unknown, DocstringMeta)
+    assert meta_unknown.description == desc_unknown
+```
+---- 2024-02-29T00:51:28 docstring_parser/google.py:132-173 ----
+total usage: {'prompt_tokens': 16438, 'completion_tokens': 6882}
+---- 2024-02-29T00:51:30 docstring_parser/google.py:132-173 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7fe0e301fe80>
+
+    def test_google_parser_build_multi_meta(google_parser):
+        # Test for lines 140-141
+>       section_param_optional = Section('param', 'param_name: type, optional')
+E       TypeError: SectionBase.__new__() missing 1 required positional argument: 'type'
+
+coverup-tests/tmp_test_y4clqemd.py:11: TypeError
+
+---- 2024-02-29T00:51:31 docstring_parser/rest.py:86-132 ----
+```python
+import pytest
+from docstring_parser import parse, Docstring, ParseError
+
+def test_parse_with_various_sections():
+    text = """
+    Short description
+
+    Long description with a blank line above.
+
+    :param arg1: Description of arg1
+    :param arg2: Description of arg2
+    :raises ValueError: When something bad happens.
+    :returns: The result
+    """
+
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with a blank line above."
+    assert docstring.meta[0].args == ['param', 'arg1']
+    assert docstring.meta[0].description == "Description of arg1"
+    assert docstring.meta[1].args == ['param', 'arg2']
+    assert docstring.meta[1].description == "Description of arg2"
+    assert docstring.meta[2].args == ['raises', 'ValueError']
+    assert docstring.meta[2].description == "When something bad happens."
+    assert docstring.meta[3].args == ['returns']
+    assert docstring.meta[3].description == "The result"
+
+def test_parse_empty_docstring():
+    text = ""
+    docstring = parse(text)
+    assert docstring.short_description is None
+    assert docstring.long_description is None
+    assert len(docstring.meta) == 0
+
+def test_parse_no_meta():
+    text = "Short description\n\nLong description with a blank line above."
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with a blank line above."
+    assert len(docstring.meta) == 0
+
+def test_parse_meta_with_newlines():
+    text = """
+    Short description
+
+    :param arg1: Description
+        with newlines
+    """
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.meta[0].args == ['param', 'arg1']
+    assert docstring.meta[0].description == "Description\nwith newlines"
+
+def test_parse_meta_with_multiple_colons():
+    text = ":param arg1: Description with: colons"
+    docstring = parse(text)
+    assert docstring.meta[0].args == ['param', 'arg1']
+    assert docstring.meta[0].description == "Description with: colons"
+
+def test_parse_blank_lines_after_sections():
+    text = "Short description\n\n\nLong description with two blank lines above.\n\n"
+    docstring = parse(text)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with two blank lines above."
+    assert docstring.blank_after_short_description is True
+    assert docstring.blank_after_long_description is False  # Corrected assertion
+```
+---- 2024-02-29T00:51:31 docstring_parser/rest.py:86-132 ----
+total usage: {'prompt_tokens': 17965, 'completion_tokens': 7478}
+---- 2024-02-29T00:51:32 docstring_parser/common.py:113-146 ----
+```python
+import pytest
+from docstring_parser.common import Docstring, DocstringParam, DocstringRaises, DocstringReturns, DocstringDeprecated
+
+@pytest.fixture
+def docstring():
+    return Docstring()
+
+def test_docstring_properties_for_coverage(docstring):
+    # Add instances of different meta types to the docstring
+    docstring.meta.append(DocstringParam(arg_name="param", type_name="str", description="A parameter", is_optional=False, default=None, args=[]))
+    docstring.meta.append(DocstringRaises(type_name="Exception", description="An exception", args=[]))
+    docstring.meta.append(DocstringReturns(type_name="int", description="Return value", args=[]))
+    docstring.meta.append(DocstringDeprecated(description="Deprecated feature", args=[]))
+
+    # Test the 'params' property
+    params = docstring.params
+    assert len(params) == 1
+    assert isinstance(params[0], DocstringParam)
+
+    # Test the 'raises' property
+    raises = docstring.raises
+    assert len(raises) == 1
+    assert isinstance(raises[0], DocstringRaises)
+
+    # Test the 'returns' property
+    returns = docstring.returns
+    assert isinstance(returns, DocstringReturns)
+
+    # Test the 'deprecation' property
+    deprecation = docstring.deprecation
+    assert isinstance(deprecation, DocstringDeprecated)
+
+    # Add a second instance of DocstringReturns and DocstringDeprecated to test the early return
+    docstring.meta.append(DocstringReturns(type_name="float", description="Another return value", args=[]))
+    docstring.meta.append(DocstringDeprecated(description="Another deprecated feature", args=[]))
+
+    # Test that 'returns' and 'deprecation' still return the first instance
+    assert docstring.returns is returns
+    assert docstring.deprecation is deprecation
+```
+---- 2024-02-29T00:51:32 docstring_parser/common.py:113-146 ----
+total usage: {'prompt_tokens': 19537, 'completion_tokens': 7868}
+---- 2024-02-29T00:51:32 docstring_parser/rest.py:86-132 ----
+......                                                                   [100%]
+
+---- 2024-02-29T00:51:32 docstring_parser/rest.py:86-132 ----
+Saved as coverup-tests/test_coverup_28.py
+
+---- 2024-02-29T00:51:33 docstring_parser/common.py:113-146 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+docstring = <docstring_parser.common.Docstring object at 0x7f7df775f0a0>
+
+    def test_docstring_properties_for_coverage(docstring):
+        # Add instances of different meta types to the docstring
+        docstring.meta.append(DocstringParam(arg_name="param", type_name="str", description="A parameter", is_optional=False, default=None, args=[]))
+        docstring.meta.append(DocstringRaises(type_name="Exception", description="An exception", args=[]))
+>       docstring.meta.append(DocstringReturns(type_name="int", description="Return value", args=[]))
+E       TypeError: DocstringReturns.__init__() missing 1 required positional argument: 'is_generator'
+
+coverup-tests/tmp_test_zwfmwv7y.py:12: TypeError
+
+---- 2024-02-29T00:51:33 docstring_parser/common.py:113-146 ----
+Too many attempts, giving up
+---- 2024-02-29T00:51:41 docstring_parser/numpydoc.py:117-154 ----
+```python
+import re
+import pytest
+from docstring_parser.numpydoc import DocstringParam
+
+# Assuming the regex patterns are defined somewhere in the module as follows:
+PARAM_KEY_REGEX = re.compile(r'(?P<name>\w+)(?:\s*:\s*(?P<type>[\w\[\],\s]+))?')
+PARAM_OPTIONAL_REGEX = re.compile(r'(?P<type>[\w\[\]]+)(?:,\s*optional)?')
+PARAM_DEFAULT_REGEX = re.compile(r'\[default:\s*(?P<value>.+)\]')
+
+# Assuming the _KVSection class is defined somewhere in the module as follows:
+class _KVSection:
+    key = 'param_key'  # Placeholder for the actual key attribute
+
+    def _parse_item(self, key: str, value: str):
+        pass  # Placeholder for the actual implementation
+
+# Assuming the _clean_str function is defined somewhere in the module as follows:
+def _clean_str(s: str) -> str:
+    return s.strip()
+
+# The ParamSection class as provided in the question
+class ParamSection(_KVSection):
+    def _parse_item(self, key: str, value: str) -> DocstringParam:
+        m = PARAM_KEY_REGEX.match(key)
+        arg_name = type_name = is_optional = None
+        if m is not None:
+            arg_name, type_name = m.group("name"), m.group("type")
+            if type_name is not None:
+                optional_match = PARAM_OPTIONAL_REGEX.match(type_name)
+                if optional_match is not None:
+                    type_name = optional_match.group("type")
+                    is_optional = True
+                else:
+                    is_optional = False
+
+        default = None
+        if len(value) > 0:
+            default_match = PARAM_DEFAULT_REGEX.search(value)
+            if default_match is not None:
+                default = default_match.group("value")
+
+        return DocstringParam(
+            args=[self.key, arg_name],
+            description=_clean_str(value),
+            arg_name=arg_name,
+            type_name=type_name,
+            is_optional=is_optional,
+            default=default,
+        )
+
+# Test function to cover the missing branches
+@pytest.fixture
+def param_section():
+    return ParamSection()
+
+def test_param_section_parse_item(param_section):
+    # Test case to cover branch 131->141 (type_name is None)
+    result = param_section._parse_item("param", "description")
+    assert result.arg_name == "param"
+    assert result.type_name is None
+    assert result.is_optional is None
+    assert result.default is None
+
+    # Test case to cover branch 142->147 (value is not empty and default is found)
+    result = param_section._parse_item("param : type, optional", "description [default: value]")
+    assert result.arg_name == "param"
+    assert result.type_name == "type"
+    assert result.is_optional is True
+    assert result.default == "value"
+```
+---- 2024-02-29T00:51:41 docstring_parser/numpydoc.py:117-154 ----
+total usage: {'prompt_tokens': 21058, 'completion_tokens': 8479}
+---- 2024-02-29T00:51:42 docstring_parser/numpydoc.py:117-154 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:51:42 docstring_parser/numpydoc.py:117-154 ----
+
+This test still lacks coverage: branches 131->141, 142->147 do not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T00:51:43 docstring_parser/google.py:89-114 ----
+```python
+import inspect
+import re
+import pytest
+from docstring_parser import parse, DocstringMeta
+from docstring_parser.common import SectionType
+from docstring_parser.google import GoogleParser
+
+MULTIPLE_PATTERN = re.compile(r"(\w+: .+\n)+")
+
+class MockSection:
+    def __init__(self, section_type):
+        self.type = section_type
+
+@pytest.fixture
+def google_parser(mocker):
+    parser = GoogleParser()
+    mocker.patch.object(parser, 'sections', {
+        'Example': MockSection(SectionType.SINGULAR_OR_MULTIPLE),
+        'Parameters': MockSection(SectionType.MULTIPLE),
+        'Returns': MockSection(SectionType.SINGULAR)
+    })
+    mocker.patch.object(parser, '_build_single_meta', return_value=DocstringMeta())
+    mocker.patch.object(parser, '_build_multi_meta', return_value=DocstringMeta())
+    return parser
+
+def test_build_meta_singular_or_multiple_without_match(google_parser):
+    text = "param: description"
+    title = "Example"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_single_meta.assert_called_once_with(google_parser.sections[title], text)
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_singular(google_parser):
+    text = "description"
+    title = "Returns"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_single_meta.assert_called_once_with(google_parser.sections[title], text)
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_multiple_with_newline_and_indent(google_parser):
+    text = "param: description\n    with indent"
+    title = "Parameters"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_multi_meta.assert_called_once_with(google_parser.sections[title], 'param', 'description\nwith indent')
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_multiple_with_newline_without_indent(google_parser):
+    text = "param: description\nwithout indent"
+    title = "Parameters"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_multi_meta.assert_called_once_with(google_parser.sections[title], 'param', 'description\nwithout indent')
+    assert isinstance(result, DocstringMeta)
+```
+---- 2024-02-29T00:51:43 docstring_parser/google.py:89-114 ----
+total usage: {'prompt_tokens': 22177, 'completion_tokens': 8955}
+---- 2024-02-29T00:51:44 docstring_parser/google.py:89-114 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_lxp0z8e9.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_lxp0z8e9.py:5: in <module>
+    from docstring_parser.common import SectionType
+E   ImportError: cannot import name 'SectionType' from 'docstring_parser.common' (/output/docstring_parser/common.py)
+
+---- 2024-02-29T00:51:51 docstring_parser/google.py:132-173 ----
+```python
+import pytest
+from docstring_parser import parse, DocstringParam, DocstringRaises, DocstringReturns, DocstringMeta
+from docstring_parser.google import GoogleParser, Section
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_google_parser_build_multi_meta(google_parser):
+    # Test for lines 140-141
+    section_param_optional = Section('param', 'param_name: type, optional', 'description of param with optional type')
+    meta_optional = google_parser._build_multi_meta(section_param_optional, 'param_name: type, optional', section_param_optional.description)
+    assert isinstance(meta_optional, DocstringParam)
+    assert meta_optional.arg_name == 'param_name'
+    assert meta_optional.type_name == 'type'
+    assert meta_optional.is_optional is True
+
+    # Test for lines 143-144
+    section_param_optional_q = Section('param', 'param_name: type?', 'description of param with optional type using question mark')
+    meta_optional_q = google_parser._build_multi_meta(section_param_optional_q, 'param_name: type?', section_param_optional_q.description)
+    assert isinstance(meta_optional_q, DocstringParam)
+    assert meta_optional_q.arg_name == 'param_name'
+    assert meta_optional_q.type_name == 'type'
+    assert meta_optional_q.is_optional is True
+
+    # Test for lines 148-149
+    section_param_no_type = Section('param', 'param_name', 'description of param without type')
+    meta_no_type = google_parser._build_multi_meta(section_param_no_type, 'param_name', section_param_no_type.description)
+    assert isinstance(meta_no_type, DocstringParam)
+    assert meta_no_type.arg_name == 'param_name'
+    assert meta_no_type.type_name is None
+    assert meta_no_type.is_optional is None
+
+    # Test for lines 169-173
+    section_raises = Section('raises', 'ExceptionType', 'description of raises')
+    meta_raises = google_parser._build_multi_meta(section_raises, 'ExceptionType', section_raises.description)
+    assert isinstance(meta_raises, DocstringRaises)
+    assert meta_raises.type_name == 'ExceptionType'
+    assert meta_raises.description == section_raises.description
+
+    # Test for lines 162-163 (DocstringReturns)
+    section_returns = Section('returns', 'ReturnType', 'description of returns')
+    meta_returns = google_parser._build_multi_meta(section_returns, 'ReturnType', section_returns.description)
+    assert isinstance(meta_returns, DocstringReturns)
+    assert meta_returns.type_name == 'ReturnType'
+    assert meta_returns.description == section_returns.description
+
+    # Test for a section that does not match any special cases
+    section_unknown = Section('unknown', 'UnknownType', 'description of unknown section')
+    meta_unknown = google_parser._build_multi_meta(section_unknown, 'UnknownType', section_unknown.description)
+    assert isinstance(meta_unknown, DocstringMeta)
+    assert meta_unknown.description == section_unknown.description
+```
+---- 2024-02-29T00:51:51 docstring_parser/google.py:132-173 ----
+total usage: {'prompt_tokens': 24336, 'completion_tokens': 9562}
+---- 2024-02-29T00:51:52 docstring_parser/google.py:132-173 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7f41014a3be0>
+
+    def test_google_parser_build_multi_meta(google_parser):
+        # Test for lines 140-141
+        section_param_optional = Section('param', 'param_name: type, optional', 'description of param with optional type')
+>       meta_optional = google_parser._build_multi_meta(section_param_optional, 'param_name: type, optional', section_param_optional.description)
+E       AttributeError: 'Section' object has no attribute 'description'
+
+coverup-tests/tmp_test_dbuz82vo.py:12: AttributeError
+
+---- 2024-02-29T00:51:52 docstring_parser/google.py:132-173 ----
+Too many attempts, giving up
+---- 2024-02-29T00:51:56 docstring_parser/google.py:184-266 ----
+```python
+import pytest
+from docstring_parser.google import GoogleParser, ParseError, Docstring
+
+@pytest.fixture
+def google_parser():
+    return GoogleParser()
+
+def test_google_parser_coverage(google_parser, mocker):
+    # Test empty text
+    empty_docstring = google_parser.parse("")
+    assert isinstance(empty_docstring, Docstring)
+    assert empty_docstring.short_description is None
+    assert empty_docstring.long_description is None
+    assert empty_docstring.meta == []
+
+    # Test no sections
+    text_no_sections = "Short description\n\nLong description with no sections."
+    docstring = google_parser.parse(text_no_sections)
+    assert docstring.short_description == "Short description"
+    assert docstring.long_description == "Long description with no sections."
+    assert docstring.meta == []
+
+    # Test unknown section
+    text_unknown_section = """
+    Short description
+
+    Long description.
+
+    Args:
+        param1: Description of param1.
+
+    Unknown:
+        This section is unknown and should be skipped.
+    """
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock()})
+    docstring = google_parser.parse(text_unknown_section)
+    assert len(docstring.meta) == 1  # Only 'Args' should be parsed
+
+    # Test no indent error
+    text_no_indent = """
+    Short description
+
+    Args:
+    No indent here, should raise ParseError.
+    """
+    with pytest.raises(ParseError, match="Can't infer indent"):
+        google_parser.parse(text_no_indent)
+
+    # Test no specification error
+    text_no_specification = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+        param2:
+    """
+    with pytest.raises(ParseError, match="No specification for"):
+        google_parser.parse(text_no_specification)
+
+    # Test singular section
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock(type='singular')})
+    text_singular_section = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+    """
+    docstring = google_parser.parse(text_singular_section)
+    assert len(docstring.meta) == 1  # 'Args' should be parsed as singular
+
+    # Test singular or multiple section
+    mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock(type='singular_or_multiple')})
+    text_singular_or_multiple_section = """
+    Short description
+
+    Args:
+        param1: Description of param1.
+    """
+    docstring = google_parser.parse(text_singular_or_multiple_section)
+    assert len(docstring.meta) == 1  # 'Args' should be parsed as singular or multiple
+```
+---- 2024-02-29T00:51:56 docstring_parser/google.py:184-266 ----
+total usage: {'prompt_tokens': 27219, 'completion_tokens': 10108}
+---- 2024-02-29T00:51:58 docstring_parser/google.py:184-266 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+google_parser = <docstring_parser.google.GoogleParser object at 0x7f9626dfb520>
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f96259a25c0>
+
+    def test_google_parser_coverage(google_parser, mocker):
+        # Test empty text
+        empty_docstring = google_parser.parse("")
+        assert isinstance(empty_docstring, Docstring)
+        assert empty_docstring.short_description is None
+        assert empty_docstring.long_description is None
+        assert empty_docstring.meta == []
+    
+        # Test no sections
+        text_no_sections = "Short description\n\nLong description with no sections."
+        docstring = google_parser.parse(text_no_sections)
+        assert docstring.short_description == "Short description"
+        assert docstring.long_description == "Long description with no sections."
+        assert docstring.meta == []
+    
+        # Test unknown section
+        text_unknown_section = """
+        Short description
+    
+        Long description.
+    
+        Args:
+            param1: Description of param1.
+    
+        Unknown:
+            This section is unknown and should be skipped.
+        """
+        mocker.patch.object(google_parser, 'sections', {'Args': mocker.Mock()})
+>       docstring = google_parser.parse(text_unknown_section)
+
+coverup-tests/tmp_test_pz6tmh79.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docstring_parser/google.py:264: in parse
+    ret.meta.append(self._build_meta(part, title))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <docstring_parser.google.GoogleParser object at 0x7f9626dfb520>
+text = 'This section is unknown and should be skipped.', title = 'Args'
+
+    def _build_meta(self, text: str, title: str) -> DocstringMeta:
+        """Build docstring element.
+    
+        :param text: docstring element text
+        :param title: title of section containing element
+        :return:
+        """
+    
+        section = self.sections[title]
+    
+        if (
+            section.type == SectionType.SINGULAR_OR_MULTIPLE
+            and not MULTIPLE_PATTERN.match(text)
+        ) or section.type == SectionType.SINGULAR:
+            return self._build_single_meta(section, text)
+    
+        # Split spec and description
+>       before, desc = text.split(":", 1)
+E       ValueError: not enough values to unpack (expected 2, got 1)
+
+docstring_parser/google.py:106: ValueError
+
+---- 2024-02-29T00:51:58 docstring_parser/google.py:184-266 ----
+Too many attempts, giving up
+---- 2024-02-29T00:52:07 docstring_parser/numpydoc.py:117-154 ----
+```python
+import re
+import pytest
+from docstring_parser.numpydoc import DocstringParam
+
+# Assuming the regex patterns are defined somewhere in the module as follows:
+PARAM_KEY_REGEX = re.compile(r'(?P<name>\w+)(?:\s*:\s*(?P<type>[\w\[\],\s]+))?')
+PARAM_OPTIONAL_REGEX = re.compile(r'(?P<type>[\w\[\]]+)(?:,\s*optional)?')
+PARAM_DEFAULT_REGEX = re.compile(r'\[default:\s*(?P<value>.+)\]')
+
+# Assuming the _KVSection class is defined somewhere in the module as follows:
+class _KVSection:
+    key = 'param_key'  # Placeholder for the actual key attribute
+
+    def _parse_item(self, key: str, value: str):
+        pass  # Placeholder for the actual implementation
+
+# Assuming the _clean_str function is defined somewhere in the module as follows:
+def _clean_str(s: str) -> str:
+    return s.strip()
+
+# The ParamSection class as provided in the question
+class ParamSection(_KVSection):
+    def _parse_item(self, key: str, value: str) -> DocstringParam:
+        m = PARAM_KEY_REGEX.match(key)
+        arg_name = type_name = is_optional = None
+        if m is not None:
+            arg_name, type_name = m.group("name"), m.group("type")
+            if type_name is not None:
+                optional_match = PARAM_OPTIONAL_REGEX.match(type_name)
+                if optional_match is not None:
+                    type_name = optional_match.group("type")
+                    is_optional = True
+                else:
+                    is_optional = False
+
+        default = None
+        if len(value) > 0:
+            default_match = PARAM_DEFAULT_REGEX.search(value)
+            if default_match is not None:
+                default = default_match.group("value")
+
+        return DocstringParam(
+            args=[self.key, arg_name],
+            description=_clean_str(value),
+            arg_name=arg_name,
+            type_name=type_name,
+            is_optional=is_optional,
+            default=default,
+        )
+
+# Test function to cover the missing branches
+@pytest.fixture
+def param_section():
+    return ParamSection()
+
+def test_param_section_parse_item(param_section):
+    # Test case to cover branch 131->141 (type_name is not None and is_optional is False)
+    result = param_section._parse_item("param : type", "description")
+    assert result.arg_name == "param"
+    assert result.type_name == "type"
+    assert result.is_optional is False
+    assert result.default is None
+
+    # Test case to cover branch 142->147 (value is not empty and default is not found)
+    result = param_section._parse_item("param : type, optional", "description without default")
+    assert result.arg_name == "param"
+    assert result.type_name == "type"
+    assert result.is_optional is True
+    assert result.default is None
+
+    # Test case to cover branch 142->147 (value is not empty and default is found)
+    result = param_section._parse_item("param : type, optional", "description [default: value]")
+    assert result.arg_name == "param"
+    assert result.type_name == "type"
+    assert result.is_optional is True
+    assert result.default == "value"
+```
+---- 2024-02-29T00:52:07 docstring_parser/numpydoc.py:117-154 ----
+total usage: {'prompt_tokens': 29397, 'completion_tokens': 10803}
+---- 2024-02-29T00:52:09 docstring_parser/numpydoc.py:117-154 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+param_section = <tmp_test_zeh80cno.ParamSection object at 0x7fd9019debc0>
+
+    def test_param_section_parse_item(param_section):
+        # Test case to cover branch 131->141 (type_name is not None and is_optional is False)
+        result = param_section._parse_item("param : type", "description")
+        assert result.arg_name == "param"
+        assert result.type_name == "type"
+>       assert result.is_optional is False
+E       assert True is False
+E        +  where True = <docstring_parser.common.DocstringParam object at 0x7fd9019df100>.is_optional
+
+coverup-tests/tmp_test_zeh80cno.py:61: AssertionError
+
+---- 2024-02-29T00:52:09 docstring_parser/numpydoc.py:117-154 ----
+Too many attempts, giving up
+---- 2024-02-29T00:52:12 docstring_parser/google.py:89-114 ----
+```python
+import inspect
+import re
+import pytest
+from docstring_parser import parse, DocstringMeta
+from docstring_parser.parser import SectionType
+from docstring_parser.google import GoogleParser
+
+MULTIPLE_PATTERN = re.compile(r"(\w+: .+\n)+")
+
+class MockSection:
+    def __init__(self, section_type):
+        self.type = section_type
+
+@pytest.fixture
+def google_parser(mocker):
+    parser = GoogleParser()
+    mocker.patch.object(parser, 'sections', {
+        'Example': MockSection(SectionType.SINGULAR_OR_MULTIPLE),
+        'Parameters': MockSection(SectionType.MULTIPLE),
+        'Returns': MockSection(SectionType.SINGULAR)
+    })
+    mocker.patch.object(parser, '_build_single_meta', return_value=DocstringMeta())
+    mocker.patch.object(parser, '_build_multi_meta', return_value=DocstringMeta())
+    return parser
+
+def test_build_meta_singular_or_multiple_without_match(google_parser):
+    text = "param: description"
+    title = "Example"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_single_meta.assert_called_once_with(google_parser.sections[title], text)
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_singular(google_parser):
+    text = "description"
+    title = "Returns"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_single_meta.assert_called_once_with(google_parser.sections[title], text)
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_multiple_with_newline_and_indent(google_parser):
+    text = "param: description\n    with indent"
+    title = "Parameters"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_multi_meta.assert_called_once_with(google_parser.sections[title], 'param', 'description\nwith indent')
+    assert isinstance(result, DocstringMeta)
+
+def test_build_meta_multiple_with_newline_without_indent(google_parser):
+    text = "param: description\nwithout indent"
+    title = "Parameters"
+    result = google_parser._build_meta(text, title)
+    google_parser._build_multi_meta.assert_called_once_with(google_parser.sections[title], 'param', 'description\nwithout indent')
+    assert isinstance(result, DocstringMeta)
+```
+---- 2024-02-29T00:52:12 docstring_parser/google.py:89-114 ----
+total usage: {'prompt_tokens': 31185, 'completion_tokens': 11279}
+---- 2024-02-29T00:52:14 docstring_parser/google.py:89-114 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_ogf2vza9.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_ogf2vza9.py:5: in <module>
+    from docstring_parser.parser import SectionType
+E   ImportError: cannot import name 'SectionType' from 'docstring_parser.parser' (/output/docstring_parser/parser.py)
+
+---- 2024-02-29T00:52:14 docstring_parser/google.py:89-114 ----
+Too many attempts, giving up

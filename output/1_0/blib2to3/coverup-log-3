@@ -1,0 +1,238 @@
+---- 2024-02-28T20:07:08 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir src/blib2to3 --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-3 --checkpoint coverup-ckpt.json src/blib2to3/pgen2/token.py src/blib2to3/pygram.py
+---- 2024-02-28T20:07:10 src/blib2to3/pygram.py:157-197 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from src/blib2to3/pygram.py, module blib2to3.pygram, does not achieve full coverage:
+when tested, lines 167-197 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def initialize(cache_dir: Union[str, "os.PathLike[str]", None] = None) -> None:
+                global python_grammar
+                global python_grammar_no_print_statement
+                global python_grammar_no_print_statement_no_exec_statement
+                global python_grammar_no_print_statement_no_exec_statement_async_keywords
+                global python_symbols
+                global pattern_grammar
+                global pattern_symbols
+            
+                # The grammar file
+       167:     _GRAMMAR_FILE = os.path.join(os.path.dirname(__file__), "Grammar.txt")
+       168:     _PATTERN_GRAMMAR_FILE = os.path.join(
+       169:         os.path.dirname(__file__), "PatternGrammar.txt"
+                )
+            
+                # Python 2
+       173:     python_grammar = driver.load_packaged_grammar("blib2to3", _GRAMMAR_FILE, cache_dir)
+            
+       175:     python_symbols = _python_symbols(python_grammar)
+            
+                # Python 2 + from __future__ import print_function
+       178:     python_grammar_no_print_statement = python_grammar.copy()
+       179:     del python_grammar_no_print_statement.keywords["print"]
+            
+                # Python 3.0-3.6
+       182:     python_grammar_no_print_statement_no_exec_statement = python_grammar.copy()
+       183:     del python_grammar_no_print_statement_no_exec_statement.keywords["print"]
+       184:     del python_grammar_no_print_statement_no_exec_statement.keywords["exec"]
+            
+                # Python 3.7+
+       187:     python_grammar_no_print_statement_no_exec_statement_async_keywords = (
+       188:         python_grammar_no_print_statement_no_exec_statement.copy()
+                )
+       190:     python_grammar_no_print_statement_no_exec_statement_async_keywords.async_keywords = (
+       191:         True
+                )
+            
+       194:     pattern_grammar = driver.load_packaged_grammar(
+       195:         "blib2to3", _PATTERN_GRAMMAR_FILE, cache_dir
+                )
+       197:     pattern_symbols = _pattern_symbols(pattern_grammar)
+
+```
+
+---- 2024-02-28T20:07:26 src/blib2to3/pygram.py:157-197 ----
+```python
+import os
+import pytest
+from blib2to3.pygram import initialize
+from blib2to3.pgen2 import driver
+
+@pytest.fixture
+def cleanup_globals():
+    # Backup original global variables
+    original_python_grammar = driver.python_grammar
+    original_python_grammar_no_print_statement = driver.python_grammar_no_print_statement
+    original_python_grammar_no_print_statement_no_exec_statement = driver.python_grammar_no_print_statement_no_exec_statement
+    original_python_grammar_no_print_statement_no_exec_statement_async_keywords = driver.python_grammar_no_print_statement_no_exec_statement_async_keywords
+    original_python_symbols = driver.python_symbols
+    original_pattern_grammar = driver.pattern_grammar
+    original_pattern_symbols = driver.pattern_symbols
+
+    yield
+
+    # Restore original global variables
+    driver.python_grammar = original_python_grammar
+    driver.python_grammar_no_print_statement = original_python_grammar_no_print_statement
+    driver.python_grammar_no_print_statement_no_exec_statement = original_python_grammar_no_print_statement_no_exec_statement
+    driver.python_grammar_no_print_statement_no_exec_statement_async_keywords = original_python_grammar_no_print_statement_no_exec_statement_async_keywords
+    driver.python_symbols = original_python_symbols
+    driver.pattern_grammar = original_pattern_grammar
+    driver.pattern_symbols = original_pattern_symbols
+
+def test_initialize_improves_coverage(cleanup_globals):
+    # Call initialize to execute the lines 167-197
+    initialize()
+
+    # Assertions to verify postconditions
+    assert driver.python_grammar is not None
+    assert 'print' not in driver.python_grammar_no_print_statement.keywords
+    assert 'print' not in driver.python_grammar_no_print_statement_no_exec_statement.keywords
+    assert 'exec' not in driver.python_grammar_no_print_statement_no_exec_statement.keywords
+    assert driver.python_grammar_no_print_statement_no_exec_statement_async_keywords.async_keywords is True
+    assert driver.python_symbols is not None
+    assert driver.pattern_grammar is not None
+    assert driver.pattern_symbols is not None
+```
+---- 2024-02-28T20:07:26 src/blib2to3/pygram.py:157-197 ----
+total usage: {'prompt_tokens': 651, 'completion_tokens': 417}
+---- 2024-02-28T20:07:27 src/blib2to3/pygram.py:157-197 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def cleanup_globals():
+        # Backup original global variables
+>       original_python_grammar = driver.python_grammar
+E       AttributeError: module 'blib2to3.pgen2.driver' has no attribute 'python_grammar'
+
+coverup-tests/tmp_test_crbbe8tj.py:9: AttributeError
+
+---- 2024-02-28T20:07:40 src/blib2to3/pygram.py:157-197 ----
+```python
+import os
+import pytest
+from blib2to3.pygram import initialize
+from blib2to3.pygram import python_grammar, python_grammar_no_print_statement, python_grammar_no_print_statement_no_exec_statement, python_grammar_no_print_statement_no_exec_statement_async_keywords, python_symbols, pattern_grammar, pattern_symbols
+
+@pytest.fixture
+def cleanup_globals():
+    # Backup original global variables
+    original_python_grammar = python_grammar
+    original_python_grammar_no_print_statement = python_grammar_no_print_statement
+    original_python_grammar_no_print_statement_no_exec_statement = python_grammar_no_print_statement_no_exec_statement
+    original_python_grammar_no_print_statement_no_exec_statement_async_keywords = python_grammar_no_print_statement_no_exec_statement_async_keywords
+    original_python_symbols = python_symbols
+    original_pattern_grammar = pattern_grammar
+    original_pattern_symbols = pattern_symbols
+
+    yield
+
+    # Restore original global variables
+    globals()['python_grammar'] = original_python_grammar
+    globals()['python_grammar_no_print_statement'] = original_python_grammar_no_print_statement
+    globals()['python_grammar_no_print_statement_no_exec_statement'] = original_python_grammar_no_print_statement_no_exec_statement
+    globals()['python_grammar_no_print_statement_no_exec_statement_async_keywords'] = original_python_grammar_no_print_statement_no_exec_statement_async_keywords
+    globals()['python_symbols'] = original_python_symbols
+    globals()['pattern_grammar'] = original_pattern_grammar
+    globals()['pattern_symbols'] = original_pattern_symbols
+
+def test_initialize_improves_coverage(cleanup_globals):
+    # Call initialize to execute the lines 167-197
+    initialize()
+
+    # Assertions to verify postconditions
+    assert python_grammar is not None
+    assert 'print' not in python_grammar_no_print_statement.keywords
+    assert 'print' not in python_grammar_no_print_statement_no_exec_statement.keywords
+    assert 'exec' not in python_grammar_no_print_statement_no_exec_statement.keywords
+    assert python_grammar_no_print_statement_no_exec_statement_async_keywords.async_keywords is True
+    assert python_symbols is not None
+    assert pattern_grammar is not None
+    assert pattern_symbols is not None
+```
+---- 2024-02-28T20:07:40 src/blib2to3/pygram.py:157-197 ----
+total usage: {'prompt_tokens': 1825, 'completion_tokens': 873}
+---- 2024-02-28T20:07:42 src/blib2to3/pygram.py:157-197 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_dt8dc3dt.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_dt8dc3dt.py:4: in <module>
+    from blib2to3.pygram import python_grammar, python_grammar_no_print_statement, python_grammar_no_print_statement_no_exec_statement, python_grammar_no_print_statement_no_exec_statement_async_keywords, python_symbols, pattern_grammar, pattern_symbols
+E   ImportError: cannot import name 'python_grammar' from 'blib2to3.pygram' (/output/src/blib2to3/pygram.py)
+
+---- 2024-02-28T20:08:09 src/blib2to3/pygram.py:157-197 ----
+```python
+import os
+import pytest
+from blib2to3.pygram import initialize
+from blib2to3.pgen2 import driver
+
+@pytest.fixture
+def cleanup_globals():
+    # Backup original global variables
+    original_python_grammar = driver.python_grammar
+    original_python_grammar_no_print_statement = driver.python_grammar_no_print_statement
+    original_python_grammar_no_print_statement_no_exec_statement = driver.python_grammar_no_print_statement_no_exec_statement
+    original_python_grammar_no_print_statement_no_exec_statement_async_keywords = driver.python_grammar_no_print_statement_no_exec_statement_async_keywords
+    original_python_symbols = driver.python_symbols
+    original_pattern_grammar = driver.pattern_grammar
+    original_pattern_symbols = driver.pattern_symbols
+
+    yield
+
+    # Restore original global variables
+    driver.python_grammar = original_python_grammar
+    driver.python_grammar_no_print_statement = original_python_grammar_no_print_statement
+    driver.python_grammar_no_print_statement_no_exec_statement = original_python_grammar_no_print_statement_no_exec_statement
+    driver.python_grammar_no_print_statement_no_exec_statement_async_keywords = original_python_grammar_no_print_statement_no_exec_statement_async_keywords
+    driver.python_symbols = original_python_symbols
+    driver.pattern_grammar = original_pattern_grammar
+    driver.pattern_symbols = original_pattern_symbols
+
+def test_initialize_improves_coverage(cleanup_globals):
+    # Call initialize to execute the lines 167-197
+    initialize()
+
+    # Assertions to verify postconditions
+    assert driver.python_grammar is not None
+    assert 'print' not in driver.python_grammar_no_print_statement.keywords
+    assert 'print' not in driver.python_grammar_no_print_statement_no_exec_statement.keywords
+    assert 'exec' not in driver.python_grammar_no_print_statement_no_exec_statement.keywords
+    assert driver.python_grammar_no_print_statement_no_exec_statement_async_keywords.async_keywords is True
+    assert driver.python_symbols is not None
+    assert driver.pattern_grammar is not None
+    assert driver.pattern_symbols is not None
+```
+---- 2024-02-28T20:08:09 src/blib2to3/pygram.py:157-197 ----
+total usage: {'prompt_tokens': 3695, 'completion_tokens': 1290}
+---- 2024-02-28T20:08:11 src/blib2to3/pygram.py:157-197 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def cleanup_globals():
+        # Backup original global variables
+>       original_python_grammar = driver.python_grammar
+E       AttributeError: module 'blib2to3.pgen2.driver' has no attribute 'python_grammar'
+
+coverup-tests/tmp_test_qiv6jh9r.py:9: AttributeError
+
+---- 2024-02-28T20:08:11 src/blib2to3/pygram.py:157-197 ----
+Too many attempts, giving up

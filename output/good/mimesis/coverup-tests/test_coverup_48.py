@@ -1,0 +1,15 @@
+# file mimesis/providers/internet.py:120-132
+# lines [120, 128, 129, 130]
+# branches []
+
+import pytest
+from mimesis.providers.internet import Internet
+from ipaddress import IPv6Address
+
+@pytest.fixture
+def internet_provider():
+    return Internet()
+
+def test_ip_v6_object(internet_provider):
+    ip_v6 = internet_provider.ip_v6_object()
+    assert isinstance(ip_v6, IPv6Address), "The object must be an instance of IPv6Address"

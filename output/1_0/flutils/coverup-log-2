@@ -1,0 +1,67 @@
+---- 2024-02-28T21:14:38 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./flutils --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json flutils/strutils.py
+---- 2024-02-28T21:14:40 flutils/strutils.py:47-72 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/strutils.py, module flutils.strutils, does not achieve full coverage:
+when tested, lines 68-72 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def as_escaped_utf8_literal(
+                    text: str,
+            ) -> str:
+                """Convert the given ``text`` into a string of escaped UTF8 hexadecimal.
+            
+                Args:
+                     text (:obj:`str`): The string to convert.
+            
+                :rtype:
+                    :obj:`str`
+            
+                        A string with each character of the given ``text`` converted
+                        into an escaped UTF8 hexadecimal.
+            
+                Example:
+                    >>> from flutils.strutils import as_literal_utf8
+                    >>> t = '1.★ 🛑'
+                    >>> as_escaped_utf8_literal(t)
+                    '\\\\x31\\\\x2e\\\\xe2\\\\x98\\\\x85\\\\x20\\\\xf0\\\\x9f\\\\x9b
+                    \\\\x91'
+                """
+        68:     out = ''
+        69:     text_bytes = text.encode('utf8')
+        70:     for c in text_bytes:
+        71:         out += '\\%s' % hex(c)[1:]
+        72:     return out
+
+```
+
+---- 2024-02-28T21:14:49 flutils/strutils.py:47-72 ----
+```python
+import pytest
+from flutils.strutils import as_escaped_utf8_literal
+
+def test_as_escaped_utf8_literal_non_ascii():
+    # Test with non-ASCII characters to ensure lines 68-72 are covered
+    text = '1.★ 🛑'
+    expected = '\\x31\\x2e\\xe2\\x98\\x85\\x20\\xf0\\x9f\\x9b\\x91'
+    result = as_escaped_utf8_literal(text)
+    assert result == expected, "The escaped UTF8 hexadecimal representation does not match the expected result."
+```
+---- 2024-02-28T21:14:49 flutils/strutils.py:47-72 ----
+total usage: {'prompt_tokens': 422, 'completion_tokens': 128}
+---- 2024-02-28T21:14:50 flutils/strutils.py:47-72 ----
+.                                                                        [100%]
+
+---- 2024-02-28T21:14:50 flutils/strutils.py:47-72 ----
+Saved as coverup-tests/test_coverup_6.py
+
