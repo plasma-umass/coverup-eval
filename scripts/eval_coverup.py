@@ -6,6 +6,7 @@ import os
 
 test_apps = Path("codamosa/replication/test-apps")
 pip_cache = Path("pip-cache")  # set to None to disable
+eval_path = Path(__file__).parent.parent
 
 def parse_args():
     import argparse
@@ -63,7 +64,7 @@ for d in pkg:
     config = args.config if args.config else 'default'
 
     cmd = f"docker run --rm " +\
-           "-v .:/eval:ro " +\
+          f"-v {str(eval_path.absolute())}:/eval:ro " +\
           f"-v {str(output.absolute())}:/output " +\
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
            "-v ./pip-cache:/root/.cache/pip " +\
