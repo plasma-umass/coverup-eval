@@ -28,6 +28,10 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help=f'start interactive docker (rather than run CoverUp)')
 
+    ap.add_argument('--pip-cache', default=True,
+                    action=argparse.BooleanOptionalAction,
+                    help=f'whether to pass in the pip cache')
+
     return ap.parse_args()
 
 args = parse_args()
@@ -67,7 +71,7 @@ for d in pkg:
           f"-v {str(eval_path.absolute())}:/eval:ro " +\
           f"-v {str(output.absolute())}:/output " +\
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
-           "-v ./pip-cache:/root/.cache/pip " +\
+          (f"-v {str((eval_path / 'pip-cache').absolute())}:/root/.cache/pip " if args.pip_cache else "") +\
           ("-ti " if args.interactive else "-t ") +\
            "coverup-runner bash " +\
           (f"/eval/scripts/run_coverup.sh {config} {src} {package} {' '.join(files)}" if not args.interactive else "")
