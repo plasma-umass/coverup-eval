@@ -21,19 +21,13 @@ def parse_args():
     ap.add_argument('--modules', choices=['good', '1_0'], default='good',
                     help='set of modules to process')
 
-    ap.add_argument('--variant', type=str, help='specify an execution variant')
-
-    ap.add_argument('--ablate', default=False, action='store_true')
+    ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
     ap.add_argument('-i', '--interactive', default=False,
                     action=argparse.BooleanOptionalAction,
                     help=f'start interactive docker (rather than run CoverUp)')
 
-    args = ap.parse_args()
-    if args.ablate and not args.variant:
-        args.variant = 'ablated'
-
-    return args
+    return ap.parse_args()
 
 args = parse_args()
 
@@ -58,7 +52,7 @@ for d in pkg:
 
     files = [str(src / (m.replace('.','/') + ".py")) for m in pkg[d]]
 
-    output = Path("output") / (args.modules + (f".{args.variant}" if args.variant else "")) / package
+    output = Path("output") / (args.modules + (f".{args.config}" if args.config else "")) / package
 
     if (output / "final.json").exists() and not (args.dry_run or args.interactive):
         continue
@@ -66,17 +60,16 @@ for d in pkg:
     if not args.dry_run:
         output.mkdir(parents=True, exist_ok=True)
 
-    options="--ablate" if args.ablate else ""
+    config = args.config if args.config else 'default'
 
     cmd = f"docker run --rm " +\
-          f"-e OPENAI_API_KEY=\"{os.environ['OPENAI_API_KEY']}\" " +\
            "-v .:/eval:ro " +\
           f"-v {str(output.absolute())}:/output " +\
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
            "-v ./pip-cache:/root/.cache/pip " +\
           ("-ti " if args.interactive else "-t ") +\
            "coverup-runner bash " +\
-          (f"/eval/scripts/run_coverup.sh {src} {package} \"{options}\" {' '.join(files)}" if not args.interactive else "")
+          (f"/eval/scripts/run_coverup.sh {config} {src} {package} {' '.join(files)}" if not args.interactive else "")
 
     print(cmd)
     if not args.dry_run:

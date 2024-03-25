@@ -19,7 +19,7 @@ def count_tokens(text: str, model = MODEL):
 total_time = 0
 total_serial_time = 0
 total_tokens = 0
-for file in sorted((Path('output') / (args.modules + (f".{args.variant}" if args.variant else ""))).glob(args.logs)):
+for file in sorted((Path('output') / (args.modules + (f".{args.config}" if args.config else ""))).glob(args.logs)):
     if '.' in file.name: # "foobar.failed" and such
         continue
 

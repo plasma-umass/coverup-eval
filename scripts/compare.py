@@ -15,7 +15,7 @@ def parse_args():
     ap.add_argument('--modules', choices=['good', '1_0'], default='good',
                     help='set of modules to compare')
 
-    ap.add_argument('--variant', type=str, help='specify an execution variant')
+    ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
     ap.add_argument('--codamosa-results', choices=['gpt4', 'codex'], default='gpt4',
                     help='codamosa results to use')
@@ -34,7 +34,7 @@ def parse_args():
 args = parse_args()
 
 modules_csv = replication / "test-apps" / f"{args.modules}_modules.csv"
-coverup_output = coverup_output / (args.modules + (f".{args.variant}" if args.variant else ""))
+coverup_output = coverup_output / (args.modules + (f".{args.config}" if args.config else ""))
 codamosa_output = replication / f"output-{args.codamosa_results}"
 
 modules_list = []

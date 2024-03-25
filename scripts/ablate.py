@@ -25,7 +25,7 @@ for d in Path("output/good").glob("*"):
     print(cmd)
     subprocess.run(cmd, shell=True, check=True)
 
-    cmd = f"python3 scripts/eval_coverup.py --ablate {pkg2dir[d.name]}"
+    cmd = f"python3 scripts/eval_coverup.py --config ablate {pkg2dir[d.name]}"
     print(cmd)
     subprocess.run(cmd, shell=True, check=True)
 #    break

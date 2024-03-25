@@ -15,7 +15,7 @@ def parse_args():
     ap.add_argument('--modules', choices=['good', '1_0'], default='good',
                     help='set of modules to compare')
 
-    ap.add_argument('--variant', type=str, help='specify an execution variant')
+    ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
     ap.add_argument('--plot', default=True,
                     action=argparse.BooleanOptionalAction,
@@ -30,7 +30,7 @@ args = parse_args()
 
 modules_csv = replication / "test-apps" / f"{args.modules}_modules.csv"
 coverup_orig_output = coverup_output / args.modules 
-coverup_output = coverup_output / (args.modules + (f".{args.variant}" if args.variant else ""))
+coverup_output = coverup_output / (args.modules + (f".{args.config}" if args.config else ""))
 
 modules_list = []
 with modules_csv.open() as f:
@@ -69,7 +69,7 @@ for m in modules_list:
     for run in range(1, RUNS+1):
         coverup[m['name']].append(get_summ(coverup_output, m, run)['percent_covered'])
 
-        if args.variant:
+        if args.config:
             coverup_orig[m['name']].append(get_summ(coverup_orig_output, m, run)['percent_covered'])
 
 for m in sorted(coverup.keys()):
@@ -82,7 +82,7 @@ print('')
 print('median: ', [round(median(coverup[m][r] for m in coverup), 2) for r in range(1,RUNS+1)])
 print('mean:   ', [round(mean(coverup[m][r] for m in coverup), 2) for r in range(1,RUNS+1)])
 
-if args.variant:
+if args.config:
     print('')
     print('original:')
     print('median: ', [round(median(coverup_orig[m][r] for m in coverup_orig), 2) for r in range(1,RUNS+1)])
