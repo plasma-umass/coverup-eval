@@ -32,7 +32,12 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help=f'whether to pass in the pip cache')
 
-    return ap.parse_args()
+    args = ap.parse_args()
+
+    if args.interactive and not args.module:
+        ap.error("module is required when using --interactive.")
+
+    return args
 
 args = parse_args()
 
