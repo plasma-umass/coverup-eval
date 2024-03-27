@@ -51,34 +51,27 @@ with modules_csv.open() as f:
         })
 
 by_module = defaultdict(dict)
-coverup_totals = defaultdict(int)
-codamosa_totals = defaultdict(int)
-def add_to_totals(totals, module, summ):
-    totals['count'] += 1
-    line_keys = ['covered_lines', 'missing_lines']
-    branch_keys = ['covered_branches', 'missing_branches']
-    for k in line_keys + branch_keys:
-        totals[k] += summ[k]
-
+def add_to_totals(module, summ):
     lines = summ['covered_lines'] + summ['missing_lines']
     branches = summ['covered_branches'] + summ['missing_branches']
 
-    if module in by_module:
-        if by_module[module]['lines'] != lines:
-            print(f"*** lines differ for {module}: {by_module[module]['lines']} vs {lines}")
-        if by_module[module]['branches'] != branches:
-            print(f"*** branches differ for {module}: {by_module[module]['branches']} vs {branches}")
+#    if module in by_module:
+#        if by_module[module]['lines'] != lines:
+#            print(f"*** lines differ for {module}: {by_module[module]['lines']} vs {lines}")
+#        if by_module[module]['branches'] != branches:
+#            print(f"*** branches differ for {module}: {by_module[module]['branches']} vs {branches}")
 
     by_module[module]['lines'] = lines
     by_module[module]['branches'] = branches
 
-
 codamosa = defaultdict(list)
 coverup = dict()
-codamosa_metrics = defaultdict(lambda: {'lines': [], 'branches': [], 'lines+branches': []})
-coverup_metrics = defaultdict(dict)
 
-def cover_pct(summ, cov_types, context):
+# list of per-file summaries
+codamosa_data = defaultdict(list)
+coverup_data = defaultdict(list)
+
+def cover_pct(summ, cov_types, context=None):
     nom = sum(summ[f"covered_{c}"] for c in cov_types)
     den = nom + sum(summ[f"missing_{c}"] for c in cov_types)
     return 100*nom/den if den > 0 else None
@@ -86,9 +79,6 @@ def cover_pct(summ, cov_types, context):
 if args.modules == '1_0':
     for m in modules_list:
         codamosa[m['name']] = [100.0]
-        codamosa_metrics[m['name']]['lines'] = [100.0]
-        codamosa_metrics[m['name']]['branches'] = [100.0]
-        codamosa_metrics[m['name']]['lines+branches'] = [100.0]
 
 else:
     assert args.modules == 'good'
@@ -108,14 +98,9 @@ else:
         if file in cov['files']:
             summ = cov['files'][file]['summary']
             codamosa[module].append(summ['percent_covered'])
-            add_to_totals(codamosa_totals, module, summ)
+            add_to_totals(module, summ)
 
-            pct = cover_pct(summ, ['lines'], f.name)
-            if pct is not None: codamosa_metrics[module]['lines'].append(pct)
-            pct = cover_pct(summ, ['branches'], f.name)
-            if pct is not None: codamosa_metrics[module]['branches'].append(pct)
-            pct = cover_pct(summ, ['lines','branches'], f.name)
-            if pct is not None: codamosa_metrics[module]['lines+branches'].append(pct)
+            codamosa_data[module].append(summ)
 
 
 for m in modules_list:
@@ -142,25 +127,14 @@ for m in modules_list:
     if file in cov['files']:
         summ = cov['files'][file]['summary']
         coverup[m_name] = summ['percent_covered']
-        add_to_totals(coverup_totals, m_name, summ)
+        add_to_totals(m_name, summ)
 
-        pct = cover_pct(summ, ['lines'], m_name)
-        if pct is not None: coverup_metrics[m_name]['lines'] = pct
-        pct = cover_pct(summ, ['branches'], m_name)
-        if pct is not None: coverup_metrics[m_name]['branches'] = pct
-        pct = cover_pct(summ, ['lines','branches'], m_name)
-        if pct is not None: coverup_metrics[m_name]['lines+branches'] = pct
+        coverup_data[m_name].append(summ)
 
 module_names = sorted(codamosa.keys()|coverup.keys())
 cov_codamosa = [mean(codamosa[m]) if codamosa[m] else None for m in module_names]
 cov_coverup = [coverup[m] if m in coverup else None for m in module_names]
 cov_delta = [cu - cm for cu, cm in zip(cov_coverup, cov_codamosa) if cu is not None and cm is not None]
-
-cov_codamosa_l = [mean(codamosa_metrics[m]['lines']) for m in module_names if codamosa_metrics[m]['lines']]
-cov_codamosa_b = [mean(codamosa_metrics[m]['branches']) for m in module_names if codamosa_metrics[m]['branches']]
-cov_coverup_l = [coverup_metrics[m]['lines'] for m in module_names if 'lines' in coverup_metrics[m]]
-cov_coverup_b = [coverup_metrics[m]['branches'] for m in module_names if 'branches' in coverup_metrics[m]]
-
 
 if args.plot or args.histogram:
     import matplotlib.pyplot as plt
@@ -244,46 +218,35 @@ else:
 
     print(tabulate(table(), headers=headers))
 
-    def pct_cover(source, counters):
-        nom = sum(source[f"covered_{c}"] for c in counters)
-        den = nom + sum(source[f"missing_{c}"] for c in counters)
-        return (f"{100*nom/den:.1f}%  " if den>0 else "") +\
-               f"({nom}/{den})"
+    sets = [
+        ['coverup', coverup_data],
+        [f'codamosa ({args.codamosa_results})', codamosa_data]
+    ]
 
-    cov_coverup = [c for c in cov_coverup if c is not None]
-    cov_codamosa = [c for c in cov_codamosa if c is not None]
+    for name, dataset in sets:
+        print("")
+        for metrics in [['lines'], ['branches'], ['lines','branches']]:
+            label = '+'.join(metrics)
+            short_label = '+'.join(m[0] for m in metrics)
 
-    print("")
-    print(f"coverup l:             {len(cov_coverup_l):3} benchmarks, {mean(cov_coverup_l):.1f}% mean, " +\
-          f"{median(cov_coverup_l):.1f}% median, {min(cov_coverup_l):.1f}% min, {max(cov_coverup_l):.1f}% max, " +\
-          f"{sum(c==100 for c in cov_coverup_l)} @ 100%")
-    print(f"coverup b:             {len(cov_coverup_b):3} benchmarks, {mean(cov_coverup_l):.1f}% mean, " +\
-          f"{median(cov_coverup_b):.1f}% median, {min(cov_coverup_l):.1f}% min, {max(cov_coverup_l):.1f}% max, " +\
-          f"{sum(c==100 for c in cov_coverup_b)} @ 100%")
-    print(f"coverup l+b:           {len(cov_coverup):3} benchmarks, {mean(cov_coverup):.1f}% mean, " +\
-          f"{median(cov_coverup):.1f}% median, {min(cov_coverup):.1f}% min, {max(cov_coverup):.1f}% max, " +\
-          f"{sum(c==100 for c in cov_coverup)} @ 100%")
-    print(f"   overall line cov.:     {pct_cover(coverup_totals, ['lines'])}")
-    print(f"   overall branch cov.:   {pct_cover(coverup_totals, ['branches'])}")
-    print(f"   overall l+b cov.:      {pct_cover(coverup_totals, ['lines','branches'])}")
+            def mean_of(values):
+                clean = [v for v in values if v is not None]
+                return mean(clean) if clean else None
 
-    print("")
-    codamosa_hdr = f"codamosa ({args.codamosa_results}) l:"
-    print(f"{codamosa_hdr:22} {len(cov_codamosa_l):3} benchmarks, {mean(cov_codamosa_l):.1f}% mean, " +\
-          f"{median(cov_codamosa_l):.1f}% median, {min(cov_codamosa_l):.1f}% min, {max(cov_codamosa_l):.1f}% max, " +\
-          f"{sum(c==100 for c in cov_codamosa_l)} @ 100%")
-    codamosa_hdr = f"codamosa ({args.codamosa_results}) b:"
-    print(f"{codamosa_hdr:22} {len(cov_codamosa_b):3} benchmarks, {mean(cov_codamosa_b):.1f}% mean, " +\
-          f"{median(cov_codamosa_b):.1f}% median, {min(cov_codamosa_b):.1f}% min, {max(cov_codamosa_b):.1f}% max, " +\
-          f"{sum(c==100 for c in cov_codamosa_b)} @ 100%")
-    codamosa_hdr = f"codamosa ({args.codamosa_results}) l+b:"
-    print(f"{codamosa_hdr:22} {len(cov_codamosa):3} benchmarks, {mean(cov_codamosa):.1f}% mean, " +\
-          f"{median(cov_codamosa):.1f}% median, {min(cov_codamosa):.1f}% min, {max(cov_codamosa):.1f}% max, " +\
-          f"{sum(c==100 for c in cov_codamosa)} @ 100%")
-    if codamosa_totals:
-        print(f"   overall line cov.:     {pct_cover(codamosa_totals, ['lines'])}")
-        print(f"   overall branch cov.:   {pct_cover(codamosa_totals, ['branches'])}")
-        print(f"   overall l+b cov.:      {pct_cover(codamosa_totals, ['lines','branches'])}")
+            data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in dataset]
+            data = [d for d in data if d is not None]
+
+            print(f"{name + ' ' + short_label + ':':22} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
+                  f"{median(data):.1f}% median, {min(data):.1f}% min, {max(data):.1f}% max, " +\
+                  f"{sum(c==100 for c in data)} @ 100%")
+
+        for metrics in [['lines'], ['branches'], ['lines','branches']]:
+            short_label = '+'.join(m[0] for m in metrics)
+            covered = sum(sample[f'covered_{metric}'] for metric in metrics for m in dataset for sample in dataset[m])
+            total = covered + sum(sample[f'missing_{metric}'] for metric in metrics for m in dataset for sample in dataset[m])
+
+            pct = f"{100*covered/total:.1f}%  " if total>0 else ""
+            print(f"   overall {short_label+':':6} {pct}({covered}/{total})")
 
     better_count = sum([v > 0 for v in cov_delta])
     worse_count = sum([v < 0 for v in cov_delta])
