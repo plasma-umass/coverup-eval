@@ -5,8 +5,8 @@ import re
 import csv
 from statistics import mean, median
 
-replication = Path("codamosa") / "replication"  # 'codamosa' links to its replication package
 coverup_output = Path("output")
+replication = Path("codamosa") / "replication"
 
 def parse_args():
     import argparse
@@ -33,41 +33,64 @@ def parse_args():
 
 args = parse_args()
 
-modules_csv = replication / "test-apps" / f"{args.modules}_modules.csv"
-coverup_output = coverup_output / (args.modules + (f".{args.config}" if args.config else ""))
-codamosa_output = replication / f"output-{args.codamosa_results}"
+def load_modules_list(modules_csv: Path):
+    modules_list = []
+    with modules_csv.open() as f:
+        reader = csv.reader(f)
+        for d, m in reader:
+            dp = Path(d)
+            assert dp.parts[0] == 'test-apps'
 
-modules_list = []
-with modules_csv.open() as f:
-    reader = csv.reader(f)
-    for d, m in reader:
-        dp = Path(d)
-        assert dp.parts[0] == 'test-apps'
+            modules_list.append({
+                'name': m,
+                'base_module': m.split('.')[0],
+                'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
+            })
 
-        modules_list.append({
-            'name': m,
-            'base_module': m.split('.')[0],
-            'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
-        })
+    return modules_list
 
-codamosa = defaultdict(list)
-coverup = dict()
 
-# list of per-file summaries
-codamosa_data = defaultdict(list)
-coverup_data = defaultdict(list)
+def load_coverup(modules_list, config = None):
+    # per-module dictonary -> list of [coverage 'summary']
+    data = defaultdict(list)
 
-def cover_pct(summ, cov_types):
-    nom = sum(summ[f"covered_{c}"] for c in cov_types)
-    den = nom + sum(summ[f"missing_{c}"] for c in cov_types)
-    return 100*nom/den if den > 0 else None
-
-if args.modules == '1_0':
     for m in modules_list:
-        codamosa[m['name']] = [100.0]
+        m_name = m['name']
+        base_module = m['base_module']
 
-else:
+        m_out_dir = coverup_output / (args.modules + (f".{config}" if config else "")) / base_module
+
+        cov_file = m_out_dir / "final.json"
+        if cov_file.exists():
+            with cov_file.open() as jsonf:
+                cov = json.load(jsonf)
+        else:
+            cov = None
+            ckpt_files = sorted((m_out_dir / base_module).glob("coverup-ckpt-*.json"))
+            if ckpt_files:
+                with ckpt_files[-1].open() as jsonf:
+                    ckpt = json.load(jsonf)
+                cov = ckpt.get('final_coverage')
+
+            if not cov:
+                continue
+
+            print(f"Note: using {ckpt_files[-1]} for {m_name}")
+
+        file = m['source_dir'] + m_name.replace('.','/') + ".py"
+        assert file in cov['files']
+        if file in cov['files']:
+            data[m_name].append(cov['files'][file]['summary'])
+
+    return data
+
+
+def load_codamosa(codamosa_output):
     assert args.modules == 'good'
+
+    # list of per-file summaries
+    data = defaultdict(list)
+
     for f in codamosa_output.iterdir():
         m = re.match('(.*?)-\d+', f.name)
         module = m.group(1)
@@ -82,42 +105,44 @@ else:
 
         assert file in cov['files']
         if file in cov['files']:
-            summ = cov['files'][file]['summary']
-            codamosa[module].append(summ['percent_covered'])
+            data[module].append(cov['files'][file]['summary'])
 
-            codamosa_data[module].append(summ)
+    return data
 
 
-for m in modules_list:
-    m_name = m['name']
-    base_module = m['base_module']
+modules_list = load_modules_list(replication / "test-apps" / f"{args.modules}_modules.csv")
+coverup_data = load_coverup(modules_list, args.config)
 
-    cov_file = coverup_output / base_module / "final.json"
-    if cov_file.exists():
-        with cov_file.open() as jsonf:
-            cov = json.load(jsonf)
-    else:
-        cov = None
-        ckpt_files = sorted((coverup_output / base_module).glob("coverup-ckpt-*.json"))
-        if ckpt_files:
-            with ckpt_files[-1].open() as jsonf:
-                ckpt = json.load(jsonf)
-            cov = ckpt.get('final_coverage')
+codamosa_data = load_codamosa(replication / f"output-{args.codamosa_results}")
 
-        if not cov:
-            continue
 
-    file = m['source_dir'] + m_name.replace('.','/') + ".py"
-    assert file in cov['files']
-    if file in cov['files']:
-        summ = cov['files'][file]['summary']
-        coverup[m_name] = summ['percent_covered']
+def cover_pct(summ, cov_types):
+    """Computes the percentage of coverage.
 
-        coverup_data[m_name].append(summ)
+       summ: JSON "summary" from coverage measurement
+       cov_types: either ['lines'], ['branches'] or ['lines','branches']
+       return: percentage, or None if the denominator is 0.
+    """
+    nom = sum(summ[f"covered_{c}"] for c in cov_types)
+    den = nom + sum(summ[f"missing_{c}"] for c in cov_types)
+    return 100*nom/den if den > 0 else None
 
-module_names = sorted(codamosa.keys()|coverup.keys())
-cov_codamosa = [mean(codamosa[m]) if codamosa[m] else None for m in module_names]
-cov_coverup = [coverup[m] if m in coverup else None for m in module_names]
+
+def mean_of(values):
+    """Returns the mean of a list of values, ignoring any that are None.
+       Returns None if there are no values to take the mean of.
+
+       This is useful because some statistics may not be possible, such
+       such as branch coverage when a module has no branches
+    """
+    clean = [v for v in values if v is not None]
+    return mean(clean) if clean else None
+
+
+module_names = sorted(codamosa_data.keys()|coverup_data.keys())
+cov_codamosa = [mean_of(cover_pct(sample, ['lines','branches']) for sample in codamosa_data[m]) for m in module_names]
+cov_coverup = [mean_of(cover_pct(sample, ['lines','branches']) for sample in coverup_data[m]) for m in module_names]
+
 cov_delta = [cu - cm for cu, cm in zip(cov_coverup, cov_codamosa) if cu is not None and cm is not None]
 
 
@@ -207,7 +232,7 @@ else:
                 else:
                     cu = red(f"{cu:5.2f}")
 
-            yield m, module_info[m]['lines'], module_info[m]['branches'], cu, cm, len(codamosa[m])
+            yield m, module_info[m]['lines'], module_info[m]['branches'], cu, cm, len(codamosa_data[m])
 
     print(tabulate(table(), headers=headers))
 
@@ -221,12 +246,6 @@ else:
         for metrics in [['lines'], ['branches'], ['lines','branches']]:
             label = '+'.join(metrics)
             short_label = '+'.join(m[0] for m in metrics)
-
-            # some statistics may not be possible -- such as branch coverage
-            # when a module has no branches; those yield 'None'
-            def mean_of(values):
-                clean = [v for v in values if v is not None]
-                return mean(clean) if clean else None
 
             data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in dataset]
             data = [d for d in data if d is not None]
