@@ -56,9 +56,7 @@ def load_coverup(modules_list, config = None):
 
     for m in modules_list:
         m_name = m['name']
-        base_module = m['base_module']
-
-        m_out_dir = coverup_output / (args.modules + (f".{config}" if config else "")) / base_module
+        m_out_dir = coverup_output / (args.modules + (f".{config}" if config else "")) / m['base_module']
 
         cov_file = m_out_dir / "final.json"
         if cov_file.exists():
@@ -66,7 +64,7 @@ def load_coverup(modules_list, config = None):
                 cov = json.load(jsonf)
         else:
             cov = None
-            ckpt_files = sorted((m_out_dir / base_module).glob("coverup-ckpt-*.json"))
+            ckpt_files = sorted(m_out_dir.glob("coverup-ckpt-*.json"))
             if ckpt_files:
                 with ckpt_files[-1].open() as jsonf:
                     ckpt = json.load(jsonf)
