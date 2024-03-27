@@ -12,8 +12,8 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--modules', choices=['good', '1_0'], default='good',
-                    help='set of modules to compare')
+    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+                    help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
@@ -56,7 +56,7 @@ def load_coverup(modules_list, config = None):
 
     for m in modules_list:
         m_name = m['name']
-        m_out_dir = coverup_output / (args.modules + (f".{config}" if config else "")) / m['base_module']
+        m_out_dir = coverup_output / (args.suite + (f".{config}" if config else "")) / m['base_module']
 
         cov_file = m_out_dir / "final.json"
         if cov_file.exists():
@@ -84,7 +84,7 @@ def load_coverup(modules_list, config = None):
 
 
 def load_codamosa(codamosa_output):
-    assert args.modules == 'good'
+    assert args.suite == 'good'
 
     # list of per-file summaries
     data = defaultdict(list)
@@ -108,10 +108,23 @@ def load_codamosa(codamosa_output):
     return data
 
 
-modules_list = load_modules_list(replication / "test-apps" / f"{args.modules}_modules.csv")
+modules_list = load_modules_list(replication / "test-apps" / f"{args.suite}_modules.csv")
 coverup_data = load_coverup(modules_list, args.config)
 
-codamosa_data = load_codamosa(replication / f"output-{args.codamosa_results}")
+if args.suite == '1_0':
+    # fake 100% coverage
+    codamosa_data = defaultdict(list)
+    for m in coverup_data:
+        summ = coverup_data[m][0]
+        codamosa_data[m].append({
+            'covered_lines': summ['covered_lines'] + summ['missing_lines'],
+            'covered_branches': summ['covered_branches'] + summ['missing_branches'],
+            'missing_lines': 0,
+            'missing_branches': 0
+        })
+
+else:
+    codamosa_data = load_codamosa(replication / f"output-{args.codamosa_results}")
 
 
 def cover_pct(summ, cov_types):
@@ -234,10 +247,10 @@ else:
 
     print(tabulate(table(), headers=headers))
 
-    sets = [
-        ['coverup', coverup_data],
-        [f'codamosa ({args.codamosa_results})', codamosa_data]
-    ]
+    sets = [['coverup', coverup_data]]
+
+    if args.suite != '1_0':
+        sets.append([f'codamosa ({args.codamosa_results})', codamosa_data])
 
     for name, dataset in sets:
         print("")
