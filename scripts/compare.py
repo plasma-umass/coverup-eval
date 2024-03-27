@@ -50,20 +50,6 @@ with modules_csv.open() as f:
             'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
         })
 
-by_module = defaultdict(dict)
-def add_to_totals(module, summ):
-    lines = summ['covered_lines'] + summ['missing_lines']
-    branches = summ['covered_branches'] + summ['missing_branches']
-
-#    if module in by_module:
-#        if by_module[module]['lines'] != lines:
-#            print(f"*** lines differ for {module}: {by_module[module]['lines']} vs {lines}")
-#        if by_module[module]['branches'] != branches:
-#            print(f"*** branches differ for {module}: {by_module[module]['branches']} vs {branches}")
-
-    by_module[module]['lines'] = lines
-    by_module[module]['branches'] = branches
-
 codamosa = defaultdict(list)
 coverup = dict()
 
@@ -71,7 +57,7 @@ coverup = dict()
 codamosa_data = defaultdict(list)
 coverup_data = defaultdict(list)
 
-def cover_pct(summ, cov_types, context=None):
+def cover_pct(summ, cov_types):
     nom = sum(summ[f"covered_{c}"] for c in cov_types)
     den = nom + sum(summ[f"missing_{c}"] for c in cov_types)
     return 100*nom/den if den > 0 else None
@@ -98,7 +84,6 @@ else:
         if file in cov['files']:
             summ = cov['files'][file]['summary']
             codamosa[module].append(summ['percent_covered'])
-            add_to_totals(module, summ)
 
             codamosa_data[module].append(summ)
 
@@ -127,7 +112,6 @@ for m in modules_list:
     if file in cov['files']:
         summ = cov['files'][file]['summary']
         coverup[m_name] = summ['percent_covered']
-        add_to_totals(m_name, summ)
 
         coverup_data[m_name].append(summ)
 
@@ -135,6 +119,15 @@ module_names = sorted(codamosa.keys()|coverup.keys())
 cov_codamosa = [mean(codamosa[m]) if codamosa[m] else None for m in module_names]
 cov_coverup = [coverup[m] if m in coverup else None for m in module_names]
 cov_delta = [cu - cm for cu, cm in zip(cov_coverup, cov_codamosa) if cu is not None and cm is not None]
+
+
+# compute lines and branches for each module, for easy access
+module_info = defaultdict(dict)
+for module in coverup_data:
+    summ = coverup_data[module][0]
+    module_info[module]['lines'] = summ['covered_lines'] + summ['missing_lines']
+    module_info[module]['branches'] = summ['covered_branches'] + summ['missing_branches']
+
 
 if args.plot or args.histogram:
     import matplotlib.pyplot as plt
@@ -173,12 +166,12 @@ if args.plot or args.histogram:
         elif args.histogram == 'lines':
             ax.set_title('Lines per Module Histogram', size=20)
             ax.set_xlabel('# Lines in Module', size=18)
-            ax.hist([by_module[m]['lines'] for m in module_names], bins=100)
+            ax.hist([module_info[m]['lines'] for m in module_names], bins=100)
 
         elif args.histogram == 'lines+branches':
             ax.set_title('Lines+Branches per Module Histogram', size=20)
             ax.set_xlabel('# Lines + # Branches in Module', size=18)
-            ax.hist([by_module[m]['lines']+by_module[m]['branches'] for m in module_names], bins=100)
+            ax.hist([module_info[m]['lines']+module_info[m]['branches'] for m in module_names], bins=100)
 
         fig.savefig('histogram.pdf')
     else:
@@ -214,7 +207,7 @@ else:
                 else:
                     cu = red(f"{cu:5.2f}")
 
-            yield m, by_module[m]['lines'], by_module[m]['branches'], cu, cm, len(codamosa[m])
+            yield m, module_info[m]['lines'], module_info[m]['branches'], cu, cm, len(codamosa[m])
 
     print(tabulate(table(), headers=headers))
 
@@ -229,6 +222,8 @@ else:
             label = '+'.join(metrics)
             short_label = '+'.join(m[0] for m in metrics)
 
+            # some statistics may not be possible -- such as branch coverage
+            # when a module has no branches; those yield 'None'
             def mean_of(values):
                 clean = [v for v in values if v is not None]
                 return mean(clean) if clean else None
