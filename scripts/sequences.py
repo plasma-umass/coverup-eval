@@ -6,8 +6,8 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--modules', choices=['good', '1_0'], default='good',
-                    help='set of modules to compare')
+    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+                    help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     seq_count = defaultdict(int)
-    for file in (Path('output') / (args.modules + (f".{args.config}" if args.config else ""))).glob(args.logs):
+    for file in (Path('output') / (args.suite + (f".{args.config}" if args.config else ""))).glob(args.logs):
         if '.' in file.name: # "foobar.failed" and such
             continue
 

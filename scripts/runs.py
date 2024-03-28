@@ -12,8 +12,8 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--modules', choices=['good', '1_0'], default='good',
-                    help='set of modules to compare')
+    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+                    help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
@@ -28,9 +28,9 @@ def parse_args():
 
 args = parse_args()
 
-modules_csv = replication / "test-apps" / f"{args.modules}_modules.csv"
-coverup_orig_output = coverup_output / args.modules 
-coverup_output = coverup_output / (args.modules + (f".{args.config}" if args.config else ""))
+modules_csv = replication / "test-apps" / f"{args.suite}_modules.csv"
+coverup_orig_output = coverup_output / args.suite
+coverup_output = coverup_output / (args.suite + (f".{args.config}" if args.config else ""))
 
 modules_list = []
 with modules_csv.open() as f:

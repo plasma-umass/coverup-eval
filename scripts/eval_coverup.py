@@ -19,8 +19,8 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help=f'only print out the command(s), but don\'t execute them')
 
-    ap.add_argument('--modules', choices=['good', '1_0'], default='good',
-                    help='set of modules to process')
+    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+                    help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
@@ -41,7 +41,7 @@ def parse_args():
 
 args = parse_args()
 
-modules_csv = test_apps / f"{args.modules}_modules.csv"
+modules_csv = test_apps / f"{args.suite}_modules.csv"
 
 pkg = defaultdict(list)
 
@@ -62,7 +62,7 @@ for d in pkg:
 
     files = [str(src / (m.replace('.','/') + ".py")) for m in pkg[d]]
 
-    output = Path("output") / (args.modules + (f".{args.config}" if args.config else "")) / package
+    output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
 
     if (output / "final.json").exists() and not (args.dry_run or args.interactive):
         continue
