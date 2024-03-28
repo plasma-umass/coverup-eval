@@ -4,6 +4,7 @@ import json
 import re
 import csv
 from statistics import mean, median
+import sys
 
 coverup_output = Path("output")
 replication = Path("codamosa") / "replication"
@@ -63,6 +64,10 @@ def load_coverup(suite, config = None):
 
     config_output_dir = coverup_output / (suite['name'] + (f".{config}" if config else ""))
 
+    if not config_output_dir.exists():
+        print(f"Cannot load data: directory {config_output_dir} missing")
+        sys.exit(1)
+
     for m in suite['modules']:
         m_name = m['name']
         m_out_dir = config_output_dir / m['base_module']
@@ -98,10 +103,16 @@ def load_coverup(suite, config = None):
 def load_codamosa(suite, coda_config):
     assert suite['name'] == 'good'
 
+    config_output_dir = replication / f"output-{coda_config}"
+
+    if not config_output_dir.exists():
+        print(f"Cannot load data: directory {config_output_dir} missing")
+        sys.exit(1)
+
     # list of per-file summaries
     data = defaultdict(list)
 
-    for f in (replication / f"output-{coda_config}").iterdir():
+    for f in config_output_dir.iterdir():
         m = re.match('(.*?)-\d+', f.name)
         module = m.group(1)
         file = module.replace('.','/') + ".py"
