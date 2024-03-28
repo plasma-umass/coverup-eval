@@ -2,7 +2,7 @@
 # "default" configuration
 PYTEST_ARGS=""
 SLIPCOVER_ARGS=""
-COVERUP_ARGS="--model gpt-4-1106-preview"
+COVERUP_ARGS="--model gpt-4-1106-preview --failing-test-action disable"
 
 REPEAT=false
 if $REPEAT; then
