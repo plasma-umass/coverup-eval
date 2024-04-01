@@ -5,6 +5,13 @@ SRC=$1; shift
 PKG=$1; shift
 FILES=$@
 
+OWNER=`stat -c %u /output`:`stat -c %g /output`
+
+run() {
+    echo $1
+    eval $1 || exit 1
+}
+
 # load/run base settings (such as OpenAI key)
 if [ -e /eval/config/common.sh ]; then
     source /eval/config/common.sh
@@ -14,13 +21,6 @@ fi
 if [ -e /eval/config/$CONFIG.sh ]; then
     source /eval/config/$CONFIG.sh
 fi
-
-OWNER=`stat -c %u /output`:`stat -c %g /output`
-
-run() {
-    echo $1
-    eval $1 || exit 1
-}
 
 run "cd /output"
 
