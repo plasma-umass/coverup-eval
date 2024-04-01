@@ -65,6 +65,7 @@ for d in pkg:
     output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
 
     if (output / "final.json").exists() and not (args.dry_run or args.interactive):
+        if args.module: print(f"{str(output/'final.json')} exists, skipping.")
         continue
 
     if not args.dry_run:
