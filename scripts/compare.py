@@ -324,5 +324,5 @@ if __name__ == "__main__":
         worse_count = sum([v < 0 for v in cov_delta])
 
         print('')
-        print(f"improvement: +{better_count} ({100*better_count/len(cov_delta):.1f}%)/" +\
-                           f"-{worse_count}/{len(cov_delta):3} benchmarks")
+        print(f"{datasets[0]['name']} did better on {better_count} ({100*better_count/len(cov_delta):.1f}%) " +\
+                           f"and worse on {worse_count} benchmarks out of {len(cov_delta)}.")
