@@ -23,10 +23,10 @@
     docker load <docker/coverup-runner.tar
 ```
 
-- add any keys
+- add any keys to `config/common.sh` or `your-new-model.sh` below; `config/common.sh` is always included, and is in `.gitignore` to help avoid checking it in by mistake.
 
 ```
-    vim config/common.sh    # add any keys here, or add them to your-new-model.sh below
+    vim config/common.sh
 ```
 
 - add configuration. This will be a new file; see `config/default.sh` for an example
