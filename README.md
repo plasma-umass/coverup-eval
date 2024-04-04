@@ -1,6 +1,8 @@
-Running CoverUp-Eval
+## Running CoverUp-eval
 
-- check out coverup-eval repository
+** Note: this requires a Linux system **
+
+- check out this repository
 
 ```
     git clone --recurse-submodules git@github.com:plasma-umass/coverup-eval
