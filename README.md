@@ -29,7 +29,7 @@
     vim config/common.sh    # add any keys here, or add them to your-new-model.sh below
 ```
 
-- add configuration. This will be a new file; see config/default.sh for an example
+- add configuration. This will be a new file; see `config/default.sh` for an example
 
 ```
     echo COVERUP_ARGS=\"--model your-new-model\" > config/your-new-model.sh
