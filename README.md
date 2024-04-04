@@ -1,6 +1,6 @@
 ## Running CoverUp-eval
 
-** Note: this requires a Linux system **
+<b>Note: this requires a Linux system</b>
 
 - check out this repository
 
