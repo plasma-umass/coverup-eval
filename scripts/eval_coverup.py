@@ -73,10 +73,14 @@ for d in pkg:
 
     config = args.config if args.config else 'default'
 
+    # topmost directory for sources
+    src_topdir = src.parts[0] if src.parts else package
+
     cmd = f"docker run --rm " +\
           f"-v {str(eval_path.absolute())}:/eval:ro " +\
           f"-v {str(output.absolute())}:/output " +\
           f"-v {str(pkg_top.absolute())}:/package:ro " +\
+          f"-v {str((pkg_top / src_topdir).resolve())}:/output/{src_topdir}:ro " +\
           (f"-v {str((eval_path / 'pip-cache').absolute())}:/root/.cache/pip " if args.pip_cache else "") +\
           ("-ti " if args.interactive else "-t ") +\
            "coverup-runner bash " +\

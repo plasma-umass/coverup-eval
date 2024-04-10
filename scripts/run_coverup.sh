@@ -24,11 +24,6 @@ fi
 
 run "cd /output"
 
-if ! [ -e $SRC/$PKG ]; then
-    run "mkdir -p $SRC"
-    run "ln -s `realpath /package/$SRC/$PKG` $SRC"
-fi
-
 # install CodaMOSA-computed package dependencies;
 # requirementslib has a variable named _fragment_dict and pydantic, if also installed,
 # causes load failures (saying it should be renamed to fragment_dict).
@@ -64,6 +59,6 @@ done
 
 # measure final coverage
 if ! [ -e /output/final.json ]; then
-    run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest $PYTEST_ARGS coverup-tests"
+    run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest -qq --disable-warnings $PYTEST_ARGS coverup-tests"
     run "chown -R $OWNER /output"
 fi
