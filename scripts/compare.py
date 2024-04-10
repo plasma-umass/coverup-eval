@@ -58,6 +58,15 @@ def load_suite(suite_name):
     }
 
 
+json_load_cache = dict()
+def json_load(path):
+    if path not in json_load_cache:
+        with path.open() as f:
+            json_load_cache[path] = json.load(f)
+
+    return json_load_cache[path]
+
+
 def load_coverup(suite, config = None):
     # per-module dictonary -> list of [coverage 'summary']
     data = defaultdict(list)
@@ -74,25 +83,24 @@ def load_coverup(suite, config = None):
 
         cov_file = m_out_dir / "final.json"
         if cov_file.exists():
-            with cov_file.open() as jsonf:
-                cov = json.load(jsonf)
+            cov = json_load(cov_file)
         else:
             cov = None
             ckpt_files = sorted(m_out_dir.glob("coverup-ckpt-*.json"))
             if ckpt_files:
-                with ckpt_files[-1].open() as jsonf:
-                    ckpt = json.load(jsonf)
+                if ckpt_files[-1] not in json_load_cache: print(f"Note: using {ckpt_files[-1]}")
+
+                ckpt = json_load(ckpt_files[-1])
                 cov = ckpt.get('final_coverage')
 
             if not cov:
                 continue
 
-            print(f"Note: using {ckpt_files[-1]} for {m_name}")
-
         file = m['source_dir'] + m_name.replace('.','/') + ".py"
-        assert file in cov['files']
-        if file in cov['files']:
-            data[m_name].append(cov['files'][file]['summary'])
+        if file not in cov['files']:
+            file = "/package/" + file
+        assert file in cov['files'], f"{file} missing for {m_out_dir}"
+        data[m_name].append(cov['files'][file]['summary'])
 
     return {
         "name": "CoverUp" + (f" ({config})" if config else ""),
@@ -283,13 +291,17 @@ if __name__ == "__main__":
                 if b is not None: b = round(b, 2)
 
                 if a is not None and b is not None:
-                    if a >= b:
-                        a = green(f"{a:5.2f}")
+                    v = f"{a:5.2f}"
+                    if a > b:
+                        a = green(v)
+                    elif a < b:
+                        a = red(v)
                     else:
-                        a = red(f"{a:5.2f}")
+                        a = v
 
                 yield m, module_info[m]['lines'], module_info[m]['branches'], a, b, len(datasets[1]['data'][m])
 
+        print('')
         print(tabulate(table(), headers=headers))
 
 
@@ -308,7 +320,7 @@ if __name__ == "__main__":
                 data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in dataset]
                 data = [d for d in data if d is not None]
 
-                print(f"{name + ' ' + short_label + ':':22} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
+                print(f"{name + ' ' + short_label + ':':25} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
                       f"{median(data):.1f}% median, {min(data):.1f}% min, {max(data):.1f}% max, " +\
                       f"{sum(c==100 for c in data)} @ 100%")
 
