@@ -52,7 +52,7 @@ for RUN in 1 2 3; do
     if ! [ -e coverup-ckpt-$RUN.json ]; then
         # run CoverUp on it
         run "coverup $COVERUP_ARGS --log-file coverup-log-$RUN --checkpoint coverup-ckpt.json $FILES"
-        run "chown -R $OWNER /output"
+        run "chown -R $OWNER coverup-log* *.json *.txt coverup-tests"
         run "mv coverup-ckpt.json coverup-ckpt-$RUN.json"
     fi
 done
@@ -60,5 +60,5 @@ done
 # measure final coverage
 if ! [ -e /output/final.json ]; then
     run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest -qq --disable-warnings $PYTEST_ARGS coverup-tests"
-    run "chown -R $OWNER /output"
+    run "chown -R $OWNER final.json"
 fi
