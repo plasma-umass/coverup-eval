@@ -1,0 +1,3172 @@
+---- 2024-02-29T18:55:48 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./string_utils --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json string_utils/generation.py string_utils/manipulation.py string_utils/validation.py
+---- 2024-02-29T18:55:50 string_utils/generation.py:88-140 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/generation.py, module string_utils.generation, does not achieve full coverage:
+when tested, lines 106-140 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def roman_range(stop: int, start: int = 1, step: int = 1) -> Generator:
+                """
+                Similarly to native Python's `range()`, returns a Generator object which generates a new roman number
+                on each iteration instead of an integer.
+            
+                *Example:*
+            
+                >>> for n in roman_range(7): print(n)
+                >>> # prints: I, II, III, IV, V, VI, VII
+                >>> for n in roman_range(start=7, stop=1, step=-1): print(n)
+                >>> # prints: VII, VI, V, IV, III, II, I
+            
+                :param stop: Number at which the generation must stop (must be <= 3999).
+                :param start: Number at which the generation must start (must be >= 1).
+                :param step: Increment of each generation step (default to 1).
+                :return: Generator of roman numbers.
+                """
+            
+       106:     def validate(arg_value, arg_name, allow_negative=False):
+       107:         msg = '"{}" must be an integer in the range 1-3999'.format(arg_name)
+            
+       109:         if not isinstance(arg_value, int):
+       110:             raise ValueError(msg)
+            
+       112:         if allow_negative:
+       113:             arg_value = abs(arg_value)
+            
+       115:         if arg_value < 1 or arg_value > 3999:
+       116:             raise ValueError(msg)
+            
+       118:     def generate():
+       119:         current = start
+            
+                    # generate values for each step
+       122:         while current != stop:
+       123:             yield roman_encode(current)
+       124:             current += step
+            
+                    # last value to return
+       127:         yield roman_encode(current)
+            
+                # checks each single argument value
+       130:     validate(stop, 'stop')
+       131:     validate(start, 'start')
+       132:     validate(step, 'step', allow_negative=True)
+            
+                # checks if the provided configuration leads to a feasible iteration with respect to boundaries or not
+       135:     forward_exceed = step > 0 and (start > stop or start + step > stop)
+       136:     backward_exceed = step < 0 and (start < stop or start + step < stop)
+       137:     if forward_exceed or backward_exceed:
+       138:         raise OverflowError('Invalid start/stop/step configuration')
+            
+       140:     return generate()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:250-277 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 252-277 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def format(self) -> str:
+                    # map of temporary placeholders
+       252:         placeholders = {}
+       253:         out = self.input_string
+            
+                    # looks for url or email and updates placeholders map with found values
+       256:         placeholders.update({self.__placeholder_key(): m[0] for m in URLS_RE.findall(out)})
+       257:         placeholders.update({self.__placeholder_key(): m for m in EMAILS_RE.findall(out)})
+            
+                    # replace original value with the placeholder key
+       260:         for p in placeholders:
+       261:             out = out.replace(placeholders[p], p, 1)
+            
+       263:         out = PRETTIFY_RE['UPPERCASE_FIRST_LETTER'].sub(self.__uppercase_first_char, out)
+       264:         out = PRETTIFY_RE['DUPLICATES'].sub(self.__remove_duplicates, out)
+       265:         out = PRETTIFY_RE['RIGHT_SPACE'].sub(self.__ensure_right_space_only, out)
+       266:         out = PRETTIFY_RE['LEFT_SPACE'].sub(self.__ensure_left_space_only, out)
+       267:         out = PRETTIFY_RE['SPACES_AROUND'].sub(self.__ensure_spaces_around, out)
+       268:         out = PRETTIFY_RE['SPACES_INSIDE'].sub(self.__remove_internal_spaces, out)
+       269:         out = PRETTIFY_RE['UPPERCASE_AFTER_SIGN'].sub(self.__uppercase_first_letter_after_sign, out)
+       270:         out = PRETTIFY_RE['SAXON_GENITIVE'].sub(self.__fix_saxon_genitive, out)
+       271:         out = out.strip()
+            
+                    # restore placeholder keys with their associated original value
+       274:         for p in placeholders:
+       275:             out = out.replace(p, placeholders[p], 1)
+            
+       277:         return out
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:324-354 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 341-354 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def snake_case_to_camel(input_string: str, upper_case_first: bool = True, separator: str = '_') -> str:
+                """
+                Convert a snake case string into a camel case one.
+                (The original string is returned if is not a valid snake case string)
+            
+                *Example:*
+            
+                >>> snake_case_to_camel('the_snake_is_green') # returns 'TheSnakeIsGreen'
+            
+                :param input_string: String to convert.
+                :type input_string: str
+                :param upper_case_first: True to turn the first letter into uppercase (default).
+                :type upper_case_first: bool
+                :param separator: Sign to use as separator (default to "_").
+                :type separator: str
+                :return: Converted string
+                """
+       341:     if not is_string(input_string):
+       342:         raise InvalidInputError(input_string)
+            
+       344:     if not is_snake_case(input_string, separator):
+       345:         return input_string
+            
+       347:     tokens = [s.title() for s in input_string.split(separator) if is_full_string(s)]
+            
+       349:     if not upper_case_first:
+       350:         tokens[0] = tokens[0].lower()
+            
+       352:     out = ''.join(tokens)
+            
+       354:     return out
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:204-244 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 221, 229, 234, 238-244 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_email(input_string: Any) -> bool:
+                """
+                Check if a string is a valid email.
+            
+                Reference: https://tools.ietf.org/html/rfc3696#section-3
+            
+                *Examples:*
+            
+                >>> is_email('my.email@the-provider.com') # returns true
+                >>> is_email('@gmail.com') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :return: True if email, false otherwise.
+                """
+                # first simple "pre check": it must be a non empty string with max len 320 and cannot start with a dot
+       220:     if not is_full_string(input_string) or len(input_string) > 320 or input_string.startswith('.'):
+       221:         return False
+            
+                try:
+                    # we expect 2 tokens, one before "@" and one after, otherwise we have an exception and the email is not valid
+                    head, tail = input_string.split('@')
+            
+                    # head's size must be <= 64, tail <= 255, head must not start with a dot or contain multiple consecutive dots
+       228:         if len(head) > 64 or len(tail) > 255 or head.endswith('.') or ('..' in head):
+       229:             return False
+            
+                    # removes escaped spaces, so that later on the test regex will accept the string
+                    head = head.replace('\\ ', '')
+       233:         if head.startswith('"') and head.endswith('"'):
+       234:             head = head.replace(' ', '')[1:-1]
+            
+                    return EMAIL_RE.match(head + '@' + tail) is not None
+            
+       238:     except ValueError:
+                    # borderline case in which we have multiple "@" signs but the head part is correctly escaped
+       240:         if ESCAPED_AT_SIGN.search(input_string) is not None:
+                        # replace "@" with "a" in the head
+       242:             return is_email(ESCAPED_AT_SIGN.sub('a', input_string))
+            
+       244:         return False
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:308-342 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 329-342 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_snake_case(input_string: Any, separator: str = '_') -> bool:
+                """
+                Checks if a string is formatted as "snake case".
+            
+                A string is considered snake case when:
+            
+                - it's composed only by lowercase/uppercase letters and digits
+                - it contains at least one underscore (or provided separator)
+                - it does not start with a number
+            
+                *Examples:*
+            
+                >>> is_snake_case('foo_bar_baz') # returns true
+                >>> is_snake_case('foo') # returns false
+            
+                :param input_string: String to test.
+                :type input_string: str
+                :param separator: String to use as separator.
+                :type separator: str
+                :return: True for a snake case string, false otherwise.
+                """
+       329:     if is_full_string(input_string):
+       330:         re_map = {
+       331:             '_': SNAKE_CASE_TEST_RE,
+       332:             '-': SNAKE_CASE_TEST_DASH_RE
+                    }
+       334:         re_template = r'([a-z]+\d*{sign}[a-z\d{sign}]*|{sign}+[a-z\d]+[a-z\d{sign}]*)'
+       335:         r = re_map.get(
+       336:             separator,
+       337:             re.compile(re_template.format(sign=re.escape(separator)), re.IGNORECASE)
+                    )
+            
+       340:         return r.match(input_string) is not None
+            
+       342:     return False
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:300-321 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 315-321 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def camel_case_to_snake(input_string, separator='_'):
+                """
+                Convert a camel case string into a snake case one.
+                (The original string is returned if is not a valid camel case string)
+            
+                *Example:*
+            
+                >>> camel_case_to_snake('ThisIsACamelStringTest') # returns 'this_is_a_camel_case_string_test'
+            
+                :param input_string: String to convert.
+                :type input_string: str
+                :param separator: Sign to use as separator.
+                :type separator: str
+                :return: Converted string.
+                """
+       315:     if not is_string(input_string):
+       316:         raise InvalidInputError(input_string)
+            
+       318:     if not is_camel_case(input_string):
+       319:         return input_string
+            
+       321:     return CAMEL_CASE_REPLACE_RE.sub(lambda m: m.group(1) + separator, input_string).lower()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:42-78 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 45, 75-76 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __ISBNChecker:
+                def __init__(self, input_string: str, normalize: bool = True):
+        44:         if not is_string(input_string):
+        45:             raise InvalidInputError(input_string)
+            
+                    self.input_string = input_string.replace('-', '') if normalize else input_string
+            
+                def is_isbn_13(self) -> bool:
+                    if len(self.input_string) == 13:
+                        product = 0
+            
+                        try:
+                            for index, digit in enumerate(self.input_string):
+                                weight = 1 if (index % 2 == 0) else 3
+                                product += int(digit) * weight
+            
+                            return product % 10 == 0
+            
+                        except ValueError:
+                            pass
+            
+                    return False
+            
+                def is_isbn_10(self) -> bool:
+                    if len(self.input_string) == 10:
+                        product = 0
+            
+                        try:
+                            for index, digit in enumerate(self.input_string):
+                                product += int(digit) * (index + 1)
+            
+                            return product % 11 == 0
+            
+        75:             except ValueError:
+        76:                 pass
+            
+                    return False
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:52-76 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 64, 68 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __RomanNumbers:
+                @classmethod
+                def __encode_digit(cls, index: int, value: int) -> str:
+                    # if digit is zero, there is no sign to display
+                    if value == 0:
+                        return ''
+            
+                    # from 1 to 3 we have just to repeat the sign N times (eg: III, XXX...)
+                    if value <= 3:
+                        return cls.__mappings[index][1] * value
+            
+                    # if 4 we have to add unit prefix
+        63:         if value == 4:
+        64:             return cls.__mappings[index][1] + cls.__mappings[index][5]
+            
+                    # if is 5, is a straight map
+        67:         if value == 5:
+        68:             return cls.__mappings[index][5]
+            
+                    # if 6, 7 or 8 we have to append unit suffixes
+                    if value <= 8:
+                        suffix = cls.__mappings[index][1] * (value - 5)
+                        return cls.__mappings[index][5] + suffix
+            
+                    # if 9 we have to prepend current unit to next
+                    return cls.__mappings[index][1] + cls.__mappings[index + 1][1]
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:116-138 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, line 136 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_number(input_string: str) -> bool:
+                """
+                Checks if a string is a valid number.
+            
+                The number can be a signed (eg: +1, -2, -3.3) or unsigned (eg: 1, 2, 3.3) integer or double
+                or use the "scientific notation" (eg: 1e5).
+            
+                *Examples:*
+            
+                >>> is_number('42') # returns true
+                >>> is_number('19.99') # returns true
+                >>> is_number('-9.12') # returns true
+                >>> is_number('1e3') # returns true
+                >>> is_number('1 2 3') # returns false
+            
+                :param input_string: String to check
+                :type input_string: str
+                :return: True if the string represents a number, false otherwise
+                """
+       135:     if not isinstance(input_string, str):
+       136:         raise InvalidInputError(input_string)
+            
+                return NUMBER_RE.match(input_string) is not None
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:177-201 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, line 194 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_url(input_string: Any, allowed_schemes: Optional[List[str]] = None) -> bool:
+                """
+                Check if a string is a valid url.
+            
+                *Examples:*
+            
+                >>> is_url('http://www.mysite.com') # returns true
+                >>> is_url('https://mysite.com') # returns true
+                >>> is_url('.mysite.com') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :param allowed_schemes: List of valid schemes ('http', 'https', 'ftp'...). Default to None (any scheme is valid).
+                :type allowed_schemes: Optional[List[str]]
+                :return: True if url, false otherwise
+                """
+       193:     if not is_full_string(input_string):
+       194:         return False
+            
+                valid = URL_RE.match(input_string) is not None
+            
+                if allowed_schemes:
+                    return valid and any([input_string.startswith(s) for s in allowed_schemes])
+            
+                return valid
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:601-618 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 617-618 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_isbn_10(input_string: str, normalize: bool = True) -> bool:
+                """
+                Checks if the given string represents a valid ISBN 10 (International Standard Book Number).
+                By default hyphens in the string are ignored, so digits can be separated in different ways, by calling this
+                function with `normalize=False` only digit-only strings will pass the validation.
+            
+                *Examples:*
+            
+                >>> is_isbn_10('1506715214') # returns true
+                >>> is_isbn_10('150-6715214') # returns true
+                >>> is_isbn_10('150-6715214', normalize=False) # returns false
+            
+                :param input_string: String to check.
+                :param normalize: True to ignore hyphens ("-") in the string (default), false otherwise.
+                :return: True if valid ISBN 10, false otherwise.
+                """
+       617:     checker = __ISBNChecker(input_string, normalize)
+       618:     return checker.is_isbn_10()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:213-217 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 215 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __init__(self, input_string):
+       214:         if not is_string(input_string):
+       215:             raise InvalidInputError(input_string)
+            
+                    self.input_string = input_string
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:225-227 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 226-227 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __uppercase_first_letter_after_sign(self, regex_match):
+       226:         match = regex_match.group(1)
+       227:         return match[:-1] + match[2].upper()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:405-430 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 429-430 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def prettify(input_string: str) -> str:
+                """
+                Reformat a string by applying the following basic grammar and formatting rules:
+            
+                - String cannot start or end with spaces
+                - The first letter in the string and the ones after a dot, an exclamation or a question mark must be uppercase
+                - String cannot have multiple sequential spaces, empty lines or punctuation (except for "?", "!" and ".")
+                - Arithmetic operators (+, -, /, \\*, =) must have one, and only one space before and after themselves
+                - One, and only one space should follow a dot, a comma, an exclamation or a question mark
+                - Text inside double quotes cannot start or end with spaces, but one, and only one space must come first and \
+                after quotes (foo" bar"baz -> foo "bar" baz)
+                - Text inside round brackets cannot start or end with spaces, but one, and only one space must come first and \
+                after brackets ("foo(bar )baz" -> "foo (bar) baz")
+                - Percentage sign ("%") cannot be preceded by a space if there is a number before ("100 %" -> "100%")
+                - Saxon genitive is correct ("Dave' s dog" -> "Dave's dog")
+            
+                *Examples:*
+            
+                >>> prettify(' unprettified string ,, like this one,will be"prettified" .it\\' s awesome! ')
+                >>> # -> 'Unprettified string, like this one, will be "prettified". It\'s awesome!'
+            
+                :param input_string: String to manipulate
+                :return: Prettified string.
+                """
+       429:     formatted = __StringFormatter(input_string).format()
+       430:     return formatted
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/validation.py:434-448 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, line 448 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_ip(input_string: Any) -> bool:
+                """
+                Checks if a string is a valid ip (either v4 or v6).
+            
+                *Examples:*
+            
+                >>> is_ip('255.200.100.75') # returns true
+                >>> is_ip('2001:db8:85a3:0000:0000:8a2e:370:7334') # returns true
+                >>> is_ip('1.2.3') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :return: True if an ip, false otherwise.
+                """
+       448:     return is_ip_v6(input_string) or is_ip_v4(input_string)
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:219-220 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 220 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __uppercase_first_char(self, regex_match):
+       220:         return regex_match.group(0).upper()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:229-230 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 230 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __ensure_right_space_only(self, regex_match):
+       230:         return regex_match.group(1).strip() + ' '
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:232-233 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 233 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __ensure_left_space_only(self, regex_match):
+       233:         return ' ' + regex_match.group(1).strip()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:235-236 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 236 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __ensure_spaces_around(self, regex_match):
+       236:         return ' ' + regex_match.group(1).strip() + ' '
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:238-239 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 239 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __remove_internal_spaces(self, regex_match):
+       239:         return regex_match.group(1).strip()
+
+```
+
+---- 2024-02-29T18:55:50 string_utils/manipulation.py:241-242 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 242 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def __fix_saxon_genitive(self, regex_match):
+       242:         return regex_match.group(1).replace(' ', '') + ' '
+
+```
+
+---- 2024-02-29T18:55:54 string_utils/manipulation.py:219-220 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_uppercase_first_char(string_formatter):
+    test_string = "hello world"
+    pattern = re.compile(r'\b[a-z]')
+    match = pattern.search(test_string)
+    result = string_formatter.___StringFormatter__uppercase_first_char(match)
+    assert result == 'H'
+```
+---- 2024-02-29T18:55:54 string_utils/manipulation.py:219-220 ----
+total usage: {'prompt_tokens': 227, 'completion_tokens': 92}
+---- 2024-02-29T18:55:55 string_utils/manipulation.py:213-217 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+from string_utils.exceptions import InvalidInputError
+
+def test_string_formatter_with_invalid_input():
+    with pytest.raises(InvalidInputError) as exc_info:
+        __StringFormatter(123)  # Pass a non-string input to trigger the exception
+    assert exc_info.value.args[0] == 123  # Assert that the exception contains the invalid input
+```
+---- 2024-02-29T18:55:55 string_utils/manipulation.py:213-217 ----
+total usage: {'prompt_tokens': 472, 'completion_tokens': 182}
+---- 2024-02-29T18:55:56 string_utils/manipulation.py:219-220 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_hilvbshh.py:7: TypeError
+
+---- 2024-02-29T18:55:56 string_utils/manipulation.py:232-233 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_ensure_left_space_only(string_formatter):
+    # Mocking a regex match with a group method that returns a string with leading and trailing spaces
+    class MockMatch:
+        def group(self, index):
+            return '   some text   '
+
+    mock_match = MockMatch()
+
+    # Call the method that needs to be tested
+    result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)
+
+    # Assert that the result is correct
+    assert result == ' some text'
+```
+---- 2024-02-29T18:55:56 string_utils/manipulation.py:232-233 ----
+total usage: {'prompt_tokens': 703, 'completion_tokens': 316}
+---- 2024-02-29T18:55:56 string_utils/validation.py:116-138 ----
+```python
+import pytest
+from string_utils.validation import is_number
+from string_utils.exceptions import InvalidInputError
+
+def test_is_number_with_non_string_input():
+    with pytest.raises(InvalidInputError):
+        is_number(123)  # Non-string input to trigger the InvalidInputError
+
+def test_is_number_with_string_input():
+    assert is_number('42') == True
+    assert is_number('19.99') == True
+    assert is_number('-9.12') == True
+    assert is_number('1e3') == True
+    assert is_number('1 2 3') == False
+```
+---- 2024-02-29T18:55:56 string_utils/validation.py:116-138 ----
+total usage: {'prompt_tokens': 1122, 'completion_tokens': 444}
+---- 2024-02-29T18:55:56 string_utils/validation.py:177-201 ----
+```python
+import pytest
+from string_utils.validation import is_url
+
+@pytest.fixture
+def cleanup():
+    # No cleanup is necessary for this test, but the fixture is here in case future cleanup is needed.
+    yield
+    # Any potential cleanup code would go here.
+
+def test_is_url_with_non_string_input(cleanup):
+    assert not is_url(None), "None should not be considered a valid URL"
+    assert not is_url(123), "Integer should not be considered a valid URL"
+    assert not is_url([]), "List should not be considered a valid URL"
+    assert not is_url({}), "Dictionary should not be considered a valid URL"
+```
+---- 2024-02-29T18:55:56 string_utils/validation.py:177-201 ----
+total usage: {'prompt_tokens': 1537, 'completion_tokens': 580}
+---- 2024-02-29T18:55:57 string_utils/manipulation.py:229-230 ----
+Error: <class 'openai.error.APIError'> HTTP code 502 from API (<html>
+<head><title>502 Bad Gateway</title></head>
+<body>
+<center><h1>502 Bad Gateway</h1></center>
+<hr><center>cloudflare</center>
+</body>
+</html>
+)
+---- 2024-02-29T18:55:57 string_utils/manipulation.py:213-217 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_fz_3vbwy.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_fz_3vbwy.py:3: in <module>
+    from string_utils.exceptions import InvalidInputError
+E   ModuleNotFoundError: No module named 'string_utils.exceptions'
+
+---- 2024-02-29T18:55:57 string_utils/validation.py:42-78 ----
+```python
+import pytest
+from string_utils.validation import __ISBNChecker
+from string_utils.exceptions import InvalidInputError
+
+def test_isbn_checker_invalid_input():
+    with pytest.raises(InvalidInputError):
+        __ISBNChecker(input_string=123)  # Non-string input to trigger line 45
+
+def test_isbn_checker_isbn_10_value_error():
+    checker = __ISBNChecker(input_string="12345X7890")  # X will cause ValueError on int conversion
+    assert not checker.is_isbn_10()  # Should pass through lines 75-76 and return False
+
+# Assuming the test suite already has a function to run the tests, no need to call pytest.main here.
+```
+---- 2024-02-29T18:55:57 string_utils/validation.py:42-78 ----
+total usage: {'prompt_tokens': 1979, 'completion_tokens': 725}
+---- 2024-02-29T18:55:57 string_utils/manipulation.py:232-233 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_izdj5eq0.py:6: TypeError
+
+---- 2024-02-29T18:55:58 string_utils/validation.py:116-138 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_aj5g5ef5.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_aj5g5ef5.py:3: in <module>
+    from string_utils.exceptions import InvalidInputError
+E   ModuleNotFoundError: No module named 'string_utils.exceptions'
+
+---- 2024-02-29T18:55:58 string_utils/validation.py:177-201 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:55:58 string_utils/validation.py:177-201 ----
+Saved as coverup-tests/test_coverup_43.py
+
+---- 2024-02-29T18:55:58 string_utils/validation.py:42-78 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_ug6rwq92.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_ug6rwq92.py:3: in <module>
+    from string_utils.exceptions import InvalidInputError
+E   ModuleNotFoundError: No module named 'string_utils.exceptions'
+
+---- 2024-02-29T18:55:58 string_utils/manipulation.py:238-239 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_remove_internal_spaces(string_formatter):
+    test_string = "  This is a test string  "
+    pattern = re.compile(r'(\s*This is a test string\s*)')
+    match = pattern.match(test_string)
+    result = string_formatter.___StringFormatter__remove_internal_spaces(match)
+    assert result == "This is a test string"
+```
+---- 2024-02-29T18:55:58 string_utils/manipulation.py:238-239 ----
+total usage: {'prompt_tokens': 2206, 'completion_tokens': 832}
+---- 2024-02-29T18:55:59 string_utils/manipulation.py:225-227 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_uppercase_first_letter_after_sign(string_formatter):
+    # Create a mock regex match object with a group method that returns a string
+    class MockMatch:
+        def group(self, index):
+            return {1: 'a@b'}[index]
+
+    mock_match = MockMatch()
+
+    # Call the method that needs to be tested
+    result = string_formatter.___StringFormatter__uppercase_first_letter_after_sign(mock_match)
+
+    # Assert that the result is as expected
+    assert result == 'a@B', "The first letter after the sign should be uppercase"
+```
+---- 2024-02-29T18:55:59 string_utils/manipulation.py:225-227 ----
+total usage: {'prompt_tokens': 2453, 'completion_tokens': 982}
+---- 2024-02-29T18:55:59 string_utils/validation.py:434-448 ----
+```python
+import pytest
+from string_utils.validation import is_ip
+
+def test_is_ip_v4_and_v6(mocker):
+    # Mock the is_ip_v4 and is_ip_v6 functions to control their behavior
+    mocker.patch('string_utils.validation.is_ip_v4', return_value=False)
+    mocker.patch('string_utils.validation.is_ip_v6', return_value=False)
+
+    # Test with a string that is neither a valid IPv4 nor a valid IPv6 address
+    assert not is_ip('invalid_ip')
+
+    # Test with a string that is a valid IPv4 address
+    string_utils.validation.is_ip_v4.return_value = True
+    assert is_ip('255.200.100.75')
+
+    # Test with a string that is a valid IPv6 address
+    string_utils.validation.is_ip_v6.return_value = True
+    assert is_ip('2001:db8:85a3:0000:0000:8a2e:370:7334')
+
+    # Verify that the mocks were called
+    string_utils.validation.is_ip_v4.assert_called()
+    string_utils.validation.is_ip_v6.assert_called()
+```
+---- 2024-02-29T18:55:59 string_utils/validation.py:434-448 ----
+total usage: {'prompt_tokens': 2803, 'completion_tokens': 1218}
+---- 2024-02-29T18:55:59 string_utils/manipulation.py:241-242 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_fix_saxon_genitive(string_formatter):
+    # Create a regex match object that matches the pattern expected by __fix_saxon_genitive
+    import re
+    pattern = re.compile(r"(\w+'s)")
+    match = pattern.search("John's book")
+
+    # Call the private method __fix_saxon_genitive directly
+    result = string_formatter.___StringFormatter__fix_saxon_genitive(match)
+
+    # Assert that the result is as expected
+    assert result == "John's "
+
+    # No cleanup is necessary as no state is modified outside the scope of the test
+```
+---- 2024-02-29T18:55:59 string_utils/manipulation.py:241-242 ----
+total usage: {'prompt_tokens': 3037, 'completion_tokens': 1372}
+---- 2024-02-29T18:56:00 string_utils/manipulation.py:52-76 ----
+```python
+import pytest
+from string_utils.manipulation import __RomanNumbers
+
+@pytest.fixture
+def mock_mappings(mocker):
+    mappings = {
+        0: {1: 'I', 5: 'V'},
+        1: {1: 'X', 5: 'L'},
+        2: {1: 'C', 5: 'D'},
+        3: {1: 'M'}
+    }
+    mocker.patch.object(__RomanNumbers, '_RomanNumbers__mappings', mappings)
+
+def test_encode_digit_for_value_four_and_five(mock_mappings):
+    assert __RomanNumbers._RomanNumbers__encode_digit(0, 4) == 'IV'
+    assert __RomanNumbers._RomanNumbers__encode_digit(0, 5) == 'V'
+```
+---- 2024-02-29T18:56:00 string_utils/manipulation.py:52-76 ----
+total usage: {'prompt_tokens': 3511, 'completion_tokens': 1534}
+---- 2024-02-29T18:56:00 string_utils/manipulation.py:238-239 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_0dw8iyx3.py:7: TypeError
+
+---- 2024-02-29T18:56:00 string_utils/manipulation.py:300-321 ----
+```python
+import pytest
+from string_utils.manipulation import camel_case_to_snake, InvalidInputError
+
+def test_camel_case_to_snake_with_invalid_input(mocker):
+    mocker.patch('string_utils.manipulation.is_string', return_value=False)
+    with pytest.raises(InvalidInputError):
+        camel_case_to_snake(123)
+
+def test_camel_case_to_snake_with_non_camel_case_input(mocker):
+    mocker.patch('string_utils.manipulation.is_string', return_value=True)
+    mocker.patch('string_utils.manipulation.is_camel_case', return_value=False)
+    assert camel_case_to_snake('not_camel_case') == 'not_camel_case'
+```
+---- 2024-02-29T18:56:00 string_utils/manipulation.py:300-321 ----
+total usage: {'prompt_tokens': 3909, 'completion_tokens': 1677}
+---- 2024-02-29T18:56:00 string_utils/manipulation.py:225-227 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_ljl5p4mv.py:6: TypeError
+
+---- 2024-02-29T18:56:01 string_utils/validation.py:434-448 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fbbd0018940>
+
+    def test_is_ip_v4_and_v6(mocker):
+        # Mock the is_ip_v4 and is_ip_v6 functions to control their behavior
+        mocker.patch('string_utils.validation.is_ip_v4', return_value=False)
+        mocker.patch('string_utils.validation.is_ip_v6', return_value=False)
+    
+        # Test with a string that is neither a valid IPv4 nor a valid IPv6 address
+        assert not is_ip('invalid_ip')
+    
+        # Test with a string that is a valid IPv4 address
+>       string_utils.validation.is_ip_v4.return_value = True
+E       NameError: name 'string_utils' is not defined
+
+coverup-tests/tmp_test_78iijfih.py:13: NameError
+
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:235-236 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_ensure_spaces_around(string_formatter):
+    test_string = "This is a test string with ' special characters ' inside."
+    regex_match = re.search(r"(' special characters ')", test_string)
+    result = string_formatter.___StringFormatter__ensure_spaces_around(regex_match)
+    assert result == " ' special characters ' "
+```
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:235-236 ----
+total usage: {'prompt_tokens': 4143, 'completion_tokens': 1778}
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:241-242 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_ygru6ut6.py:6: TypeError
+
+---- 2024-02-29T18:56:01 string_utils/validation.py:308-342 ----
+```python
+import pytest
+from string_utils.validation import is_snake_case
+
+def test_is_snake_case_with_custom_separator(mocker):
+    # Mock the is_full_string function to return True
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+    # Test with a custom separator that is not predefined
+    custom_separator = '#'
+    assert is_snake_case('foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#barbaz', separator=custom_separator)
+    assert not is_snake_case('1foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#bar#baz#', separator=custom_separator)
+    assert not is_snake_case('#foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#bar#baz#1', separator=custom_separator)
+    
+    # Clean up by stopping the patcher
+    mocker.stopall()
+```
+---- 2024-02-29T18:56:01 string_utils/validation.py:308-342 ----
+total usage: {'prompt_tokens': 4666, 'completion_tokens': 1985}
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:405-430 ----
+```python
+import pytest
+from string_utils.manipulation import prettify
+
+def test_prettify_executes_missing_lines(mocker):
+    # Mock the __StringFormatter class and its format method
+    mock_formatter = mocker.patch('string_utils.manipulation.__StringFormatter')
+    mock_formatter_instance = mock_formatter.return_value
+    mock_formatter_instance.format.return_value = 'Mocked formatted string'
+    
+    # Call the prettify function which should use the mocked __StringFormatter
+    result = prettify('Some input string')
+    
+    # Assert that the format method was called
+    mock_formatter_instance.format.assert_called_once()
+    
+    # Assert that the result is what the mocked format method returns
+    assert result == 'Mocked formatted string'
+```
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:405-430 ----
+total usage: {'prompt_tokens': 5243, 'completion_tokens': 2142}
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:52-76 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:52-76 ----
+Saved as coverup-tests/test_coverup_44.py
+
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:219-220 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+class MockStringFormatter(__StringFormatter):
+    def __init__(self):
+        pass
+
+@pytest.fixture
+def string_formatter():
+    return MockStringFormatter()
+
+def test_uppercase_first_char(string_formatter):
+    test_string = "hello world"
+    pattern = re.compile(r'\b[a-z]')
+    match = pattern.search(test_string)
+    result = string_formatter._MockStringFormatter__uppercase_first_char(match)
+    assert result == 'H'
+```
+---- 2024-02-29T18:56:01 string_utils/manipulation.py:219-220 ----
+total usage: {'prompt_tokens': 5652, 'completion_tokens': 2252}
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:300-321 ----
+..                                                                       [100%]
+
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:300-321 ----
+Saved as coverup-tests/test_coverup_45.py
+
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:229-230 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_ensure_right_space_only(string_formatter):
+    # Mocking a regex match with a group method that returns a string with spaces
+    class MockMatch:
+        def group(self, index):
+            return '  text with spaces  '
+
+    mock_match = MockMatch()
+    result = string_formatter.___StringFormatter__ensure_right_space_only(mock_match)
+    assert result == 'text with spaces ', "The function should return the string with right space only"
+```
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:229-230 ----
+total usage: {'prompt_tokens': 5883, 'completion_tokens': 2377}
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:235-236 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_iyljga17.py:6: TypeError
+
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:213-217 ----
+```python
+import pytest
+
+# Assuming the InvalidInputError is defined within the same module for this context
+from string_utils.manipulation import __StringFormatter, InvalidInputError
+
+def test_string_formatter_with_invalid_input():
+    with pytest.raises(InvalidInputError) as exc_info:
+        __StringFormatter(123)  # Pass a non-string input to trigger the exception
+    assert exc_info.value.args[0] == 123  # Assert that the exception contains the invalid input
+```
+---- 2024-02-29T18:56:02 string_utils/manipulation.py:213-217 ----
+total usage: {'prompt_tokens': 6396, 'completion_tokens': 2478}
+---- 2024-02-29T18:56:03 string_utils/validation.py:308-342 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f80d7da0250>
+
+    def test_is_snake_case_with_custom_separator(mocker):
+        # Mock the is_full_string function to return True
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+        # Test with a custom separator that is not predefined
+        custom_separator = '#'
+        assert is_snake_case('foo#bar#baz', separator=custom_separator)
+>       assert not is_snake_case('foo#barbaz', separator=custom_separator)
+E       AssertionError: assert not True
+E        +  where True = is_snake_case('foo#barbaz', separator='#')
+
+coverup-tests/tmp_test_7jzqqi2b.py:11: AssertionError
+
+---- 2024-02-29T18:56:03 string_utils/manipulation.py:405-430 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:03 string_utils/manipulation.py:405-430 ----
+Saved as coverup-tests/test_coverup_46.py
+
+---- 2024-02-29T18:56:03 string_utils/manipulation.py:219-220 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <tmp_test_g7t8p1r4.MockStringFormatter object at 0x7f05aa607940>
+
+    def test_uppercase_first_char(string_formatter):
+        test_string = "hello world"
+        pattern = re.compile(r'\b[a-z]')
+        match = pattern.search(test_string)
+>       result = string_formatter._MockStringFormatter__uppercase_first_char(match)
+E       AttributeError: 'MockStringFormatter' object has no attribute '_MockStringFormatter__uppercase_first_char'
+
+coverup-tests/tmp_test_g7t8p1r4.py:17: AttributeError
+
+---- 2024-02-29T18:56:03 string_utils/manipulation.py:229-230 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_3k95tn2h.py:6: TypeError
+
+---- 2024-02-29T18:56:04 string_utils/manipulation.py:213-217 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_string_formatter_with_invalid_input():
+        with pytest.raises(InvalidInputError) as exc_info:
+            __StringFormatter(123)  # Pass a non-string input to trigger the exception
+>       assert exc_info.value.args[0] == 123  # Assert that the exception contains the invalid input
+E       assert 'Expected "str", received "int"' == 123
+
+coverup-tests/tmp_test_bkzub1m1.py:9: AssertionError
+
+---- 2024-02-29T18:56:05 string_utils/manipulation.py:232-233 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter("dummy input string")
+
+def test_ensure_left_space_only(string_formatter):
+    # Mocking a regex match with a group method that returns a string with leading and trailing spaces
+    class MockMatch:
+        def group(self, index):
+            return '   some text   '
+
+    mock_match = MockMatch()
+
+    # Call the method that needs to be tested
+    result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)
+
+    # Assert that the result is correct
+    assert result == ' some text'
+```
+---- 2024-02-29T18:56:05 string_utils/manipulation.py:232-233 ----
+total usage: {'prompt_tokens': 6852, 'completion_tokens': 2616}
+---- 2024-02-29T18:56:05 string_utils/validation.py:116-138 ----
+```python
+import pytest
+from string_utils.validation import is_number
+
+class InvalidInputError(Exception):
+    pass
+
+def test_is_number_with_non_string_input():
+    with pytest.raises(InvalidInputError):
+        is_number(123)  # Non-string input to trigger the InvalidInputError
+
+def test_is_number_with_string_input():
+    assert is_number('42') == True
+    assert is_number('19.99') == True
+    assert is_number('-9.12') == True
+    assert is_number('1e3') == True
+    assert is_number('1 2 3') == False
+```
+---- 2024-02-29T18:56:05 string_utils/validation.py:116-138 ----
+total usage: {'prompt_tokens': 7579, 'completion_tokens': 2744}
+---- 2024-02-29T18:56:06 string_utils/manipulation.py:232-233 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <string_utils.manipulation.__StringFormatter object at 0x7f61ae37b7c0>
+
+    def test_ensure_left_space_only(string_formatter):
+        # Mocking a regex match with a group method that returns a string with leading and trailing spaces
+        class MockMatch:
+            def group(self, index):
+                return '   some text   '
+    
+        mock_match = MockMatch()
+    
+        # Call the method that needs to be tested
+>       result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)
+E       AttributeError: '__StringFormatter' object has no attribute '___StringFormatter__ensure_left_space_only'
+
+coverup-tests/tmp_test_9br1v2xq.py:17: AttributeError
+
+---- 2024-02-29T18:56:07 string_utils/validation.py:116-138 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_is_number_with_non_string_input():
+        with pytest.raises(InvalidInputError):
+>           is_number(123)  # Non-string input to trigger the InvalidInputError
+
+coverup-tests/tmp_test_7n8lw8jp.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_string = 123
+
+    def is_number(input_string: str) -> bool:
+        """
+        Checks if a string is a valid number.
+    
+        The number can be a signed (eg: +1, -2, -3.3) or unsigned (eg: 1, 2, 3.3) integer or double
+        or use the "scientific notation" (eg: 1e5).
+    
+        *Examples:*
+    
+        >>> is_number('42') # returns true
+        >>> is_number('19.99') # returns true
+        >>> is_number('-9.12') # returns true
+        >>> is_number('1e3') # returns true
+        >>> is_number('1 2 3') # returns false
+    
+        :param input_string: String to check
+        :type input_string: str
+        :return: True if the string represents a number, false otherwise
+        """
+        if not isinstance(input_string, str):
+>           raise InvalidInputError(input_string)
+E           string_utils.errors.InvalidInputError: Expected "str", received "int"
+
+string_utils/validation.py:136: InvalidInputError
+
+---- 2024-02-29T18:56:08 string_utils/manipulation.py:238-239 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+class MockStringFormatter(__StringFormatter):
+    def __init__(self):
+        pass
+
+@pytest.fixture
+def string_formatter():
+    return MockStringFormatter()
+
+def test_remove_internal_spaces(string_formatter):
+    test_string = "  This is a test string  "
+    pattern = re.compile(r'(\s*This is a test string\s*)')
+    match = pattern.match(test_string)
+    result = string_formatter._MockStringFormatter__remove_internal_spaces(match)
+    assert result == "This is a test string"
+```
+---- 2024-02-29T18:56:08 string_utils/manipulation.py:238-239 ----
+total usage: {'prompt_tokens': 8005, 'completion_tokens': 2869}
+---- 2024-02-29T18:56:09 string_utils/generation.py:88-140 ----
+```python
+import pytest
+from string_utils.generation import roman_range
+
+def test_roman_range_full_coverage(mocker):
+    # Mock the roman_encode function to avoid dependency on its implementation
+    mocker.patch('string_utils.generation.roman_encode', side_effect=lambda x: str(x))
+
+    # Test the case where start, stop, and step are within valid range and step is positive
+    result = list(roman_range(5, 1, 1))
+    assert result == ['1', '2', '3', '4', '5'], "Failed to generate the correct roman range with positive step"
+
+    # Test the case where start, stop, and step are within valid range and step is negative
+    result = list(roman_range(1, 5, -1))
+    assert result == ['5', '4', '3', '2', '1'], "Failed to generate the correct roman range with negative step"
+
+    # Test the case where start and stop are the same
+    result = list(roman_range(5, 5, 1))
+    assert result == ['5'], "Failed to generate the correct roman range when start and stop are the same"
+
+    # Test the case where step is zero, which should raise a ValueError
+    with pytest.raises(ValueError):
+        list(roman_range(5, 1, 0))
+
+    # Test the case where start, stop, or step are out of bounds
+    with pytest.raises(ValueError):
+        list(roman_range(4000, 1, 1))
+    with pytest.raises(ValueError):
+        list(roman_range(5, 0, 1))
+    with pytest.raises(ValueError):
+        list(roman_range(5, 1, 4000))
+
+    # Test the case where start/stop/step configuration is invalid
+    with pytest.raises(OverflowError):
+        list(roman_range(1, 5, 1))
+    with pytest.raises(OverflowError):
+        list(roman_range(5, 1, -1))
+```
+---- 2024-02-29T18:56:09 string_utils/generation.py:88-140 ----
+total usage: {'prompt_tokens': 8751, 'completion_tokens': 3291}
+---- 2024-02-29T18:56:09 string_utils/validation.py:42-78 ----
+```python
+import pytest
+from string_utils.validation import __ISBNChecker
+
+class InvalidInputError(Exception):
+    pass
+
+def test_isbn_checker_invalid_input():
+    with pytest.raises(InvalidInputError):
+        __ISBNChecker(input_string=123)  # Non-string input to trigger line 45
+
+def test_isbn_checker_isbn_10_value_error():
+    checker = __ISBNChecker(input_string="12345X7890")  # X will cause ValueError on int conversion
+    assert not checker.is_isbn_10()  # Should pass through lines 75-76 and return False
+
+# Assuming the test suite already has a function to run the tests, no need to call pytest.main here.
+```
+---- 2024-02-29T18:56:09 string_utils/validation.py:42-78 ----
+total usage: {'prompt_tokens': 9516, 'completion_tokens': 3436}
+---- 2024-02-29T18:56:09 string_utils/manipulation.py:238-239 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <tmp_test_c1cqwfx_.MockStringFormatter object at 0x7f0c5570f940>
+
+    def test_remove_internal_spaces(string_formatter):
+        test_string = "  This is a test string  "
+        pattern = re.compile(r'(\s*This is a test string\s*)')
+        match = pattern.match(test_string)
+>       result = string_formatter._MockStringFormatter__remove_internal_spaces(match)
+E       AttributeError: 'MockStringFormatter' object has no attribute '_MockStringFormatter__remove_internal_spaces'
+
+coverup-tests/tmp_test_c1cqwfx_.py:17: AttributeError
+
+---- 2024-02-29T18:56:09 string_utils/manipulation.py:219-220 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+class MockStringFormatter(__StringFormatter):
+    def __init__(self):
+        super().__init__("")
+
+@pytest.fixture
+def string_formatter():
+    return MockStringFormatter()
+
+def test_uppercase_first_char(string_formatter):
+    test_string = "hello world"
+    pattern = re.compile(r'\b[a-z]')
+    match = pattern.search(test_string)
+    result = string_formatter._MockStringFormatter__uppercase_first_char(match)
+    assert result == 'H'
+```
+---- 2024-02-29T18:56:09 string_utils/manipulation.py:219-220 ----
+total usage: {'prompt_tokens': 10194, 'completion_tokens': 3549}
+---- 2024-02-29T18:56:10 string_utils/manipulation.py:229-230 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter("dummy input")
+
+def test_ensure_right_space_only(string_formatter):
+    # Mocking a regex match with a group method that returns a string with spaces
+    class MockMatch:
+        def group(self, index):
+            return '  text with spaces  '
+
+    mock_match = MockMatch()
+    result = string_formatter._StringFormatter__ensure_right_space_only(mock_match)
+    assert result == 'text with spaces ', "The function should return the string with right space only"
+```
+---- 2024-02-29T18:56:10 string_utils/manipulation.py:229-230 ----
+total usage: {'prompt_tokens': 10642, 'completion_tokens': 3676}
+---- 2024-02-29T18:56:10 string_utils/generation.py:88-140 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f277a5252d0>
+
+    def test_roman_range_full_coverage(mocker):
+        # Mock the roman_encode function to avoid dependency on its implementation
+        mocker.patch('string_utils.generation.roman_encode', side_effect=lambda x: str(x))
+    
+        # Test the case where start, stop, and step are within valid range and step is positive
+        result = list(roman_range(5, 1, 1))
+        assert result == ['1', '2', '3', '4', '5'], "Failed to generate the correct roman range with positive step"
+    
+        # Test the case where start, stop, and step are within valid range and step is negative
+        result = list(roman_range(1, 5, -1))
+        assert result == ['5', '4', '3', '2', '1'], "Failed to generate the correct roman range with negative step"
+    
+        # Test the case where start and stop are the same
+>       result = list(roman_range(5, 5, 1))
+
+coverup-tests/tmp_test_7o870wyo.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stop = 5, start = 5, step = 1
+
+    def roman_range(stop: int, start: int = 1, step: int = 1) -> Generator:
+        """
+        Similarly to native Python's `range()`, returns a Generator object which generates a new roman number
+        on each iteration instead of an integer.
+    
+        *Example:*
+    
+        >>> for n in roman_range(7): print(n)
+        >>> # prints: I, II, III, IV, V, VI, VII
+        >>> for n in roman_range(start=7, stop=1, step=-1): print(n)
+        >>> # prints: VII, VI, V, IV, III, II, I
+    
+        :param stop: Number at which the generation must stop (must be <= 3999).
+        :param start: Number at which the generation must start (must be >= 1).
+        :param step: Increment of each generation step (default to 1).
+        :return: Generator of roman numbers.
+        """
+    
+        def validate(arg_value, arg_name, allow_negative=False):
+            msg = '"{}" must be an integer in the range 1-3999'.format(arg_name)
+    
+            if not isinstance(arg_value, int):
+                raise ValueError(msg)
+    
+            if allow_negative:
+                arg_value = abs(arg_value)
+    
+            if arg_value < 1 or arg_value > 3999:
+                raise ValueError(msg)
+    
+        def generate():
+            current = start
+    
+            # generate values for each step
+            while current != stop:
+                yield roman_encode(current)
+                current += step
+    
+            # last value to return
+            yield roman_encode(current)
+    
+        # checks each single argument value
+        validate(stop, 'stop')
+        validate(start, 'start')
+        validate(step, 'step', allow_negative=True)
+    
+        # checks if the provided configuration leads to a feasible iteration with respect to boundaries or not
+        forward_exceed = step > 0 and (start > stop or start + step > stop)
+        backward_exceed = step < 0 and (start < stop or start + step < stop)
+        if forward_exceed or backward_exceed:
+>           raise OverflowError('Invalid start/stop/step configuration')
+E           OverflowError: Invalid start/stop/step configuration
+
+string_utils/generation.py:138: OverflowError
+
+---- 2024-02-29T18:56:10 string_utils/validation.py:42-78 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_isbn_checker_invalid_input():
+        with pytest.raises(InvalidInputError):
+>           __ISBNChecker(input_string=123)  # Non-string input to trigger line 45
+
+coverup-tests/tmp_test_5a61eo0z.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <string_utils.validation.__ISBNChecker object at 0x7f19be026fe0>
+input_string = 123, normalize = True
+
+    def __init__(self, input_string: str, normalize: bool = True):
+        if not is_string(input_string):
+>           raise InvalidInputError(input_string)
+E           string_utils.errors.InvalidInputError: Expected "str", received "int"
+
+string_utils/validation.py:45: InvalidInputError
+
+---- 2024-02-29T18:56:11 string_utils/manipulation.py:219-220 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <tmp_test_d6u_i2br.MockStringFormatter object at 0x7f1a99916890>
+
+    def test_uppercase_first_char(string_formatter):
+        test_string = "hello world"
+        pattern = re.compile(r'\b[a-z]')
+        match = pattern.search(test_string)
+>       result = string_formatter._MockStringFormatter__uppercase_first_char(match)
+E       AttributeError: 'MockStringFormatter' object has no attribute '_MockStringFormatter__uppercase_first_char'
+
+coverup-tests/tmp_test_d6u_i2br.py:17: AttributeError
+
+---- 2024-02-29T18:56:11 string_utils/manipulation.py:219-220 ----
+Too many attempts, giving up
+---- 2024-02-29T18:56:11 string_utils/manipulation.py:229-230 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:11 string_utils/manipulation.py:229-230 ----
+Saved as coverup-tests/test_coverup_47.py
+
+---- 2024-02-29T18:56:11 string_utils/manipulation.py:324-354 ----
+```python
+import pytest
+from string_utils.manipulation import snake_case_to_camel
+from string_utils.errors import InvalidInputError
+
+def test_snake_case_to_camel_with_invalid_input(mocker):
+    mocker.patch('string_utils.manipulation.is_string', return_value=False)
+    with pytest.raises(InvalidInputError):
+        snake_case_to_camel('invalid_input')
+
+def test_snake_case_to_camel_with_non_snake_case_input(mocker):
+    mocker.patch('string_utils.manipulation.is_string', return_value=True)
+    mocker.patch('string_utils.manipulation.is_snake_case', return_value=False)
+    assert snake_case_to_camel('not_snake_case') == 'not_snake_case'
+
+def test_snake_case_to_camel_with_empty_string(mocker):
+    mocker.patch('string_utils.manipulation.is_string', return_value=True)
+    mocker.patch('string_utils.manipulation.is_snake_case', return_value=True)
+    mocker.patch('string_utils.manipulation.is_full_string', side_effect=lambda x: False if x == '' else True)
+    assert snake_case_to_camel('___', separator='_') == ''
+
+def test_snake_case_to_camel_with_upper_case_first_false(mocker):
+    mocker.patch('string_utils.manipulation.is_string', return_value=True)
+    mocker.patch('string_utils.manipulation.is_snake_case', return_value=True)
+    mocker.patch('string_utils.manipulation.is_full_string', return_value=True)
+    assert snake_case_to_camel('the_snake_is_green', upper_case_first=False) == 'theSnakeIsGreen'
+```
+---- 2024-02-29T18:56:11 string_utils/manipulation.py:324-354 ----
+total usage: {'prompt_tokens': 11129, 'completion_tokens': 4007}
+---- 2024-02-29T18:56:11 string_utils/validation.py:204-244 ----
+```python
+import pytest
+from string_utils.validation import is_email
+
+def test_is_email_coverage(mocker):
+    # Test for line 221
+    assert not is_email('')  # Empty string
+    assert not is_email('..start_with_dot@domain.com')  # Starts with dot
+    assert not is_email('a' * 321)  # Length > 320
+
+    # Test for line 229
+    assert not is_email('local_part_too_long' + 'a' * 65 + '@domain.com')  # Local part > 64
+    assert not is_email('local@' + 'a' * 256 + '.com')  # Domain part > 255
+    assert not is_email('local..part@domain.com')  # Multiple consecutive dots in local part
+    assert not is_email('local.@domain.com')  # Local part ends with dot
+
+    # Test for line 234
+    assert is_email('"local part"@domain.com')  # Local part with spaces and quotes
+
+    # Test for line 238-244
+    mocker.patch('string_utils.validation.EMAIL_RE.match', return_value=None)
+    assert not is_email('local@domain@domain.com')  # Multiple @ signs without correct escaping
+    mocker.patch('string_utils.validation.ESCAPED_AT_SIGN.search', return_value=True)
+    assert is_email('local\\@domain@domain.com')  # Correctly escaped @ sign in local part
+```
+---- 2024-02-29T18:56:11 string_utils/validation.py:204-244 ----
+total usage: {'prompt_tokens': 11773, 'completion_tokens': 4316}
+---- 2024-02-29T18:56:11 string_utils/validation.py:434-448 ----
+```python
+import pytest
+from string_utils.validation import is_ip
+
+def test_is_ip_v4_and_v6(mocker):
+    # Mock the is_ip_v4 and is_ip_v6 functions to control their behavior
+    mock_is_ip_v4 = mocker.patch('string_utils.validation.is_ip_v4', return_value=False)
+    mock_is_ip_v6 = mocker.patch('string_utils.validation.is_ip_v6', return_value=False)
+
+    # Test with a string that is neither a valid IPv4 nor a valid IPv6 address
+    assert not is_ip('invalid_ip')
+
+    # Test with a string that is a valid IPv4 address
+    mock_is_ip_v4.return_value = True
+    assert is_ip('255.200.100.75')
+
+    # Test with a string that is a valid IPv6 address
+    mock_is_ip_v6.return_value = True
+    assert is_ip('2001:db8:85a3:0000:0000:8a2e:370:7334')
+
+    # Verify that the mocks were called
+    mock_is_ip_v4.assert_called()
+    mock_is_ip_v6.assert_called()
+```
+---- 2024-02-29T18:56:11 string_utils/validation.py:434-448 ----
+total usage: {'prompt_tokens': 12573, 'completion_tokens': 4556}
+---- 2024-02-29T18:56:12 string_utils/manipulation.py:241-242 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter("dummy input string")
+
+def test_fix_saxon_genitive(string_formatter):
+    # Create a regex match object that matches the pattern expected by __fix_saxon_genitive
+    import re
+    pattern = re.compile(r"(\w+'s\s)")
+    match = pattern.search("John's book")
+
+    # Call the private method __fix_saxon_genitive directly
+    result = string_formatter._StringFormatter__fix_saxon_genitive(match)
+
+    # Assert that the result is as expected
+    assert result == "John's "
+
+    # No cleanup is necessary as no state is modified outside the scope of the test
+```
+---- 2024-02-29T18:56:12 string_utils/manipulation.py:241-242 ----
+total usage: {'prompt_tokens': 13052, 'completion_tokens': 4714}
+---- 2024-02-29T18:56:12 string_utils/manipulation.py:235-236 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+class MockStringFormatter(__StringFormatter):
+    def __init__(self):
+        pass
+
+@pytest.fixture
+def string_formatter():
+    return MockStringFormatter()
+
+def test_ensure_spaces_around(string_formatter):
+    test_string = "This is a test string with 'special characters' inside."
+    regex_match = re.search(r"('special characters')", test_string)
+    result = string_formatter.___StringFormatter__ensure_spaces_around(regex_match)
+    assert result == " 'special characters' "
+```
+---- 2024-02-29T18:56:12 string_utils/manipulation.py:235-236 ----
+total usage: {'prompt_tokens': 13477, 'completion_tokens': 4836}
+---- 2024-02-29T18:56:13 string_utils/manipulation.py:324-354 ----
+....                                                                     [100%]
+
+---- 2024-02-29T18:56:13 string_utils/manipulation.py:324-354 ----
+Saved as coverup-tests/test_coverup_48.py
+
+---- 2024-02-29T18:56:13 string_utils/validation.py:204-244 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f3c31b9b7c0>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f3c31b98250>
+
+    def test_is_email_coverage(mocker):
+        # Test for line 221
+        assert not is_email('')  # Empty string
+        assert not is_email('..start_with_dot@domain.com')  # Starts with dot
+        assert not is_email('a' * 321)  # Length > 320
+    
+        # Test for line 229
+        assert not is_email('local_part_too_long' + 'a' * 65 + '@domain.com')  # Local part > 64
+        assert not is_email('local@' + 'a' * 256 + '.com')  # Domain part > 255
+        assert not is_email('local..part@domain.com')  # Multiple consecutive dots in local part
+        assert not is_email('local.@domain.com')  # Local part ends with dot
+    
+        # Test for line 234
+        assert is_email('"local part"@domain.com')  # Local part with spaces and quotes
+    
+        # Test for line 238-244
+>       mocker.patch('string_utils.validation.EMAIL_RE.match', return_value=None)
+
+coverup-tests/tmp_test_b5n7jzlx.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f3c31b9b7c0>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'match' is read-only"), <traceback object at 0x7f3c31528440>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-02-29T18:56:13 string_utils/validation.py:434-448 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:13 string_utils/validation.py:434-448 ----
+Saved as coverup-tests/test_coverup_49.py
+
+---- 2024-02-29T18:56:13 string_utils/manipulation.py:241-242 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:13 string_utils/manipulation.py:241-242 ----
+Saved as coverup-tests/test_coverup_50.py
+
+---- 2024-02-29T18:56:14 string_utils/manipulation.py:235-236 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <tmp_test_r5rcwwc8.MockStringFormatter object at 0x7fd9b5299ea0>
+
+    def test_ensure_spaces_around(string_formatter):
+        test_string = "This is a test string with 'special characters' inside."
+        regex_match = re.search(r"('special characters')", test_string)
+>       result = string_formatter.___StringFormatter__ensure_spaces_around(regex_match)
+E       AttributeError: 'MockStringFormatter' object has no attribute '___StringFormatter__ensure_spaces_around'
+
+coverup-tests/tmp_test_r5rcwwc8.py:16: AttributeError
+
+---- 2024-02-29T18:56:14 string_utils/manipulation.py:213-217 ----
+```python
+import pytest
+
+# Assuming the InvalidInputError is defined within the same module for this context
+from string_utils.manipulation import __StringFormatter, InvalidInputError
+
+def test_string_formatter_with_invalid_input():
+    with pytest.raises(InvalidInputError) as exc_info:
+        __StringFormatter(123)  # Pass a non-string input to trigger the exception
+    assert str(exc_info.value.args[0]) == 'Expected "str", received "int"'  # Corrected assertion
+```
+---- 2024-02-29T18:56:14 string_utils/manipulation.py:213-217 ----
+total usage: {'prompt_tokens': 14226, 'completion_tokens': 4940}
+---- 2024-02-29T18:56:15 string_utils/manipulation.py:213-217 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:15 string_utils/manipulation.py:213-217 ----
+Saved as coverup-tests/test_coverup_51.py
+
+---- 2024-02-29T18:56:15 string_utils/manipulation.py:232-233 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter("dummy input string")
+
+def test_ensure_left_space_only(string_formatter):
+    # Mocking a regex match with a group method that returns a string with leading and trailing spaces
+    class MockMatch:
+        def group(self, index):
+            return '   some text   '
+
+    mock_match = MockMatch()
+
+    # Call the method that needs to be tested
+    result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)
+
+    # Assert that the result is correct
+    assert result == ' some text'
+```
+---- 2024-02-29T18:56:15 string_utils/manipulation.py:232-233 ----
+total usage: {'prompt_tokens': 15014, 'completion_tokens': 5078}
+---- 2024-02-29T18:56:16 string_utils/validation.py:116-138 ----
+```python
+import pytest
+from string_utils.validation import is_number
+
+def test_is_number_with_non_string_input(mocker):
+    mocker.patch('string_utils.validation.InvalidInputError', Exception)
+    with pytest.raises(Exception):
+        is_number(123)  # Non-string input to trigger the InvalidInputError
+
+def test_is_number_with_string_input():
+    assert is_number('42') == True
+    assert is_number('19.99') == True
+    assert is_number('-9.12') == True
+    assert is_number('1e3') == True
+    assert is_number('1 2 3') == False
+```
+---- 2024-02-29T18:56:16 string_utils/validation.py:116-138 ----
+total usage: {'prompt_tokens': 16242, 'completion_tokens': 5209}
+---- 2024-02-29T18:56:17 string_utils/manipulation.py:232-233 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <string_utils.manipulation.__StringFormatter object at 0x7f05b243b7c0>
+
+    def test_ensure_left_space_only(string_formatter):
+        # Mocking a regex match with a group method that returns a string with leading and trailing spaces
+        class MockMatch:
+            def group(self, index):
+                return '   some text   '
+    
+        mock_match = MockMatch()
+    
+        # Call the method that needs to be tested
+>       result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)
+E       AttributeError: '__StringFormatter' object has no attribute '___StringFormatter__ensure_left_space_only'
+
+coverup-tests/tmp_test_fm19_jsc.py:17: AttributeError
+
+---- 2024-02-29T18:56:17 string_utils/manipulation.py:232-233 ----
+Too many attempts, giving up
+---- 2024-02-29T18:56:17 string_utils/validation.py:308-342 ----
+```python
+import pytest
+from string_utils.validation import is_snake_case
+
+def test_is_snake_case_with_custom_separator(mocker):
+    # Mock the is_full_string function to return True
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+    # Test with a custom separator that is not predefined
+    custom_separator = '#'
+    assert is_snake_case('foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foobarbaz', separator=custom_separator)  # Corrected line
+    assert not is_snake_case('1foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#bar#baz#', separator=custom_separator)
+    assert not is_snake_case('#foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#bar#baz#1', separator=custom_separator)
+    
+    # Clean up by stopping the patcher
+    mocker.stopall()
+```
+---- 2024-02-29T18:56:17 string_utils/validation.py:308-342 ----
+total usage: {'prompt_tokens': 17175, 'completion_tokens': 5420}
+---- 2024-02-29T18:56:17 string_utils/validation.py:42-78 ----
+```python
+import pytest
+from string_utils.validation import __ISBNChecker
+from string_utils.errors import InvalidInputError
+
+def test_isbn_checker_invalid_input(mocker):
+    mocker.patch('string_utils.validation.is_string', return_value=False)
+    with pytest.raises(InvalidInputError):
+        __ISBNChecker(input_string="123")  # String input but mocked to trigger line 45
+
+def test_isbn_checker_isbn_10_value_error(mocker):
+    mocker.patch('string_utils.validation.is_string', return_value=True)
+    checker = __ISBNChecker(input_string="12345X7890")  # X will cause ValueError on int conversion
+    assert not checker.is_isbn_10()  # Should pass through lines 75-76 and return False
+```
+---- 2024-02-29T18:56:17 string_utils/validation.py:42-78 ----
+total usage: {'prompt_tokens': 18313, 'completion_tokens': 5576}
+---- 2024-02-29T18:56:17 string_utils/validation.py:116-138 ----
+..                                                                       [100%]
+
+---- 2024-02-29T18:56:17 string_utils/validation.py:116-138 ----
+Saved as coverup-tests/test_coverup_52.py
+
+---- 2024-02-29T18:56:18 string_utils/manipulation.py:225-227 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter("dummy")
+
+def test_uppercase_first_letter_after_sign(string_formatter):
+    # Create a mock regex match object with a group method that returns a string
+    class MockMatch:
+        def group(self, index):
+            return {1: 'a@b'}[index]
+
+    mock_match = MockMatch()
+
+    # Call the method that needs to be tested
+    result = string_formatter._StringFormatter__uppercase_first_letter_after_sign(mock_match)
+
+    # Assert that the result is as expected
+    assert result == 'a@B', "The first letter after the sign should be uppercase"
+```
+---- 2024-02-29T18:56:18 string_utils/manipulation.py:225-227 ----
+total usage: {'prompt_tokens': 18801, 'completion_tokens': 5727}
+---- 2024-02-29T18:56:18 string_utils/manipulation.py:250-277 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+from unittest.mock import patch
+
+# Assuming the existence of the following regular expressions in the module
+URLS_RE = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+EMAILS_RE = re.compile(r'[\w\.-]+@[\w\.-]+')
+PRETTIFY_RE = {
+    'UPPERCASE_FIRST_LETTER': re.compile(r'...'),  # regex pattern for the rule
+    'DUPLICATES': re.compile(r'...'),  # regex pattern for the rule
+    'RIGHT_SPACE': re.compile(r'...'),  # regex pattern for the rule
+    'LEFT_SPACE': re.compile(r'...'),  # regex pattern for the rule
+    'SPACES_AROUND': re.compile(r'...'),  # regex pattern for the rule
+    'SPACES_INSIDE': re.compile(r'...'),  # regex pattern for the rule
+    'UPPERCASE_AFTER_SIGN': re.compile(r'...'),  # regex pattern for the rule
+    'SAXON_GENITIVE': re.compile(r'...'),  # regex pattern for the rule
+}
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_string_formatter_format(string_formatter):
+    test_input = "This is a test string with a URL http://example.com and an email test@example.com."
+    expected_output = "This Is A Test String With A URL http://example.com And An Email test@example.com."
+    
+    with patch.object(string_formatter, 'input_string', test_input):
+        with patch.object(string_formatter, '__placeholder_key', side_effect=lambda: 'PLACEHOLDER'):
+            output = string_formatter.format()
+            assert output == expected_output
+            assert 'PLACEHOLDER' not in output
+```
+---- 2024-02-29T18:56:18 string_utils/manipulation.py:250-277 ----
+total usage: {'prompt_tokens': 19415, 'completion_tokens': 6140}
+---- 2024-02-29T18:56:19 string_utils/validation.py:308-342 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f56070cc250>
+
+    def test_is_snake_case_with_custom_separator(mocker):
+        # Mock the is_full_string function to return True
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+        # Test with a custom separator that is not predefined
+        custom_separator = '#'
+        assert is_snake_case('foo#bar#baz', separator=custom_separator)
+        assert not is_snake_case('foobarbaz', separator=custom_separator)  # Corrected line
+        assert not is_snake_case('1foo#bar#baz', separator=custom_separator)
+>       assert not is_snake_case('foo#bar#baz#', separator=custom_separator)
+E       AssertionError: assert not True
+E        +  where True = is_snake_case('foo#bar#baz#', separator='#')
+
+coverup-tests/tmp_test_bwdv3qeq.py:13: AssertionError
+
+---- 2024-02-29T18:56:19 string_utils/validation.py:42-78 ----
+..                                                                       [100%]
+
+---- 2024-02-29T18:56:19 string_utils/validation.py:42-78 ----
+Saved as coverup-tests/test_coverup_53.py
+
+---- 2024-02-29T18:56:19 string_utils/manipulation.py:225-227 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:19 string_utils/manipulation.py:225-227 ----
+Saved as coverup-tests/test_coverup_54.py
+
+---- 2024-02-29T18:56:19 string_utils/manipulation.py:235-236 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+class MockStringFormatter(__StringFormatter):
+    def __init__(self):
+        super().__init__("")
+
+@pytest.fixture
+def string_formatter():
+    return MockStringFormatter()
+
+def test_ensure_spaces_around(string_formatter):
+    test_string = "This is a test string with 'special characters' inside."
+    regex_match = re.search(r"('special characters')", test_string)
+    result = string_formatter.___StringFormatter__ensure_spaces_around(regex_match)
+    assert result == " 'special characters' "
+```
+---- 2024-02-29T18:56:19 string_utils/manipulation.py:235-236 ----
+total usage: {'prompt_tokens': 20129, 'completion_tokens': 6265}
+---- 2024-02-29T18:56:20 string_utils/manipulation.py:250-277 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+coverup-tests/tmp_test_6zt5c2nb.py:6: in <module>
+    URLS_RE = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+E   NameError: name 're' is not defined
+
+---- 2024-02-29T18:56:20 string_utils/manipulation.py:238-239 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+class MockStringFormatter(__StringFormatter):
+    def __init__(self):
+        super().__init__("")
+
+@pytest.fixture
+def string_formatter():
+    return MockStringFormatter()
+
+def test_remove_internal_spaces(string_formatter):
+    test_string = "  This is a test string  "
+    pattern = re.compile(r'(\s*This is a test string\s*)')
+    match = pattern.match(test_string)
+    result = string_formatter._MockStringFormatter__remove_internal_spaces(match)
+    assert result == "This is a test string"
+```
+---- 2024-02-29T18:56:20 string_utils/manipulation.py:238-239 ----
+total usage: {'prompt_tokens': 20848, 'completion_tokens': 6393}
+---- 2024-02-29T18:56:21 string_utils/manipulation.py:235-236 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <tmp_test_i_y72lw3.MockStringFormatter object at 0x7f1bdcf98d30>
+
+    def test_ensure_spaces_around(string_formatter):
+        test_string = "This is a test string with 'special characters' inside."
+        regex_match = re.search(r"('special characters')", test_string)
+>       result = string_formatter.___StringFormatter__ensure_spaces_around(regex_match)
+E       AttributeError: 'MockStringFormatter' object has no attribute '___StringFormatter__ensure_spaces_around'
+
+coverup-tests/tmp_test_i_y72lw3.py:16: AttributeError
+
+---- 2024-02-29T18:56:21 string_utils/manipulation.py:235-236 ----
+Too many attempts, giving up
+---- 2024-02-29T18:56:21 string_utils/manipulation.py:238-239 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <tmp_test_be2xic4b.MockStringFormatter object at 0x7fb978dd7e80>
+
+    def test_remove_internal_spaces(string_formatter):
+        test_string = "  This is a test string  "
+        pattern = re.compile(r'(\s*This is a test string\s*)')
+        match = pattern.match(test_string)
+>       result = string_formatter._MockStringFormatter__remove_internal_spaces(match)
+E       AttributeError: 'MockStringFormatter' object has no attribute '_MockStringFormatter__remove_internal_spaces'
+
+coverup-tests/tmp_test_be2xic4b.py:17: AttributeError
+
+---- 2024-02-29T18:56:21 string_utils/manipulation.py:238-239 ----
+Too many attempts, giving up
+---- 2024-02-29T18:56:28 string_utils/generation.py:88-140 ----
+```python
+import pytest
+from string_utils.generation import roman_range
+
+def test_roman_range_full_coverage(mocker):
+    # Mock the roman_encode function to avoid dependency on its implementation
+    mocker.patch('string_utils.generation.roman_encode', side_effect=lambda x: str(x))
+
+    # Test the case where start, stop, and step are within valid range and step is positive
+    result = list(roman_range(5, 1, 1))
+    assert result == ['1', '2', '3', '4', '5'], "Failed to generate the correct roman range with positive step"
+
+    # Test the case where start, stop, and step are within valid range and step is negative
+    result = list(roman_range(5, 1, -1))
+    assert result == ['5', '4', '3', '2', '1'], "Failed to generate the correct roman range with negative step"
+
+    # Test the case where start and stop are the same and step is positive
+    result = list(roman_range(5, 5, 1))
+    assert result == ['5'], "Failed to generate the correct roman range when start and stop are the same with positive step"
+
+    # Test the case where start and stop are the same and step is negative
+    result = list(roman_range(5, 5, -1))
+    assert result == ['5'], "Failed to generate the correct roman range when start and stop are the same with negative step"
+
+    # Test the case where step is zero, which should raise a ValueError
+    with pytest.raises(ValueError):
+        list(roman_range(5, 1, 0))
+
+    # Test the case where start, stop, or step are out of bounds
+    with pytest.raises(ValueError):
+        list(roman_range(4000, 1, 1))
+    with pytest.raises(ValueError):
+        list(roman_range(5, 0, 1))
+    with pytest.raises(ValueError):
+        list(roman_range(5, 1, 4000))
+
+    # Test the case where start/stop/step configuration is invalid
+    with pytest.raises(OverflowError):
+        list(roman_range(1, 5, 1))
+    with pytest.raises(OverflowError):
+        list(roman_range(5, 1, -1))
+```
+---- 2024-02-29T18:56:28 string_utils/generation.py:88-140 ----
+total usage: {'prompt_tokens': 22844, 'completion_tokens': 6881}
+---- 2024-02-29T18:56:30 string_utils/generation.py:88-140 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f5941d27250>
+
+    def test_roman_range_full_coverage(mocker):
+        # Mock the roman_encode function to avoid dependency on its implementation
+        mocker.patch('string_utils.generation.roman_encode', side_effect=lambda x: str(x))
+    
+        # Test the case where start, stop, and step are within valid range and step is positive
+        result = list(roman_range(5, 1, 1))
+        assert result == ['1', '2', '3', '4', '5'], "Failed to generate the correct roman range with positive step"
+    
+        # Test the case where start, stop, and step are within valid range and step is negative
+>       result = list(roman_range(5, 1, -1))
+
+coverup-tests/tmp_test_htm0d803.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stop = 5, start = 1, step = -1
+
+    def roman_range(stop: int, start: int = 1, step: int = 1) -> Generator:
+        """
+        Similarly to native Python's `range()`, returns a Generator object which generates a new roman number
+        on each iteration instead of an integer.
+    
+        *Example:*
+    
+        >>> for n in roman_range(7): print(n)
+        >>> # prints: I, II, III, IV, V, VI, VII
+        >>> for n in roman_range(start=7, stop=1, step=-1): print(n)
+        >>> # prints: VII, VI, V, IV, III, II, I
+    
+        :param stop: Number at which the generation must stop (must be <= 3999).
+        :param start: Number at which the generation must start (must be >= 1).
+        :param step: Increment of each generation step (default to 1).
+        :return: Generator of roman numbers.
+        """
+    
+        def validate(arg_value, arg_name, allow_negative=False):
+            msg = '"{}" must be an integer in the range 1-3999'.format(arg_name)
+    
+            if not isinstance(arg_value, int):
+                raise ValueError(msg)
+    
+            if allow_negative:
+                arg_value = abs(arg_value)
+    
+            if arg_value < 1 or arg_value > 3999:
+                raise ValueError(msg)
+    
+        def generate():
+            current = start
+    
+            # generate values for each step
+            while current != stop:
+                yield roman_encode(current)
+                current += step
+    
+            # last value to return
+            yield roman_encode(current)
+    
+        # checks each single argument value
+        validate(stop, 'stop')
+        validate(start, 'start')
+        validate(step, 'step', allow_negative=True)
+    
+        # checks if the provided configuration leads to a feasible iteration with respect to boundaries or not
+        forward_exceed = step > 0 and (start > stop or start + step > stop)
+        backward_exceed = step < 0 and (start < stop or start + step < stop)
+        if forward_exceed or backward_exceed:
+>           raise OverflowError('Invalid start/stop/step configuration')
+E           OverflowError: Invalid start/stop/step configuration
+
+string_utils/generation.py:138: OverflowError
+
+---- 2024-02-29T18:56:32 string_utils/validation.py:308-342 ----
+```python
+import pytest
+from string_utils.validation import is_snake_case
+
+def test_is_snake_case_with_custom_separator(mocker):
+    # Mock the is_full_string function to return True
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+    # Test with a custom separator that is not predefined
+    custom_separator = '#'
+    assert is_snake_case('foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foobarbaz', separator=custom_separator)
+    assert not is_snake_case('1foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#bar#baz#', separator=custom_separator)  # This line should be correct as per the definition
+    assert not is_snake_case('#foo#bar#baz', separator=custom_separator)
+    assert not is_snake_case('foo#bar#baz#1', separator=custom_separator)
+    assert not is_snake_case('foo#bar#', separator=custom_separator)  # Added line to cover the missing branch
+    
+    # Clean up by stopping the patcher
+    mocker.stopall()
+```
+---- 2024-02-29T18:56:32 string_utils/validation.py:308-342 ----
+total usage: {'prompt_tokens': 24233, 'completion_tokens': 7125}
+---- 2024-02-29T18:56:33 string_utils/validation.py:204-244 ----
+```python
+import pytest
+from string_utils.validation import is_email
+
+def test_is_email_coverage(mocker):
+    # Test for line 221
+    assert not is_email('')  # Empty string
+    assert not is_email('..start_with_dot@domain.com')  # Starts with dot
+    assert not is_email('a' * 321)  # Length > 320
+
+    # Test for line 229
+    assert not is_email('local_part_too_long' + 'a' * 65 + '@domain.com')  # Local part > 64
+    assert not is_email('local@' + 'a' * 256 + '.com')  # Domain part > 255
+    assert not is_email('local..part@domain.com')  # Multiple consecutive dots in local part
+    assert not is_email('local.@domain.com')  # Local part ends with dot
+
+    # Test for line 234
+    assert is_email('"local part"@domain.com')  # Local part with spaces and quotes
+
+    # Test for line 238-244
+    mocker.patch('string_utils.validation.ESCAPED_AT_SIGN.search', return_value=None)
+    assert not is_email('local@domain@domain.com')  # Multiple @ signs without correct escaping
+    mocker.patch('string_utils.validation.ESCAPED_AT_SIGN.search', return_value=True)
+    mocker.patch('string_utils.validation.is_email', side_effect=lambda x: True if x == 'localadomain@domain.com' else False)
+    assert is_email('local\\@domain@domain.com')  # Correctly escaped @ sign in local part
+```
+---- 2024-02-29T18:56:33 string_utils/validation.py:204-244 ----
+total usage: {'prompt_tokens': 27003, 'completion_tokens': 7468}
+---- 2024-02-29T18:56:33 string_utils/validation.py:308-342 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fc043e54250>
+
+    def test_is_snake_case_with_custom_separator(mocker):
+        # Mock the is_full_string function to return True
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+        # Test with a custom separator that is not predefined
+        custom_separator = '#'
+        assert is_snake_case('foo#bar#baz', separator=custom_separator)
+        assert not is_snake_case('foobarbaz', separator=custom_separator)
+        assert not is_snake_case('1foo#bar#baz', separator=custom_separator)
+>       assert not is_snake_case('foo#bar#baz#', separator=custom_separator)  # This line should be correct as per the definition
+E       AssertionError: assert not True
+E        +  where True = is_snake_case('foo#bar#baz#', separator='#')
+
+coverup-tests/tmp_test_ucw9_bma.py:13: AssertionError
+
+---- 2024-02-29T18:56:33 string_utils/validation.py:308-342 ----
+Too many attempts, giving up
+---- 2024-02-29T18:56:34 string_utils/validation.py:204-244 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f44cf815480>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'search' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f44cf816dd0>
+
+    def test_is_email_coverage(mocker):
+        # Test for line 221
+        assert not is_email('')  # Empty string
+        assert not is_email('..start_with_dot@domain.com')  # Starts with dot
+        assert not is_email('a' * 321)  # Length > 320
+    
+        # Test for line 229
+        assert not is_email('local_part_too_long' + 'a' * 65 + '@domain.com')  # Local part > 64
+        assert not is_email('local@' + 'a' * 256 + '.com')  # Domain part > 255
+        assert not is_email('local..part@domain.com')  # Multiple consecutive dots in local part
+        assert not is_email('local.@domain.com')  # Local part ends with dot
+    
+        # Test for line 234
+        assert is_email('"local part"@domain.com')  # Local part with spaces and quotes
+    
+        # Test for line 238-244
+>       mocker.patch('string_utils.validation.ESCAPED_AT_SIGN.search', return_value=None)
+
+coverup-tests/tmp_test_0xsrv4kh.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f44cf815480>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'search' is read-only"), <traceback object at 0x7f44cf9c5040>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'search' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-02-29T18:56:38 string_utils/manipulation.py:250-277 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+from unittest.mock import patch
+
+# Assuming the existence of the following regular expressions in the module
+URLS_RE = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+EMAILS_RE = re.compile(r'[\w\.-]+@[\w\.-]+')
+PRETTIFY_RE = {
+    'UPPERCASE_FIRST_LETTER': re.compile(r'...'),  # regex pattern for the rule
+    'DUPLICATES': re.compile(r'...'),  # regex pattern for the rule
+    'RIGHT_SPACE': re.compile(r'...'),  # regex pattern for the rule
+    'LEFT_SPACE': re.compile(r'...'),  # regex pattern for the rule
+    'SPACES_AROUND': re.compile(r'...'),  # regex pattern for the rule
+    'SPACES_INSIDE': re.compile(r'...'),  # regex pattern for the rule
+    'UPPERCASE_AFTER_SIGN': re.compile(r'...'),  # regex pattern for the rule
+    'SAXON_GENITIVE': re.compile(r'...'),  # regex pattern for the rule
+}
+
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter()
+
+def test_string_formatter_format(string_formatter):
+    test_input = "This is a test string with a URL http://example.com and an email test@example.com."
+    expected_output = "This Is A Test String With A URL http://example.com And An Email test@example.com."
+    
+    with patch.object(string_formatter, 'input_string', test_input):
+        with patch.object(string_formatter, '__placeholder_key', side_effect=lambda: 'PLACEHOLDER'):
+            output = string_formatter.format()
+            assert output == expected_output
+            assert 'PLACEHOLDER' not in output
+```
+---- 2024-02-29T18:56:38 string_utils/manipulation.py:250-277 ----
+total usage: {'prompt_tokens': 28154, 'completion_tokens': 7884}
+---- 2024-02-29T18:56:39 string_utils/manipulation.py:250-277 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_fi5r_0xq.py:22: TypeError
+
+---- 2024-02-29T18:56:49 string_utils/validation.py:204-244 ----
+```python
+import pytest
+from string_utils.validation import is_email
+
+def test_is_email_coverage():
+    # Test for line 221
+    assert not is_email('')  # Empty string
+    assert not is_email('..start_with_dot@domain.com')  # Starts with dot
+    assert not is_email('a' * 321)  # Length > 320
+
+    # Test for line 229
+    assert not is_email('local_part_too_long' + 'a' * 65 + '@domain.com')  # Local part > 64
+    assert not is_email('local@' + 'a' * 256 + '.com')  # Domain part > 255
+    assert not is_email('local..part@domain.com')  # Multiple consecutive dots in local part
+    assert not is_email('local.@domain.com')  # Local part ends with dot
+
+    # Test for line 234
+    assert is_email('"local part"@domain.com')  # Local part with spaces and quotes
+
+    # Test for line 238-244
+    assert not is_email('local@domain@domain.com')  # Multiple @ signs without correct escaping
+    assert is_email('local\\@domain@domain.com')  # Correctly escaped @ sign in local part
+```
+---- 2024-02-29T18:56:49 string_utils/validation.py:204-244 ----
+total usage: {'prompt_tokens': 33077, 'completion_tokens': 8157}
+---- 2024-02-29T18:56:50 string_utils/manipulation.py:250-277 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+from unittest.mock import patch
+
+# Assuming the existence of the following regular expressions in the module
+# and that __StringFormatter takes 'input_string' as an argument in its constructor
+@pytest.fixture
+def string_formatter():
+    return __StringFormatter("This is a test string with a URL http://example.com and an email test@example.com.")
+
+def test_string_formatter_format(string_formatter):
+    # Assuming that __StringFormatter has methods to set the input_string and generate placeholder keys
+    test_input = "This is a test string with a URL http://example.com and an email test@example.com."
+    expected_output = "This Is A Test String With A URL http://example.com And An Email test@example.com."
+    
+    with patch.object(__StringFormatter, '__placeholder_key', side_effect=lambda: 'PLACEHOLDER'):
+        output = string_formatter.format()
+        assert output == expected_output
+        assert 'PLACEHOLDER' not in output
+```
+---- 2024-02-29T18:56:50 string_utils/manipulation.py:250-277 ----
+total usage: {'prompt_tokens': 34737, 'completion_tokens': 8364}
+---- 2024-02-29T18:56:51 string_utils/validation.py:204-244 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:56:51 string_utils/validation.py:204-244 ----
+Saved as coverup-tests/test_coverup_55.py
+
+---- 2024-02-29T18:56:51 string_utils/manipulation.py:250-277 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+string_formatter = <string_utils.manipulation.__StringFormatter object at 0x7fabf167a8c0>
+
+    def test_string_formatter_format(string_formatter):
+        # Assuming that __StringFormatter has methods to set the input_string and generate placeholder keys
+        test_input = "This is a test string with a URL http://example.com and an email test@example.com."
+        expected_output = "This Is A Test String With A URL http://example.com And An Email test@example.com."
+    
+>       with patch.object(__StringFormatter, '__placeholder_key', side_effect=lambda: 'PLACEHOLDER'):
+
+coverup-tests/tmp_test_p_qccpf4.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fabf167b370>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <class 'string_utils.manipulation.__StringFormatter'> does not have the attribute '__placeholder_key'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-02-29T18:56:51 string_utils/manipulation.py:250-277 ----
+Too many attempts, giving up
+---- 2024-02-29T18:57:00 string_utils/generation.py:88-140 ----
+```python
+import pytest
+from string_utils.generation import roman_range
+
+def test_roman_range_full_coverage(mocker):
+    # Mock the roman_encode function to avoid dependency on its implementation
+    mocker.patch('string_utils.generation.roman_encode', side_effect=lambda x: str(x))
+
+    # Test the case where start, stop, and step are within valid range and step is positive
+    result = list(roman_range(5, 1, 1))
+    assert result == ['1', '2', '3', '4', '5'], "Failed to generate the correct roman range with positive step"
+
+    # Test the case where start, stop, and step are within valid range and step is negative
+    result = list(roman_range(1, 5, -1))
+    assert result == ['5', '4', '3', '2', '1'], "Failed to generate the correct roman range with negative step"
+
+    # Test the case where start and stop are the same and step is positive
+    result = list(roman_range(5, 5, 1))
+    assert result == ['5'], "Failed to generate the correct roman range when start and stop are the same with positive step"
+
+    # Test the case where start and stop are the same and step is negative
+    result = list(roman_range(5, 5, -1))
+    assert result == ['5'], "Failed to generate the correct roman range when start and stop are the same with negative step"
+
+    # Test the case where step is zero, which should raise a ValueError
+    with pytest.raises(ValueError):
+        list(roman_range(5, 1, 0))
+
+    # Test the case where start, stop, or step are out of bounds
+    with pytest.raises(ValueError):
+        list(roman_range(4000, 1, 1))
+    with pytest.raises(ValueError):
+        list(roman_range(5, 0, 1))
+    with pytest.raises(ValueError):
+        list(roman_range(5, 1, 4000))
+
+    # Test the case where start/stop/step configuration is invalid
+    with pytest.raises(OverflowError):
+        list(roman_range(1, 5, 1))
+    with pytest.raises(OverflowError):
+        list(roman_range(5, 1, -1))
+```
+---- 2024-02-29T18:57:00 string_utils/generation.py:88-140 ----
+total usage: {'prompt_tokens': 37986, 'completion_tokens': 8852}
+---- 2024-02-29T18:57:02 string_utils/generation.py:88-140 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fce1852f250>
+
+    def test_roman_range_full_coverage(mocker):
+        # Mock the roman_encode function to avoid dependency on its implementation
+        mocker.patch('string_utils.generation.roman_encode', side_effect=lambda x: str(x))
+    
+        # Test the case where start, stop, and step are within valid range and step is positive
+        result = list(roman_range(5, 1, 1))
+        assert result == ['1', '2', '3', '4', '5'], "Failed to generate the correct roman range with positive step"
+    
+        # Test the case where start, stop, and step are within valid range and step is negative
+        result = list(roman_range(1, 5, -1))
+        assert result == ['5', '4', '3', '2', '1'], "Failed to generate the correct roman range with negative step"
+    
+        # Test the case where start and stop are the same and step is positive
+>       result = list(roman_range(5, 5, 1))
+
+coverup-tests/tmp_test_9hu3tskx.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stop = 5, start = 5, step = 1
+
+    def roman_range(stop: int, start: int = 1, step: int = 1) -> Generator:
+        """
+        Similarly to native Python's `range()`, returns a Generator object which generates a new roman number
+        on each iteration instead of an integer.
+    
+        *Example:*
+    
+        >>> for n in roman_range(7): print(n)
+        >>> # prints: I, II, III, IV, V, VI, VII
+        >>> for n in roman_range(start=7, stop=1, step=-1): print(n)
+        >>> # prints: VII, VI, V, IV, III, II, I
+    
+        :param stop: Number at which the generation must stop (must be <= 3999).
+        :param start: Number at which the generation must start (must be >= 1).
+        :param step: Increment of each generation step (default to 1).
+        :return: Generator of roman numbers.
+        """
+    
+        def validate(arg_value, arg_name, allow_negative=False):
+            msg = '"{}" must be an integer in the range 1-3999'.format(arg_name)
+    
+            if not isinstance(arg_value, int):
+                raise ValueError(msg)
+    
+            if allow_negative:
+                arg_value = abs(arg_value)
+    
+            if arg_value < 1 or arg_value > 3999:
+                raise ValueError(msg)
+    
+        def generate():
+            current = start
+    
+            # generate values for each step
+            while current != stop:
+                yield roman_encode(current)
+                current += step
+    
+            # last value to return
+            yield roman_encode(current)
+    
+        # checks each single argument value
+        validate(stop, 'stop')
+        validate(start, 'start')
+        validate(step, 'step', allow_negative=True)
+    
+        # checks if the provided configuration leads to a feasible iteration with respect to boundaries or not
+        forward_exceed = step > 0 and (start > stop or start + step > stop)
+        backward_exceed = step < 0 and (start < stop or start + step < stop)
+        if forward_exceed or backward_exceed:
+>           raise OverflowError('Invalid start/stop/step configuration')
+E           OverflowError: Invalid start/stop/step configuration
+
+string_utils/generation.py:138: OverflowError
+
+---- 2024-02-29T18:57:02 string_utils/generation.py:88-140 ----
+Too many attempts, giving up
+---- 2024-02-29T19:05:50 string_utils/validation.py:601-618 ----
+Error: <class 'openai.error.APIError'> Timed out generating response. Please try again with a shorter prompt or with `max_tokens` set to a lower value. {
+    "error": {
+        "message": "Timed out generating response. Please try again with a shorter prompt or with `max_tokens` set to a lower value.",
+        "type": "internal_error",
+        "param": null,
+        "code": "request_timeout"
+    }
+}
+ 500 {'error': {'message': 'Timed out generating response. Please try again with a shorter prompt or with `max_tokens` set to a lower value.', 'type': 'internal_error', 'param': None, 'code': 'request_timeout'}} <CIMultiDictProxy('Date': 'Thu, 29 Feb 2024 19:05:50 GMT', 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': '251', 'Connection': 'keep-alive', 'Vary': 'Origin', 'x-request-id': 'req_64edb005c42c6cbf2f868adb980ae492', 'strict-transport-security': 'max-age=15724800; includeSubDomains', 'CF-Cache-Status': 'DYNAMIC', 'Set-Cookie': '__cf_bm=H0AnGMRlGmAzR93FlYl9OzpCqneYQvlS44ljphUjUqc-1709233550-1.0-ASM5aAAlTEq0MymnSnaW1Fl6mXfQPmT/PR+++DQ7pwGBztvd2IhS3HdMhYeOzOlxx+T34BZldeF6AS/vjYZkS+Q=; path=/; expires=Thu, 29-Feb-24 19:35:50 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None', 'Set-Cookie': '_cfuvid=Ir_t2xiYg9panQJloM4FwsYiLrJE5ixVbN7q0t23iKM-1709233550894-0.0-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None', 'Server': 'cloudflare', 'CF-RAY': '85d31fb6be143b70-BOS', 'alt-svc': 'h3=":443"; ma=86400')>
+---- 2024-02-29T19:05:57 string_utils/validation.py:601-618 ----
+```python
+import pytest
+from string_utils.validation import is_isbn_10
+
+@pytest.fixture
+def mock_isbn_checker(mocker):
+    class MockISBNChecker:
+        def __init__(self, input_string, normalize):
+            pass
+
+        def is_isbn_10(self):
+            return True
+
+    mocker.patch('string_utils.validation.__ISBNChecker', side_effect=MockISBNChecker)
+    return MockISBNChecker
+
+def test_is_isbn_10_executes_missing_lines(mock_isbn_checker):
+    assert is_isbn_10('1506715214') == True
+    mock_isbn_checker.is_isbn_10.assert_called_once()
+```
+---- 2024-02-29T19:05:57 string_utils/validation.py:601-618 ----
+total usage: {'prompt_tokens': 38401, 'completion_tokens': 8985}
+---- 2024-02-29T19:05:59 string_utils/validation.py:601-618 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_isbn_checker = <class 'tmp_test_xclu_w09.mock_isbn_checker.<locals>.MockISBNChecker'>
+
+    def test_is_isbn_10_executes_missing_lines(mock_isbn_checker):
+        assert is_isbn_10('1506715214') == True
+>       mock_isbn_checker.is_isbn_10.assert_called_once()
+E       AttributeError: 'function' object has no attribute 'assert_called_once'
+
+coverup-tests/tmp_test_xclu_w09.py:18: AttributeError
+
+---- 2024-02-29T19:06:04 string_utils/validation.py:601-618 ----
+```python
+import pytest
+from unittest.mock import MagicMock
+from string_utils.validation import is_isbn_10
+
+@pytest.fixture
+def mock_isbn_checker(mocker):
+    mock_checker = MagicMock()
+    mock_checker.is_isbn_10.return_value = True
+    mocker.patch('string_utils.validation.__ISBNChecker', return_value=mock_checker)
+    return mock_checker
+
+def test_is_isbn_10_executes_missing_lines(mock_isbn_checker):
+    assert is_isbn_10('1506715214') == True
+    mock_isbn_checker.is_isbn_10.assert_called_once()
+```
+---- 2024-02-29T19:06:04 string_utils/validation.py:601-618 ----
+total usage: {'prompt_tokens': 39091, 'completion_tokens': 9107}
+---- 2024-02-29T19:06:05 string_utils/validation.py:601-618 ----
+.                                                                        [100%]
+
+---- 2024-02-29T19:06:05 string_utils/validation.py:601-618 ----
+Saved as coverup-tests/test_coverup_56.py
+

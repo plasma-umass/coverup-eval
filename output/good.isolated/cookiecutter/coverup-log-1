@@ -1,0 +1,3370 @@
+---- 2024-02-29T00:26:43 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./cookiecutter --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-1 --checkpoint coverup-ckpt.json cookiecutter/find.py cookiecutter/prompt.py cookiecutter/replay.py cookiecutter/repository.py cookiecutter/zipfile.py
+---- 2024-02-29T00:26:45 cookiecutter/zipfile.py:13-112 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/zipfile.py, module cookiecutter.zipfile, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+                """Download and unpack a zipfile at a given URI.
+            
+                This will download the zipfile to the cookiecutter repository,
+                and unpack into a temporary directory.
+            
+                :param zip_uri: The URI for the zipfile.
+                :param is_url: Is the zip URI a URL or a file?
+                :param clone_to_dir: The cookiecutter repository directory
+                    to put the archive into.
+                :param no_input: Suppress any prompts
+                :param password: The password to use when unpacking the repository.
+                """
+                # Ensure that clone_to_dir exists
+                clone_to_dir = os.path.expanduser(clone_to_dir)
+                make_sure_path_exists(clone_to_dir)
+            
+                if is_url:
+                    # Build the name of the cached zipfile,
+                    # and prompt to delete if it already exists.
+                    identifier = zip_uri.rsplit('/', 1)[1]
+                    zip_path = os.path.join(clone_to_dir, identifier)
+            
+                    if os.path.exists(zip_path):
+                        download = prompt_and_delete(zip_path, no_input=no_input)
+                    else:
+                        download = True
+            
+                    if download:
+                        # (Re) download the zipfile
+                        r = requests.get(zip_uri, stream=True)
+                        with open(zip_path, 'wb') as f:
+                            for chunk in r.iter_content(chunk_size=1024):
+                                if chunk:  # filter out keep-alive new chunks
+                                    f.write(chunk)
+                else:
+                    # Just use the local zipfile as-is.
+                    zip_path = os.path.abspath(zip_uri)
+            
+                # Now unpack the repository. The zipfile will be unpacked
+                # into a temporary directory
+                try:
+                    zip_file = ZipFile(zip_path)
+            
+                    if len(zip_file.namelist()) == 0:
+                        raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+            
+                    # The first record in the zipfile should be the directory entry for
+                    # the archive. If it isn't a directory, there's a problem.
+                    first_filename = zip_file.namelist()[0]
+                    if not first_filename.endswith('/'):
+                        raise InvalidZipRepository(
+                            'Zip repository {} does not include '
+                            'a top-level directory'.format(zip_uri)
+                        )
+            
+                    # Construct the final target directory
+                    project_name = first_filename[:-1]
+                    unzip_base = tempfile.mkdtemp()
+                    unzip_path = os.path.join(unzip_base, project_name)
+            
+                    # Extract the zip file into the temporary directory
+                    try:
+                        zip_file.extractall(path=unzip_base)
+                    except RuntimeError:
+                        # File is password protected; try to get a password from the
+                        # environment; if that doesn't work, ask the user.
+                        if password is not None:
+                            try:
+                                zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+                            except RuntimeError:
+                                raise InvalidZipRepository(
+                                    'Invalid password provided for protected repository'
+                                )
+                        elif no_input:
+                            raise InvalidZipRepository(
+                                'Unable to unlock password protected repository'
+                            )
+                        else:
+                            retry = 0
+                            while retry is not None:
+                                try:
+                                    password = read_repo_password('Repo password')
+                                    zip_file.extractall(
+                                        path=unzip_base, pwd=password.encode('utf-8')
+                                    )
+                                    retry = None
+                                except RuntimeError:
+                                    retry += 1
+                                    if retry == 3:
+                                        raise InvalidZipRepository(
+                                            'Invalid password provided for protected repository'
+                                        )
+            
+                except BadZipFile:
+                    raise InvalidZipRepository(
+                        'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+                    )
+            
+                return unzip_path
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:171-229 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def prompt_for_config(context, no_input=False):
+                """Prompt user to enter a new config.
+            
+                :param dict context: Source for field names and sample values.
+                :param no_input: Prompt the user at command line for manual configuration?
+                """
+                cookiecutter_dict = OrderedDict([])
+                env = StrictEnvironment(context=context)
+            
+                # First pass: Handle simple and raw variables, plus choices.
+                # These must be done first because the dictionaries keys and
+                # values might refer to them.
+                for key, raw in context['cookiecutter'].items():
+                    if key.startswith('_') and not key.startswith('__'):
+                        cookiecutter_dict[key] = raw
+                        continue
+                    elif key.startswith('__'):
+                        cookiecutter_dict[key] = render_variable(env, raw, cookiecutter_dict)
+                        continue
+            
+                    try:
+                        if isinstance(raw, list):
+                            # We are dealing with a choice variable
+                            val = prompt_choice_for_config(
+                                cookiecutter_dict, env, key, raw, no_input
+                            )
+                            cookiecutter_dict[key] = val
+                        elif not isinstance(raw, dict):
+                            # We are dealing with a regular variable
+                            val = render_variable(env, raw, cookiecutter_dict)
+            
+                            if not no_input:
+                                val = read_user_variable(key, val)
+            
+                            cookiecutter_dict[key] = val
+                    except UndefinedError as err:
+                        msg = "Unable to render variable '{}'".format(key)
+                        raise UndefinedVariableInTemplate(msg, err, context)
+            
+                # Second pass; handle the dictionaries.
+                for key, raw in context['cookiecutter'].items():
+                    # Skip private type dicts not ot be rendered.
+                    if key.startswith('_') and not key.startswith('__'):
+                        continue
+            
+                    try:
+                        if isinstance(raw, dict):
+                            # We are dealing with a dict variable
+                            val = render_variable(env, raw, cookiecutter_dict)
+            
+                            if not no_input and not key.startswith('__'):
+                                val = read_user_dict(key, val)
+            
+                            cookiecutter_dict[key] = val
+                    except UndefinedError as err:
+                        msg = "Unable to render variable '{}'".format(key)
+                        raise UndefinedVariableInTemplate(msg, err, context)
+            
+                return cookiecutter_dict
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/repository.py:63-130 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def determine_repo_dir(
+                template,
+                abbreviations,
+                clone_to_dir,
+                checkout,
+                no_input,
+                password=None,
+                directory=None,
+            ):
+                """
+                Locate the repository directory from a template reference.
+            
+                Applies repository abbreviations to the template reference.
+                If the template refers to a repository URL, clone it.
+                If the template is a path to a local repository, use it.
+            
+                :param template: A directory containing a project template directory,
+                    or a URL to a git repository.
+                :param abbreviations: A dictionary of repository abbreviation
+                    definitions.
+                :param clone_to_dir: The directory to clone the repository into.
+                :param checkout: The branch, tag or commit ID to checkout after clone.
+                :param no_input: Prompt the user at command line for manual configuration?
+                :param password: The password to use when extracting the repository.
+                :param directory: Directory within repo where cookiecutter.json lives.
+                :return: A tuple containing the cookiecutter template directory, and
+                    a boolean descriving whether that directory should be cleaned up
+                    after the template has been instantiated.
+                :raises: `RepositoryNotFound` if a repository directory could not be found.
+                """
+                template = expand_abbreviations(template, abbreviations)
+            
+                if is_zip_file(template):
+                    unzipped_dir = unzip(
+                        zip_uri=template,
+                        is_url=is_repo_url(template),
+                        clone_to_dir=clone_to_dir,
+                        no_input=no_input,
+                        password=password,
+                    )
+                    repository_candidates = [unzipped_dir]
+                    cleanup = True
+                elif is_repo_url(template):
+                    cloned_repo = clone(
+                        repo_url=template,
+                        checkout=checkout,
+                        clone_to_dir=clone_to_dir,
+                        no_input=no_input,
+                    )
+                    repository_candidates = [cloned_repo]
+                    cleanup = False
+                else:
+                    repository_candidates = [template, os.path.join(clone_to_dir, template)]
+                    cleanup = False
+            
+                if directory:
+                    repository_candidates = [
+                        os.path.join(s, directory) for s in repository_candidates
+                    ]
+            
+                for repo_candidate in repository_candidates:
+                    if repository_has_cookiecutter_json(repo_candidate):
+                        return repo_candidate, cleanup
+            
+                raise RepositoryNotFound(
+                    'A valid repository for "{}" could not be found in the following '
+                    'locations:\n{}'.format(template, '\n'.join(repository_candidates))
+                )
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:122-156 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def render_variable(env, raw, cookiecutter_dict):
+                """Render the next variable to be displayed in the user prompt.
+            
+                Inside the prompting taken from the cookiecutter.json file, this renders
+                the next variable. For example, if a project_name is "Peanut Butter
+                Cookie", the repo_name could be be rendered with:
+            
+                    `{{ cookiecutter.project_name.replace(" ", "_") }}`.
+            
+                This is then presented to the user as the default.
+            
+                :param Environment env: A Jinja2 Environment object.
+                :param raw: The next value to be prompted for by the user.
+                :param dict cookiecutter_dict: The current context as it's gradually
+                    being populated with variables.
+                :return: The rendered value for the default variable.
+                """
+                if raw is None:
+                    return None
+                elif isinstance(raw, dict):
+                    return {
+                        render_variable(env, k, cookiecutter_dict): render_variable(
+                            env, v, cookiecutter_dict
+                        )
+                        for k, v in raw.items()
+                    }
+                elif isinstance(raw, list):
+                    return [render_variable(env, v, cookiecutter_dict) for v in raw]
+                elif not isinstance(raw, str):
+                    raw = str(raw)
+            
+                template = env.from_string(raw)
+            
+                rendered_template = template.render(cookiecutter=cookiecutter_dict)
+                return rendered_template
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:44-78 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def read_user_choice(var_name, options):
+                """Prompt the user to choose from several options for the given variable.
+            
+                The first item will be returned if no input happens.
+            
+                :param str var_name: Variable as specified in the context
+                :param list options: Sequence of options that are available to select from
+                :return: Exactly one item of ``options`` that has been chosen by the user
+                """
+                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt
+                if not isinstance(options, list):
+                    raise TypeError
+            
+                if not options:
+                    raise ValueError
+            
+                choice_map = OrderedDict(
+                    ('{}'.format(i), value) for i, value in enumerate(options, 1)
+                )
+                choices = choice_map.keys()
+                default = '1'
+            
+                choice_lines = ['{} - {}'.format(*c) for c in choice_map.items()]
+                prompt = '\n'.join(
+                    (
+                        'Select {}:'.format(var_name),
+                        '\n'.join(choice_lines),
+                        'Choose from {}'.format(', '.join(choices)),
+                    )
+                )
+            
+                user_choice = click.prompt(
+                    prompt, type=click.Choice(choices), default=default, show_choices=False
+                )
+                return choice_map[user_choice]
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/replay.py:19-36 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/replay.py, module cookiecutter.replay, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def dump(replay_dir, template_name, context):
+                """Write json data to file."""
+                if not make_sure_path_exists(replay_dir):
+                    raise IOError('Unable to create replay dir at {}'.format(replay_dir))
+            
+                if not isinstance(template_name, str):
+                    raise TypeError('Template name is required to be of type str')
+            
+                if not isinstance(context, dict):
+                    raise TypeError('Context is required to be of type dict')
+            
+                if 'cookiecutter' not in context:
+                    raise ValueError('Context is required to contain a cookiecutter key')
+            
+                replay_file = get_file_name(replay_dir, template_name)
+            
+                with open(replay_file, 'w') as outfile:
+                    json.dump(context, outfile, indent=2)
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/find.py:10-31 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/find.py, module cookiecutter.find, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def find_template(repo_dir):
+                """Determine which child directory of `repo_dir` is the project template.
+            
+                :param repo_dir: Local directory of newly cloned repo.
+                :returns project_template: Relative path to project template.
+                """
+                logger.debug('Searching %s for the project template.', repo_dir)
+            
+                repo_dir_contents = os.listdir(repo_dir)
+            
+                project_template = None
+                for item in repo_dir_contents:
+                    if 'cookiecutter' in item and '{{' in item and '}}' in item:
+                        project_template = item
+                        break
+            
+                if project_template:
+                    project_template = os.path.join(repo_dir, project_template)
+                    logger.debug('The project template appears to be %s', project_template)
+                    return project_template
+                else:
+                    raise NonTemplatedInputDirException
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/replay.py:39-52 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/replay.py, module cookiecutter.replay, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def load(replay_dir, template_name):
+                """Read json data from file."""
+                if not isinstance(template_name, str):
+                    raise TypeError('Template name is required to be of type str')
+            
+                replay_file = get_file_name(replay_dir, template_name)
+            
+                with open(replay_file, 'r') as infile:
+                    context = json.load(infile)
+            
+                if 'cookiecutter' not in context:
+                    raise ValueError('Context is required to contain a cookiecutter key')
+            
+                return context
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:99-119 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def read_user_dict(var_name, default_value):
+                """Prompt the user to provide a dictionary of data.
+            
+                :param str var_name: Variable as specified in the context
+                :param default_value: Value that will be returned if no input is provided
+                :return: A Python dictionary to use in the context.
+                """
+                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt
+                if not isinstance(default_value, dict):
+                    raise TypeError
+            
+                default_display = 'default'
+            
+                user_value = click.prompt(
+                    var_name, default=default_display, type=click.STRING, value_proc=process_json
+                )
+            
+                if user_value == default_display:
+                    # Return the given default w/o any processing
+                    return default_value
+                return user_value
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/repository.py:31-46 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def expand_abbreviations(template, abbreviations):
+                """Expand abbreviations in a template name.
+            
+                :param template: The project template name.
+                :param abbreviations: Abbreviation definitions.
+                """
+                if template in abbreviations:
+                    return abbreviations[template]
+            
+                # Split on colon. If there is no colon, rest will be empty
+                # and prefix will be the whole template
+                prefix, sep, rest = template.partition(':')
+                if prefix in abbreviations:
+                    return abbreviations[prefix].format(rest)
+            
+                return template
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:81-96 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def process_json(user_value):
+                """Load user-supplied value as a JSON dict.
+            
+                :param str user_value: User-supplied value to load as a JSON dict
+                """
+                try:
+                    user_dict = json.loads(user_value, object_pairs_hook=OrderedDict)
+                except Exception:
+                    # Leave it up to click to ask the user again
+                    raise click.UsageError('Unable to decode to JSON.')
+            
+                if not isinstance(user_dict, dict):
+                    # Leave it up to click to ask the user again
+                    raise click.UsageError('Requires JSON dict.')
+            
+                return user_dict
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:159-168 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def prompt_choice_for_config(cookiecutter_dict, env, key, options, no_input):
+                """Prompt user with a set of options to choose from.
+            
+                Each of the possible choices is rendered beforehand.
+                """
+                rendered_options = [render_variable(env, raw, cookiecutter_dict) for raw in options]
+            
+                if no_input:
+                    return rendered_options[0]
+                return read_user_choice(key, rendered_options)
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/repository.py:49-60 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def repository_has_cookiecutter_json(repo_directory):
+                """Determine if `repo_directory` contains a `cookiecutter.json` file.
+            
+                :param repo_directory: The candidate repository directory.
+                :return: True if the `repo_directory` is valid, else False.
+                """
+                repo_directory_exists = os.path.isdir(repo_directory)
+            
+                repo_config_exists = os.path.isfile(
+                    os.path.join(repo_directory, 'cookiecutter.json')
+                )
+                return repo_directory_exists and repo_config_exists
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/replay.py:12-16 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/replay.py, module cookiecutter.replay, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def get_file_name(replay_dir, template_name):
+                """Get the name of file."""
+                suffix = '.json' if not template_name.endswith('.json') else ''
+                file_name = '{}{}'.format(template_name, suffix)
+                return os.path.join(replay_dir, file_name)
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:12-19 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def read_user_variable(var_name, default_value):
+                """Prompt user for variable and return the entered value or given default.
+            
+                :param str var_name: Variable of the context to query the user
+                :param default_value: Value that will be returned if no input happens
+                """
+                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt
+                return click.prompt(var_name, default=default_value)
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:22-32 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def read_user_yes_no(question, default_value):
+                """Prompt the user to reply with 'yes' or 'no' (or equivalent values).
+            
+                Note:
+                  Possible choices are 'true', '1', 'yes', 'y' or 'false', '0', 'no', 'n'
+            
+                :param str question: Question to the user
+                :param default_value: Value that will be returned if no input happens
+                """
+                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt
+                return click.prompt(question, default=default_value, type=click.BOOL)
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/prompt.py:35-41 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def read_repo_password(question):
+                """Prompt the user to enter a password.
+            
+                :param str question: Question to the user
+                """
+                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt
+                return click.prompt(question, hide_input=True)
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/repository.py:21-23 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_repo_url(value):
+                """Return True if value is a repository URL."""
+                return bool(REPO_REGEX.match(value))
+
+```
+
+---- 2024-02-29T00:26:46 cookiecutter/repository.py:26-28 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, it does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_zip_file(value):
+                """Return True if value is a zip file."""
+                return value.lower().endswith('.zip')
+
+```
+
+---- 2024-02-29T00:26:50 cookiecutter/prompt.py:35-41 ----
+```python
+import pytest
+from cookiecutter.prompt import read_repo_password
+from click.testing import CliRunner
+
+def test_read_repo_password(mocker):
+    # Mock the click.prompt to return a specific password without user input
+    mocker.patch('click.prompt', return_value='fake-password')
+
+    # Call the function to test
+    password = read_repo_password('Enter your password:')
+
+    # Assert that the password returned is the one we mocked
+    assert password == 'fake-password'
+
+    # Assert that click.prompt was called with the correct parameters
+    click.prompt.assert_called_once_with('Enter your password:', hide_input=True)
+```
+---- 2024-02-29T00:26:50 cookiecutter/prompt.py:35-41 ----
+total usage: {'prompt_tokens': 255, 'completion_tokens': 130}
+---- 2024-02-29T00:26:51 cookiecutter/prompt.py:35-41 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f3d25e25360>
+
+    def test_read_repo_password(mocker):
+        # Mock the click.prompt to return a specific password without user input
+        mocker.patch('click.prompt', return_value='fake-password')
+    
+        # Call the function to test
+        password = read_repo_password('Enter your password:')
+    
+        # Assert that the password returned is the one we mocked
+        assert password == 'fake-password'
+    
+        # Assert that click.prompt was called with the correct parameters
+>       click.prompt.assert_called_once_with('Enter your password:', hide_input=True)
+E       NameError: name 'click' is not defined
+
+coverup-tests/tmp_test_2mt_pi75.py:16: NameError
+
+---- 2024-02-29T00:26:52 cookiecutter/prompt.py:81-96 ----
+```python
+import json
+import pytest
+from click.testing import CliRunner
+from cookiecutter.prompt import process_json
+from click.exceptions import UsageError
+
+def test_process_json_valid_dict(mocker):
+    user_value = '{"name": "John", "age": 30}'
+    expected_dict = {"name": "John", "age": 30}
+    result = process_json(user_value)
+    assert result == expected_dict
+
+def test_process_json_invalid_json(mocker):
+    user_value = 'not a json'
+    with pytest.raises(UsageError) as excinfo:
+        process_json(user_value)
+    assert 'Unable to decode to JSON.' in str(excinfo.value)
+
+def test_process_json_non_dict_json(mocker):
+    user_value = '["not", "a", "dict"]'
+    with pytest.raises(UsageError) as excinfo:
+        process_json(user_value)
+    assert 'Requires JSON dict.' in str(excinfo.value)
+```
+---- 2024-02-29T00:26:52 cookiecutter/prompt.py:81-96 ----
+total usage: {'prompt_tokens': 575, 'completion_tokens': 326}
+---- 2024-02-29T00:26:54 cookiecutter/prompt.py:81-96 ----
+...                                                                      [100%]
+
+---- 2024-02-29T00:26:54 cookiecutter/prompt.py:81-96 ----
+Saved as coverup-tests/test_coverup_1.py
+
+---- 2024-02-29T00:26:54 cookiecutter/prompt.py:122-156 ----
+```python
+import pytest
+from jinja2 import Environment
+from cookiecutter.prompt import render_variable
+
+@pytest.fixture
+def env():
+    return Environment()
+
+@pytest.fixture
+def cookiecutter_dict():
+    return {'project_name': 'Peanut Butter Cookie'}
+
+def test_render_variable_with_dict(env, cookiecutter_dict):
+    raw = {
+        'repo_name': '{{ cookiecutter.project_name.replace(" ", "_") }}',
+        'author_name': 'Oreo Milkshake'
+    }
+    expected = {
+        'repo_name': 'Peanut_Butter_Cookie',
+        'author_name': 'Oreo Milkshake'
+    }
+    assert render_variable(env, raw, cookiecutter_dict) == expected
+
+def test_render_variable_with_list(env, cookiecutter_dict):
+    raw = ['{{ cookiecutter.project_name.upper() }}', 'Chocolate_Chip']
+    expected = ['PEANUT BUTTER COOKIE', 'Chocolate_Chip']
+    assert render_variable(env, raw, cookiecutter_dict) == expected
+
+def test_render_variable_with_non_string(env, cookiecutter_dict):
+    raw = 12345
+    expected = '12345'
+    assert render_variable(env, raw, cookiecutter_dict) == expected
+
+def test_render_variable_with_none(env, cookiecutter_dict):
+    raw = None
+    expected = None
+    assert render_variable(env, raw, cookiecutter_dict) == expected
+```
+---- 2024-02-29T00:26:54 cookiecutter/prompt.py:122-156 ----
+total usage: {'prompt_tokens': 1067, 'completion_tokens': 623}
+---- 2024-02-29T00:26:54 cookiecutter/repository.py:26-28 ----
+```python
+import os
+import pytest
+from cookiecutter.repository import is_zip_file
+
+def test_is_zip_file_true():
+    assert is_zip_file('example.zip') is True
+
+def test_is_zip_file_false():
+    assert is_zip_file('example.tar.gz') is False
+
+def test_is_zip_file_uppercase_extension():
+    assert is_zip_file('EXAMPLE.ZIP') is True
+
+def test_is_zip_file_mixed_case_extension():
+    assert is_zip_file('Example.ZiP') is True
+```
+---- 2024-02-29T00:26:54 cookiecutter/repository.py:26-28 ----
+total usage: {'prompt_tokens': 1287, 'completion_tokens': 728}
+---- 2024-02-29T00:26:55 cookiecutter/repository.py:31-46 ----
+```python
+import pytest
+from cookiecutter.repository import expand_abbreviations
+
+def test_expand_abbreviations_with_exact_match(mocker):
+    mocker.patch('cookiecutter.repository.abbreviations', {'gh': 'https://github.com/{0}'})
+    template = 'gh'
+    expected = 'https://github.com/{0}'
+    assert expand_abbreviations(template, {'gh': 'https://github.com/{0}'}) == expected
+
+def test_expand_abbreviations_with_prefix_match(mocker):
+    mocker.patch('cookiecutter.repository.abbreviations', {'gh': 'https://github.com/{0}'})
+    template = 'gh:username/repo'
+    expected = 'https://github.com/username/repo'
+    assert expand_abbreviations(template, {'gh': 'https://github.com/{0}'}) == expected
+
+def test_expand_abbreviations_without_match(mocker):
+    mocker.patch('cookiecutter.repository.abbreviations', {'gh': 'https://github.com/{0}'})
+    template = 'bitbucket:username/repo'
+    expected = 'bitbucket:username/repo'
+    assert expand_abbreviations(template, {'gh': 'https://github.com/{0}'}) == expected
+```
+---- 2024-02-29T00:26:55 cookiecutter/repository.py:31-46 ----
+total usage: {'prompt_tokens': 1599, 'completion_tokens': 984}
+---- 2024-02-29T00:26:55 cookiecutter/replay.py:12-16 ----
+```python
+import os
+import pytest
+from cookiecutter import replay
+
+@pytest.fixture
+def mock_replay_dir(tmp_path):
+    return tmp_path
+
+def test_get_file_name_with_json_suffix(mock_replay_dir):
+    template_name = "template.json"
+    expected_file_path = os.path.join(mock_replay_dir, template_name)
+    file_path = replay.get_file_name(mock_replay_dir, template_name)
+    assert file_path == expected_file_path
+
+def test_get_file_name_without_json_suffix(mock_replay_dir):
+    template_name = "template"
+    expected_file_path = os.path.join(mock_replay_dir, template_name + ".json")
+    file_path = replay.get_file_name(mock_replay_dir, template_name)
+    assert file_path == expected_file_path
+```
+---- 2024-02-29T00:26:55 cookiecutter/replay.py:12-16 ----
+total usage: {'prompt_tokens': 1853, 'completion_tokens': 1143}
+---- 2024-02-29T00:26:55 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import StrictEnvironment
+
+def test_prompt_for_config_with_undefined_variable(mocker):
+    context = {
+        'cookiecutter': {
+            'project_slug': '{{ cookiecutter.project_name|slugify }}',
+            'project_name': 'test_project',
+            '__private': '{{ cookiecutter.project_slug }}',
+            '_skip': 'should be skipped',
+            'choices': ['choice1', 'choice2'],
+            'dict_var': {'key': '{{ cookiecutter.project_slug }}'}
+        }
+    }
+    mocker.patch('cookiecutter.prompt.read_user_variable', return_value='user_input')
+    mocker.patch('cookiecutter.prompt.read_user_dict', return_value={'user_key': 'user_value'})
+    mocker.patch('cookiecutter.prompt.render_variable', side_effect=UndefinedVariableInTemplate)
+
+    with pytest.raises(UndefinedVariableInTemplate):
+        prompt_for_config(context)
+
+    # Cleanup is not necessary as we are using mocker.patch which is
+    # automatically undone at the end of the test.
+```
+---- 2024-02-29T00:26:55 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 2523, 'completion_tokens': 1387}
+---- 2024-02-29T00:26:55 cookiecutter/prompt.py:122-156 ----
+....                                                                     [100%]
+
+---- 2024-02-29T00:26:55 cookiecutter/prompt.py:122-156 ----
+Saved as coverup-tests/test_coverup_2.py
+
+---- 2024-02-29T00:26:55 cookiecutter/prompt.py:22-32 ----
+```python
+import pytest
+from click.testing import CliRunner
+from cookiecutter.prompt import read_user_yes_no
+
+@pytest.fixture
+def mock_click_prompt(mocker):
+    return mocker.patch('cookiecutter.prompt.click.prompt')
+
+def test_read_user_yes_no_with_yes_input(mock_click_prompt):
+    mock_click_prompt.return_value = True
+    question = "Would you like to continue?"
+    default_value = False
+
+    response = read_user_yes_no(question, default_value)
+
+    mock_click_prompt.assert_called_once_with(question, default=default_value, type=click.BOOL)
+    assert response is True
+
+def test_read_user_yes_no_with_no_input(mock_click_prompt):
+    mock_click_prompt.return_value = False
+    question = "Would you like to continue?"
+    default_value = True
+
+    response = read_user_yes_no(question, default_value)
+
+    mock_click_prompt.assert_called_once_with(question, default=default_value, type=click.BOOL)
+    assert response is False
+```
+---- 2024-02-29T00:26:55 cookiecutter/prompt.py:22-32 ----
+total usage: {'prompt_tokens': 2847, 'completion_tokens': 1586}
+---- 2024-02-29T00:26:56 cookiecutter/prompt.py:35-41 ----
+```python
+import pytest
+from cookiecutter.prompt import read_repo_password
+from unittest.mock import patch
+
+def test_read_repo_password(mocker):
+    # Mock the click.prompt to return a specific password without user input
+    prompt_mock = mocker.patch('click.prompt', return_value='fake-password')
+
+    # Call the function to test
+    password = read_repo_password('Enter your password:')
+
+    # Assert that the password returned is the one we mocked
+    assert password == 'fake-password'
+
+    # Assert that click.prompt was called with the correct parameters
+    prompt_mock.assert_called_once_with('Enter your password:', hide_input=True)
+```
+---- 2024-02-29T00:26:56 cookiecutter/prompt.py:35-41 ----
+total usage: {'prompt_tokens': 3432, 'completion_tokens': 1718}
+---- 2024-02-29T00:26:56 cookiecutter/repository.py:26-28 ----
+....                                                                     [100%]
+
+---- 2024-02-29T00:26:56 cookiecutter/repository.py:26-28 ----
+Saved as coverup-tests/test_coverup_3.py
+
+---- 2024-02-29T00:26:56 cookiecutter/prompt.py:44-78 ----
+```python
+import pytest
+from click.testing import CliRunner
+from collections import OrderedDict
+from cookiecutter.prompt import read_user_choice
+
+def test_read_user_choice(mocker):
+    mocker.patch('click.prompt', return_value='1')
+    options = ['option1', 'option2']
+    result = read_user_choice('test_var', options)
+    assert result == 'option1'
+
+    mocker.patch('click.prompt', return_value='2')
+    result = read_user_choice('test_var', options)
+    assert result == 'option2'
+
+    with pytest.raises(TypeError):
+        read_user_choice('test_var', 'not-a-list')
+
+    with pytest.raises(ValueError):
+        read_user_choice('test_var', [])
+```
+---- 2024-02-29T00:26:56 cookiecutter/prompt.py:44-78 ----
+total usage: {'prompt_tokens': 3893, 'completion_tokens': 1864}
+---- 2024-02-29T00:26:57 cookiecutter/repository.py:31-46 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fdac55a2fe0>
+
+    def test_expand_abbreviations_with_exact_match(mocker):
+>       mocker.patch('cookiecutter.repository.abbreviations', {'gh': 'https://github.com/{0}'})
+
+coverup-tests/tmp_test_71xdgn4o.py:5: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fdac55a0c70>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'cookiecutter.repository' from '/output/cookiecutter/repository.py'> does not have the attribute 'abbreviations'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+_________________ test_expand_abbreviations_with_prefix_match __________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fdac5f7b490>
+
+    def test_expand_abbreviations_with_prefix_match(mocker):
+>       mocker.patch('cookiecutter.repository.abbreviations', {'gh': 'https://github.com/{0}'})
+
+coverup-tests/tmp_test_71xdgn4o.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fdac5f7b6d0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'cookiecutter.repository' from '/output/cookiecutter/repository.py'> does not have the attribute 'abbreviations'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+___________________ test_expand_abbreviations_without_match ____________________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fdac53fa920>
+
+    def test_expand_abbreviations_without_match(mocker):
+>       mocker.patch('cookiecutter.repository.abbreviations', {'gh': 'https://github.com/{0}'})
+
+coverup-tests/tmp_test_71xdgn4o.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fdac53f85e0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'cookiecutter.repository' from '/output/cookiecutter/repository.py'> does not have the attribute 'abbreviations'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-02-29T00:26:57 cookiecutter/replay.py:12-16 ----
+..                                                                       [100%]
+
+---- 2024-02-29T00:26:57 cookiecutter/replay.py:12-16 ----
+Saved as coverup-tests/test_coverup_4.py
+
+---- 2024-02-29T00:26:57 cookiecutter/prompt.py:171-229 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_x80oku2l.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_x80oku2l.py:5: in <module>
+    from jinja2 import StrictEnvironment
+E   ImportError: cannot import name 'StrictEnvironment' from 'jinja2' (/usr/local/lib/python3.10/site-packages/jinja2/__init__.py)
+
+---- 2024-02-29T00:26:57 cookiecutter/prompt.py:22-32 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_click_prompt = <MagicMock name='prompt' id='140225398069072'>
+
+    def test_read_user_yes_no_with_yes_input(mock_click_prompt):
+        mock_click_prompt.return_value = True
+        question = "Would you like to continue?"
+        default_value = False
+    
+        response = read_user_yes_no(question, default_value)
+    
+>       mock_click_prompt.assert_called_once_with(question, default=default_value, type=click.BOOL)
+E       NameError: name 'click' is not defined
+
+coverup-tests/tmp_test_t18szoxz.py:16: NameError
+_____________________ test_read_user_yes_no_with_no_input ______________________
+
+mock_click_prompt = <MagicMock name='prompt' id='140225418574384'>
+
+    def test_read_user_yes_no_with_no_input(mock_click_prompt):
+        mock_click_prompt.return_value = False
+        question = "Would you like to continue?"
+        default_value = True
+    
+        response = read_user_yes_no(question, default_value)
+    
+>       mock_click_prompt.assert_called_once_with(question, default=default_value, type=click.BOOL)
+E       NameError: name 'click' is not defined
+
+coverup-tests/tmp_test_t18szoxz.py:26: NameError
+
+---- 2024-02-29T00:26:57 cookiecutter/prompt.py:12-19 ----
+```python
+import pytest
+from cookiecutter.prompt import read_user_variable
+from click.testing import CliRunner
+
+@pytest.fixture
+def mock_click_prompt(mocker):
+    return mocker.patch('cookiecutter.prompt.click.prompt')
+
+def test_read_user_variable_with_input(mock_click_prompt):
+    mock_click_prompt.return_value = 'user input'
+    result = read_user_variable('test_var', 'default_value')
+    mock_click_prompt.assert_called_once_with('test_var', default='default_value')
+    assert result == 'user input'
+
+def test_read_user_variable_with_default(mock_click_prompt):
+    mock_click_prompt.return_value = 'default_value'
+    result = read_user_variable('test_var', 'default_value')
+    mock_click_prompt.assert_called_once_with('test_var', default='default_value')
+    assert result == 'default_value'
+```
+---- 2024-02-29T00:26:57 cookiecutter/prompt.py:12-19 ----
+total usage: {'prompt_tokens': 4179, 'completion_tokens': 2032}
+---- 2024-02-29T00:26:57 cookiecutter/prompt.py:35-41 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:26:57 cookiecutter/prompt.py:35-41 ----
+Saved as coverup-tests/test_coverup_5.py
+
+---- 2024-02-29T00:26:57 cookiecutter/replay.py:19-36 ----
+```python
+import json
+import os
+import pytest
+from cookiecutter.replay import dump, get_file_name
+from cookiecutter.utils import make_sure_path_exists
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.replay.make_sure_path_exists', return_value=True)
+
+@pytest.fixture
+def replay_dir(tmp_path):
+    return str(tmp_path / "replay")
+
+@pytest.fixture
+def template_name():
+    return "test_template"
+
+@pytest.fixture
+def context():
+    return {"cookiecutter": {"project_slug": "test_project"}}
+
+def test_dump_creates_replay_file(mock_make_sure_path_exists, replay_dir, template_name, context):
+    dump(replay_dir, template_name, context)
+    replay_file = get_file_name(replay_dir, template_name)
+    assert os.path.exists(replay_file)
+    with open(replay_file, 'r') as f:
+        data = json.load(f)
+    assert data == context
+
+def test_dump_raises_ioerror_if_replay_dir_creation_fails(mocker, replay_dir, template_name, context):
+    mocker.patch('cookiecutter.replay.make_sure_path_exists', return_value=False)
+    with pytest.raises(IOError):
+        dump(replay_dir, template_name, context)
+
+def test_dump_raises_typeerror_if_template_name_not_str(replay_dir, context):
+    with pytest.raises(TypeError):
+        dump(replay_dir, 123, context)
+
+def test_dump_raises_typeerror_if_context_not_dict(replay_dir, template_name):
+    with pytest.raises(TypeError):
+        dump(replay_dir, template_name, "not_a_dict")
+
+def test_dump_raises_valueerror_if_context_missing_cookiecutter_key(replay_dir, template_name):
+    with pytest.raises(ValueError):
+        dump(replay_dir, template_name, {})
+```
+---- 2024-02-29T00:26:57 cookiecutter/replay.py:19-36 ----
+total usage: {'prompt_tokens': 4534, 'completion_tokens': 2408}
+---- 2024-02-29T00:26:58 cookiecutter/prompt.py:44-78 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:26:58 cookiecutter/prompt.py:44-78 ----
+Saved as coverup-tests/test_coverup_6.py
+
+---- 2024-02-29T00:26:59 cookiecutter/prompt.py:12-19 ----
+..                                                                       [100%]
+
+---- 2024-02-29T00:26:59 cookiecutter/prompt.py:12-19 ----
+Saved as coverup-tests/test_coverup_7.py
+
+---- 2024-02-29T00:26:59 cookiecutter/replay.py:19-36 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_make_sure_path_exists = <MagicMock name='make_sure_path_exists' id='140121810799008'>
+replay_dir = '/tmp/pytest-of-root/pytest-1/test_dump_creates_replay_file0/replay'
+template_name = 'test_template'
+context = {'cookiecutter': {'project_slug': 'test_project'}}
+
+    def test_dump_creates_replay_file(mock_make_sure_path_exists, replay_dir, template_name, context):
+>       dump(replay_dir, template_name, context)
+
+coverup-tests/tmp_test_0lcauzrp.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+replay_dir = '/tmp/pytest-of-root/pytest-1/test_dump_creates_replay_file0/replay'
+template_name = 'test_template'
+context = {'cookiecutter': {'project_slug': 'test_project'}}
+
+    def dump(replay_dir, template_name, context):
+        """Write json data to file."""
+        if not make_sure_path_exists(replay_dir):
+            raise IOError('Unable to create replay dir at {}'.format(replay_dir))
+    
+        if not isinstance(template_name, str):
+            raise TypeError('Template name is required to be of type str')
+    
+        if not isinstance(context, dict):
+            raise TypeError('Context is required to be of type dict')
+    
+        if 'cookiecutter' not in context:
+            raise ValueError('Context is required to contain a cookiecutter key')
+    
+        replay_file = get_file_name(replay_dir, template_name)
+    
+>       with open(replay_file, 'w') as outfile:
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-root/pytest-1/test_dump_creates_replay_file0/replay/test_template.json'
+
+cookiecutter/replay.py:35: FileNotFoundError
+
+---- 2024-02-29T00:27:00 cookiecutter/prompt.py:159-168 ----
+```python
+import pytest
+from cookiecutter.prompt import prompt_choice_for_config
+from jinja2 import Environment
+
+@pytest.fixture
+def mock_env(mocker):
+    env = mocker.Mock(spec=Environment)
+    env.from_string.return_value.render.return_value = 'rendered_value'
+    return env
+
+@pytest.fixture
+def mock_read_user_choice(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_choice', return_value='user_choice')
+
+def test_prompt_choice_for_config_no_input(mock_env):
+    cookiecutter_dict = {}
+    key = 'test_key'
+    options = ['option1']
+    no_input = True
+
+    result = prompt_choice_for_config(cookiecutter_dict, mock_env, key, options, no_input)
+
+    assert result == 'rendered_value'
+    mock_env.from_string.assert_called_once_with(options[0])
+    mock_env.from_string.return_value.render.assert_called_once_with(cookiecutter=cookiecutter_dict)
+
+def test_prompt_choice_for_config_with_input(mock_env, mock_read_user_choice):
+    cookiecutter_dict = {}
+    key = 'test_key'
+    options = ['option1', 'option2']
+    no_input = False
+
+    result = prompt_choice_for_config(cookiecutter_dict, mock_env, key, options, no_input)
+
+    assert result == 'user_choice'
+    assert mock_env.from_string.call_count == len(options)
+    mock_read_user_choice.assert_called_once_with(key, ['rendered_value', 'rendered_value'])
+```
+---- 2024-02-29T00:27:00 cookiecutter/prompt.py:159-168 ----
+total usage: {'prompt_tokens': 4817, 'completion_tokens': 2713}
+---- 2024-02-29T00:27:01 cookiecutter/find.py:10-31 ----
+```python
+import os
+import pytest
+from cookiecutter.exceptions import NonTemplatedInputDirException
+from cookiecutter.find import find_template
+from unittest.mock import patch
+
+def test_find_template_with_cookiecutter_dir(tmp_path, mocker):
+    # Setup a fake repo directory with a valid template directory
+    repo_dir = tmp_path / "fake_repo"
+    repo_dir.mkdir()
+    template_dir = repo_dir / "cookiecutter-{{fake_project}}"
+    template_dir.mkdir()
+    
+    # Mock the logger to avoid side effects
+    mock_logger = mocker.patch('cookiecutter.find.logger')
+
+    # Call the function under test
+    found_template = find_template(str(repo_dir))
+
+    # Assertions to check the postconditions
+    assert found_template == str(template_dir)
+    mock_logger.debug.assert_called_with('The project template appears to be %s', str(template_dir))
+
+def test_find_template_without_cookiecutter_dir(tmp_path, mocker):
+    # Setup a fake repo directory without a valid template directory
+    repo_dir = tmp_path / "fake_repo"
+    repo_dir.mkdir()
+    (repo_dir / "not_a_template").mkdir()
+    
+    # Mock the logger to avoid side effects
+    mocker.patch('cookiecutter.find.logger')
+
+    # Call the function under test and assert it raises the correct exception
+    with pytest.raises(NonTemplatedInputDirException):
+        find_template(str(repo_dir))
+```
+---- 2024-02-29T00:27:01 cookiecutter/find.py:10-31 ----
+total usage: {'prompt_tokens': 5184, 'completion_tokens': 3008}
+---- 2024-02-29T00:27:02 cookiecutter/prompt.py:159-168 ----
+..                                                                       [100%]
+
+---- 2024-02-29T00:27:02 cookiecutter/prompt.py:159-168 ----
+Saved as coverup-tests/test_coverup_8.py
+
+---- 2024-02-29T00:27:02 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import pytest
+import tempfile
+from unittest.mock import patch, MagicMock
+from zipfile import ZipFile, BadZipFile
+
+from cookiecutter.zipfile import unzip, InvalidZipRepository
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_get = mocker.patch('cookiecutter.zipfile.requests.get')
+    mock_response = MagicMock()
+    mock_response.iter_content.return_value = [b'content']
+    mock_get.return_value = mock_response
+    return mock_get
+
+@pytest.fixture
+def mock_os_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.os.path.exists', return_value=True)
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=False)
+
+@pytest.fixture
+def mock_zipfile(mocker):
+    mock_zip_file = mocker.patch('cookiecutter.zipfile.ZipFile')
+    mock_zip_file.return_value.__enter__.return_value.namelist.return_value = ['testdir/', 'testdir/file.txt']
+    return mock_zip_file
+
+@pytest.fixture
+def mock_tempfile_mktemp(mocker):
+    return mocker.patch('cookiecutter.zipfile.tempfile.mkdtemp', return_value='/fake/temp/dir')
+
+def test_unzip_url_exists_no_download(mock_requests_get, mock_os_path_exists, mock_prompt_and_delete, mock_zipfile, mock_tempfile_mktemp):
+    zip_uri = 'https://example.com/test.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = True
+
+    result = unzip(zip_uri, is_url, clone_to_dir, no_input)
+
+    mock_requests_get.assert_not_called()
+    mock_os_path_exists.assert_called_once_with(os.path.join(clone_to_dir, 'test.zip'))
+    mock_prompt_and_delete.assert_called_once_with(os.path.join(clone_to_dir, 'test.zip'), no_input=True)
+    assert result == '/fake/temp/dir/testdir'
+
+    # Cleanup
+    if os.path.exists('/fake/temp/dir'):
+        os.rmdir('/fake/temp/dir')
+```
+---- 2024-02-29T00:27:02 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 6164, 'completion_tokens': 3428}
+---- 2024-02-29T00:27:03 cookiecutter/repository.py:49-60 ----
+```python
+import os
+import pytest
+import shutil
+from cookiecutter.repository import repository_has_cookiecutter_json
+
+@pytest.fixture
+def temp_repo_dir(tmp_path):
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    return repo_dir
+
+def test_repository_has_cookiecutter_json_with_cookiecutter_file(temp_repo_dir):
+    cookiecutter_file = temp_repo_dir / 'cookiecutter.json'
+    cookiecutter_file.touch()  # Create an empty cookiecutter.json file
+
+    assert repository_has_cookiecutter_json(str(temp_repo_dir)) is True
+
+def test_repository_has_cookiecutter_json_without_cookiecutter_file(temp_repo_dir):
+    assert repository_has_cookiecutter_json(str(temp_repo_dir)) is False
+
+def test_repository_has_cookiecutter_json_with_nonexistent_directory():
+    nonexistent_dir = '/path/to/nonexistent/directory'
+    assert repository_has_cookiecutter_json(nonexistent_dir) is False
+```
+---- 2024-02-29T00:27:03 cookiecutter/repository.py:49-60 ----
+total usage: {'prompt_tokens': 6463, 'completion_tokens': 3624}
+---- 2024-02-29T00:27:03 cookiecutter/find.py:10-31 ----
+..                                                                       [100%]
+
+---- 2024-02-29T00:27:03 cookiecutter/find.py:10-31 ----
+Saved as coverup-tests/test_coverup_9.py
+
+---- 2024-02-29T00:27:04 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_requests_get = <MagicMock name='get' id='140157573383552'>
+mock_os_path_exists = <MagicMock name='exists' id='140157570277792'>
+mock_prompt_and_delete = <MagicMock name='prompt_and_delete' id='140157578487856'>
+mock_zipfile = <MagicMock name='ZipFile' id='140157573248528'>
+mock_tempfile_mktemp = <MagicMock name='mkdtemp' id='140157586889968'>
+
+    def test_unzip_url_exists_no_download(mock_requests_get, mock_os_path_exists, mock_prompt_and_delete, mock_zipfile, mock_tempfile_mktemp):
+        zip_uri = 'https://example.com/test.zip'
+        is_url = True
+        clone_to_dir = '.'
+        no_input = True
+    
+>       result = unzip(zip_uri, is_url, clone_to_dir, no_input)
+
+coverup-tests/tmp_test_9jtj_xtq.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'https://example.com/test.zip', is_url = True, clone_to_dir = '.'
+no_input = True, password = None
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+>               raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+E               cookiecutter.exceptions.InvalidZipRepository: Zip repository https://example.com/test.zip is empty
+
+cookiecutter/zipfile.py:58: InvalidZipRepository
+
+---- 2024-02-29T00:27:04 cookiecutter/repository.py:49-60 ----
+...                                                                      [100%]
+
+---- 2024-02-29T00:27:04 cookiecutter/repository.py:49-60 ----
+Saved as coverup-tests/test_coverup_10.py
+
+---- 2024-02-29T00:27:04 cookiecutter/repository.py:63-130 ----
+```python
+import os
+import pytest
+from cookiecutter.exceptions import RepositoryNotFound
+from cookiecutter.repository import determine_repo_dir
+from unittest.mock import patch
+
+@pytest.fixture
+def cleanup_temp_dir():
+    temp_dirs = []
+
+    yield temp_dirs
+
+    for temp_dir in temp_dirs:
+        if os.path.exists(temp_dir):
+            os.rmdir(temp_dir)
+
+def test_determine_repo_dir_with_directory_existing_locally(cleanup_temp_dir, tmp_path):
+    template = 'local-template'
+    abbreviations = {}
+    clone_to_dir = str(tmp_path)
+    checkout = None
+    no_input = True
+    password = None
+    directory = 'cookiecutter-dir'
+
+    # Create a local template directory with a 'cookiecutter.json' file
+    local_template_path = tmp_path / template
+    local_template_path.mkdir()
+    cookiecutter_json_path = local_template_path / directory / 'cookiecutter.json'
+    cookiecutter_json_path.parent.mkdir()
+    cookiecutter_json_path.touch()
+
+    cleanup_temp_dir.append(str(local_template_path))
+
+    with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+        mock_has_json.return_value = True
+
+        repo_dir, cleanup = determine_repo_dir(
+            template=template,
+            abbreviations=abbreviations,
+            clone_to_dir=clone_to_dir,
+            checkout=checkout,
+            no_input=no_input,
+            password=password,
+            directory=directory
+        )
+
+        assert repo_dir == str(cookiecutter_json_path.parent), "The repo_dir should be the path to the directory containing cookiecutter.json"
+        assert not cleanup, "Cleanup should be False for local repository"
+
+def test_determine_repo_dir_with_directory_not_existing_locally(cleanup_temp_dir, tmp_path):
+    template = 'nonexistent-template'
+    abbreviations = {}
+    clone_to_dir = str(tmp_path)
+    checkout = None
+    no_input = True
+    password = None
+    directory = 'cookiecutter-dir'
+
+    with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+        mock_has_json.return_value = False
+
+        with pytest.raises(RepositoryNotFound) as excinfo:
+            determine_repo_dir(
+                template=template,
+                abbreviations=abbreviations,
+                clone_to_dir=clone_to_dir,
+                checkout=checkout,
+                no_input=no_input,
+                password=password,
+                directory=directory
+            )
+
+        assert str(excinfo.value) == (
+            'A valid repository for "nonexistent-template" could not be found in the following '
+            'locations:\n{}\n{}'.format(
+                os.path.join(clone_to_dir, template, directory),
+                os.path.join(clone_to_dir, directory)
+            )
+        ), "The exception message should list the attempted repository candidate locations"
+```
+---- 2024-02-29T00:27:04 cookiecutter/repository.py:63-130 ----
+total usage: {'prompt_tokens': 7160, 'completion_tokens': 4202}
+---- 2024-02-29T00:27:05 cookiecutter/repository.py:31-46 ----
+```python
+import pytest
+from cookiecutter.repository import expand_abbreviations
+
+def test_expand_abbreviations_with_exact_match():
+    abbreviations = {'gh': 'https://github.com/{0}'}
+    template = 'gh'
+    expected = 'https://github.com/{0}'
+    assert expand_abbreviations(template, abbreviations) == expected
+
+def test_expand_abbreviations_with_prefix_match():
+    abbreviations = {'gh': 'https://github.com/{0}'}
+    template = 'gh:username/repo'
+    expected = 'https://github.com/username/repo'
+    assert expand_abbreviations(template, abbreviations) == expected
+
+def test_expand_abbreviations_without_match():
+    abbreviations = {'gh': 'https://github.com/{0}'}
+    template = 'bitbucket:username/repo'
+    expected = 'bitbucket:username/repo'
+    assert expand_abbreviations(template, abbreviations) == expected
+```
+---- 2024-02-29T00:27:05 cookiecutter/repository.py:31-46 ----
+total usage: {'prompt_tokens': 9171, 'completion_tokens': 4401}
+---- 2024-02-29T00:27:05 cookiecutter/prompt.py:22-32 ----
+```python
+import pytest
+from click.testing import CliRunner
+import click
+from cookiecutter.prompt import read_user_yes_no
+
+@pytest.fixture
+def mock_click_prompt(mocker):
+    return mocker.patch('cookiecutter.prompt.click.prompt')
+
+def test_read_user_yes_no_with_yes_input(mock_click_prompt):
+    mock_click_prompt.return_value = True
+    question = "Would you like to continue?"
+    default_value = False
+
+    response = read_user_yes_no(question, default_value)
+
+    mock_click_prompt.assert_called_once_with(question, default=default_value, type=click.BOOL)
+    assert response is True
+
+def test_read_user_yes_no_with_no_input(mock_click_prompt):
+    mock_click_prompt.return_value = False
+    question = "Would you like to continue?"
+    default_value = True
+
+    response = read_user_yes_no(question, default_value)
+
+    mock_click_prompt.assert_called_once_with(question, default=default_value, type=click.BOOL)
+    assert response is False
+```
+---- 2024-02-29T00:27:05 cookiecutter/prompt.py:22-32 ----
+total usage: {'prompt_tokens': 9987, 'completion_tokens': 4603}
+---- 2024-02-29T00:27:05 cookiecutter/replay.py:39-52 ----
+```python
+import json
+import os
+import pytest
+from cookiecutter.replay import load
+
+@pytest.fixture
+def mock_replay_dir(tmp_path):
+    replay_dir = tmp_path / "replay"
+    replay_dir.mkdir()
+    return replay_dir
+
+@pytest.fixture
+def mock_template_name():
+    return "test_template"
+
+@pytest.fixture
+def mock_replay_file(mock_replay_dir, mock_template_name):
+    replay_file = mock_replay_dir / f"{mock_template_name}.json"
+    return replay_file
+
+def test_load_with_invalid_template_name(mock_replay_dir):
+    with pytest.raises(TypeError):
+        load(mock_replay_dir, 123)  # Non-string template_name should raise TypeError
+
+def test_load_with_missing_cookiecutter_key(mock_replay_dir, mock_template_name, mock_replay_file):
+    # Create a replay file without 'cookiecutter' key
+    data = {"not_cookiecutter": {}}
+    with open(mock_replay_file, 'w') as f:
+        json.dump(data, f)
+
+    with pytest.raises(ValueError):
+        load(mock_replay_dir, mock_template_name)
+
+def test_load_with_valid_context(mock_replay_dir, mock_template_name, mock_replay_file):
+    # Create a valid replay file with 'cookiecutter' key
+    expected_context = {"cookiecutter": {"project_slug": "test_project"}}
+    with open(mock_replay_file, 'w') as f:
+        json.dump(expected_context, f)
+
+    context = load(mock_replay_dir, mock_template_name)
+    assert context == expected_context, "The context loaded from the replay file should match the expected context"
+```
+---- 2024-02-29T00:27:05 cookiecutter/replay.py:39-52 ----
+total usage: {'prompt_tokens': 10290, 'completion_tokens': 4942}
+---- 2024-02-29T00:27:06 cookiecutter/repository.py:63-130 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+cleanup_temp_dir = ['/tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d0/local-template']
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d0')
+
+    def test_determine_repo_dir_with_directory_existing_locally(cleanup_temp_dir, tmp_path):
+        template = 'local-template'
+        abbreviations = {}
+        clone_to_dir = str(tmp_path)
+        checkout = None
+        no_input = True
+        password = None
+        directory = 'cookiecutter-dir'
+    
+        # Create a local template directory with a 'cookiecutter.json' file
+        local_template_path = tmp_path / template
+        local_template_path.mkdir()
+        cookiecutter_json_path = local_template_path / directory / 'cookiecutter.json'
+        cookiecutter_json_path.parent.mkdir()
+        cookiecutter_json_path.touch()
+    
+        cleanup_temp_dir.append(str(local_template_path))
+    
+        with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+            mock_has_json.return_value = True
+    
+            repo_dir, cleanup = determine_repo_dir(
+                template=template,
+                abbreviations=abbreviations,
+                clone_to_dir=clone_to_dir,
+                checkout=checkout,
+                no_input=no_input,
+                password=password,
+                directory=directory
+            )
+    
+>           assert repo_dir == str(cookiecutter_json_path.parent), "The repo_dir should be the path to the directory containing cookiecutter.json"
+E           AssertionError: The repo_dir should be the path to the directory containing cookiecutter.json
+E           assert 'local-templa...kiecutter-dir' == '/tmp/pytest-...kiecutter-dir'
+E             - /tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d0/local-template/cookiecutter-dir
+E             + local-template/cookiecutter-dir
+
+coverup-tests/tmp_test_p9wknybh.py:48: AssertionError
+_________ test_determine_repo_dir_with_directory_not_existing_locally __________
+
+cleanup_temp_dir = []
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d1')
+
+    def test_determine_repo_dir_with_directory_not_existing_locally(cleanup_temp_dir, tmp_path):
+        template = 'nonexistent-template'
+        abbreviations = {}
+        clone_to_dir = str(tmp_path)
+        checkout = None
+        no_input = True
+        password = None
+        directory = 'cookiecutter-dir'
+    
+        with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+            mock_has_json.return_value = False
+    
+            with pytest.raises(RepositoryNotFound) as excinfo:
+                determine_repo_dir(
+                    template=template,
+                    abbreviations=abbreviations,
+                    clone_to_dir=clone_to_dir,
+                    checkout=checkout,
+                    no_input=no_input,
+                    password=password,
+                    directory=directory
+                )
+    
+>           assert str(excinfo.value) == (
+                'A valid repository for "nonexistent-template" could not be found in the following '
+                'locations:\n{}\n{}'.format(
+                    os.path.join(clone_to_dir, template, directory),
+                    os.path.join(clone_to_dir, directory)
+                )
+            ), "The exception message should list the attempted repository candidate locations"
+E           AssertionError: The exception message should list the attempted repository candidate locations
+E           assert 'A valid repo...kiecutter-dir' == 'A valid repo...kiecutter-dir'
+E             Skipping 83 identical leading characters in diff, use -v to show
+E               ocations:
+E             + nonexistent-template/cookiecutter-dir
+E             - /tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d1/nonexistent-template/cookiecutter-dir
+E             ?                                                                                                   -
+E             + /tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d1/nonexistent-template/cookiecutter-dir
+E             - /tmp/pytest-of-root/pytest-4/test_determine_repo_dir_with_d1/cookiecutter-dir
+
+coverup-tests/tmp_test_p9wknybh.py:74: AssertionError
+
+---- 2024-02-29T00:27:06 cookiecutter/repository.py:31-46 ----
+...                                                                      [100%]
+
+---- 2024-02-29T00:27:06 cookiecutter/repository.py:31-46 ----
+Saved as coverup-tests/test_coverup_11.py
+
+---- 2024-02-29T00:27:07 cookiecutter/prompt.py:22-32 ----
+..                                                                       [100%]
+
+---- 2024-02-29T00:27:07 cookiecutter/prompt.py:22-32 ----
+Saved as coverup-tests/test_coverup_12.py
+
+---- 2024-02-29T00:27:07 cookiecutter/replay.py:39-52 ----
+...                                                                      [100%]
+
+---- 2024-02-29T00:27:07 cookiecutter/replay.py:39-52 ----
+Saved as coverup-tests/test_coverup_13.py
+
+---- 2024-02-29T00:27:09 cookiecutter/repository.py:21-23 ----
+```python
+import pytest
+import re
+from cookiecutter.repository import is_repo_url
+
+# Assuming REPO_REGEX is defined somewhere in the cookiecutter.repository module
+# If not, we need to define it here for the test to work
+# For example, a simple regex that matches URLs could be:
+# REPO_REGEX = re.compile(r'https?://\S+')
+
+def test_is_repo_url():
+    # Test with a valid repository URL
+    valid_repo_url = "https://github.com/audreyr/cookiecutter-pypackage.git"
+    assert is_repo_url(valid_repo_url) is True
+
+    # Test with an invalid repository URL
+    invalid_repo_url = "not_a_valid_url"
+    assert is_repo_url(invalid_repo_url) is False
+
+    # Test with an empty string
+    empty_string = ""
+    assert is_repo_url(empty_string) is False
+
+    # Test with a non-string object
+    non_string = 12345
+    assert is_repo_url(non_string) is False
+```
+---- 2024-02-29T00:27:09 cookiecutter/repository.py:21-23 ----
+total usage: {'prompt_tokens': 10509, 'completion_tokens': 5157}
+---- 2024-02-29T00:27:11 cookiecutter/repository.py:21-23 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_is_repo_url():
+        # Test with a valid repository URL
+        valid_repo_url = "https://github.com/audreyr/cookiecutter-pypackage.git"
+        assert is_repo_url(valid_repo_url) is True
+    
+        # Test with an invalid repository URL
+        invalid_repo_url = "not_a_valid_url"
+        assert is_repo_url(invalid_repo_url) is False
+    
+        # Test with an empty string
+        empty_string = ""
+        assert is_repo_url(empty_string) is False
+    
+        # Test with a non-string object
+        non_string = 12345
+>       assert is_repo_url(non_string) is False
+
+coverup-tests/tmp_test_m50mscuh.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 12345
+
+    def is_repo_url(value):
+        """Return True if value is a repository URL."""
+>       return bool(REPO_REGEX.match(value))
+E       TypeError: expected string or bytes-like object
+
+cookiecutter/repository.py:23: TypeError
+
+---- 2024-02-29T00:27:14 cookiecutter/prompt.py:99-119 ----
+```python
+import json
+import pytest
+from unittest.mock import patch
+from cookiecutter.prompt import read_user_dict
+import click
+
+# Helper function to simulate JSON processing in the prompt
+def process_json(user_input):
+    try:
+        return json.loads(user_input)
+    except json.JSONDecodeError:
+        raise click.BadParameter("Invalid JSON input")
+
+# Test function to cover the missing lines/branches
+def test_read_user_dict_default_value(mocker):
+    # Mock the click.prompt to return the default display value
+    mocker.patch('click.prompt', return_value='default')
+
+    # Call the function with a default dictionary
+    default_dict = {'key': 'value'}
+    result = read_user_dict('Please enter a dictionary', default_dict)
+
+    # Assert that the result is the default dictionary
+    assert result == default_dict
+
+# Test function to cover the case where the user provides a JSON string
+def test_read_user_dict_user_input(mocker):
+    # Mock the click.prompt to return a JSON string
+    user_dict = '{"key": "new_value"}'
+    mocker.patch('click.prompt', return_value=user_dict)
+
+    # Call the function expecting the user to provide a JSON string
+    default_dict = {'key': 'value'}
+    result = read_user_dict('Please enter a dictionary', default_dict)
+
+    # Assert that the result is the dictionary parsed from the JSON string
+    assert result == json.loads(user_dict)
+
+# Test function to cover the case where the default value is not a dictionary
+def test_read_user_dict_invalid_default():
+    with pytest.raises(TypeError):
+        # Call the function with a non-dictionary default value
+        read_user_dict('Please enter a dictionary', default_value='not_a_dict')
+```
+---- 2024-02-29T00:27:14 cookiecutter/prompt.py:99-119 ----
+total usage: {'prompt_tokens': 10872, 'completion_tokens': 5513}
+---- 2024-02-29T00:27:15 cookiecutter/prompt.py:99-119 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f697021dba0>
+
+    def test_read_user_dict_user_input(mocker):
+        # Mock the click.prompt to return a JSON string
+        user_dict = '{"key": "new_value"}'
+        mocker.patch('click.prompt', return_value=user_dict)
+    
+        # Call the function expecting the user to provide a JSON string
+        default_dict = {'key': 'value'}
+        result = read_user_dict('Please enter a dictionary', default_dict)
+    
+        # Assert that the result is the dictionary parsed from the JSON string
+>       assert result == json.loads(user_dict)
+E       assert '{"key": "new_value"}' == {'key': 'new_value'}
+E        +  where {'key': 'new_value'} = <function loads at 0x7f6970199750>('{"key": "new_value"}')
+E        +    where <function loads at 0x7f6970199750> = json.loads
+
+coverup-tests/tmp_test_3gjlo20o.py:37: AssertionError
+
+---- 2024-02-29T00:27:19 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import pytest
+import tempfile
+from unittest.mock import patch, MagicMock
+from zipfile import ZipFile, BadZipFile
+
+from cookiecutter.zipfile import unzip, InvalidZipRepository
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_get = mocker.patch('cookiecutter.zipfile.requests.get')
+    mock_response = MagicMock()
+    mock_response.iter_content.return_value = [b'content']
+    mock_get.return_value = mock_response
+    return mock_get
+
+@pytest.fixture
+def mock_os_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.os.path.exists', return_value=True)
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=False)
+
+@pytest.fixture
+def mock_zipfile(mocker):
+    mock_zip_file = mocker.patch('cookiecutter.zipfile.ZipFile')
+    mock_zip_file.return_value.__enter__.return_value.namelist.return_value = ['testdir/', 'testdir/file.txt']
+    return mock_zip_file
+
+@pytest.fixture
+def mock_tempfile_mktemp(mocker):
+    return mocker.patch('cookiecutter.zipfile.tempfile.mkdtemp', return_value='/fake/temp/dir')
+
+def test_unzip_url_exists_no_download(mock_requests_get, mock_os_path_exists, mock_prompt_and_delete, mock_zipfile, mock_tempfile_mktemp):
+    zip_uri = 'https://example.com/test.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = True
+
+    with patch('cookiecutter.zipfile.make_sure_path_exists') as mock_make_sure_path_exists:
+        result = unzip(zip_uri, is_url, clone_to_dir, no_input)
+
+    mock_requests_get.assert_not_called()
+    mock_os_path_exists.assert_called_once_with(os.path.join(clone_to_dir, 'test.zip'))
+    mock_prompt_and_delete.assert_called_once_with(os.path.join(clone_to_dir, 'test.zip'), no_input=True)
+    mock_make_sure_path_exists.assert_called_once_with(clone_to_dir)
+    assert result == '/fake/temp/dir/testdir'
+
+    # Cleanup
+    if os.path.exists('/fake/temp/dir'):
+        os.rmdir('/fake/temp/dir')
+```
+---- 2024-02-29T00:27:19 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 13021, 'completion_tokens': 5971}
+---- 2024-02-29T00:27:20 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_requests_get = <MagicMock name='get' id='140476148153312'>
+mock_os_path_exists = <MagicMock name='exists' id='140476153444624'>
+mock_prompt_and_delete = <MagicMock name='prompt_and_delete' id='140476153239472'>
+mock_zipfile = <MagicMock name='ZipFile' id='140476147980208'>
+mock_tempfile_mktemp = <MagicMock name='mkdtemp' id='140476161677136'>
+
+    def test_unzip_url_exists_no_download(mock_requests_get, mock_os_path_exists, mock_prompt_and_delete, mock_zipfile, mock_tempfile_mktemp):
+        zip_uri = 'https://example.com/test.zip'
+        is_url = True
+        clone_to_dir = '.'
+        no_input = True
+    
+        with patch('cookiecutter.zipfile.make_sure_path_exists') as mock_make_sure_path_exists:
+>           result = unzip(zip_uri, is_url, clone_to_dir, no_input)
+
+coverup-tests/tmp_test_nfcbwq8p.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'https://example.com/test.zip', is_url = True, clone_to_dir = '.'
+no_input = True, password = None
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+>               raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+E               cookiecutter.exceptions.InvalidZipRepository: Zip repository https://example.com/test.zip is empty
+
+cookiecutter/zipfile.py:58: InvalidZipRepository
+
+---- 2024-02-29T00:27:22 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import Environment
+
+def test_prompt_for_config_with_undefined_variable(mocker):
+    context = {
+        'cookiecutter': {
+            'project_slug': '{{ cookiecutter.project_name|slugify }}',
+            'project_name': 'test_project',
+            '__private': '{{ cookiecutter.project_slug }}',
+            '_skip': 'should be skipped',
+            'choices': ['choice1', 'choice2'],
+            'dict_var': {'key': '{{ cookiecutter.project_slug }}'}
+        }
+    }
+    mocker.patch('cookiecutter.prompt.read_user_variable', return_value='user_input')
+    mocker.patch('cookiecutter.prompt.read_user_dict', return_value={'user_key': 'user_value'})
+    mocker.patch('cookiecutter.prompt.render_variable', side_effect=UndefinedVariableInTemplate)
+
+    with pytest.raises(UndefinedVariableInTemplate):
+        prompt_for_config(context)
+
+    # Cleanup is not necessary as we are using mocker.patch which is
+    # automatically undone at the end of the test.
+```
+---- 2024-02-29T00:27:22 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 14132, 'completion_tokens': 6214}
+---- 2024-02-29T00:27:22 cookiecutter/repository.py:21-23 ----
+```python
+import pytest
+import re
+from cookiecutter.repository import is_repo_url
+
+# Assuming REPO_REGEX is defined somewhere in the cookiecutter.repository module
+# If not, we need to define it here for the test to work
+# For example, a simple regex that matches URLs could be:
+# REPO_REGEX = re.compile(r'https?://\S+')
+
+def test_is_repo_url():
+    # Test with a valid repository URL
+    valid_repo_url = "https://github.com/audreyr/cookiecutter-pypackage.git"
+    assert is_repo_url(valid_repo_url) is True
+
+    # Test with an invalid repository URL
+    invalid_repo_url = "not_a_valid_url"
+    assert is_repo_url(invalid_repo_url) is False
+
+    # Test with an empty string
+    empty_string = ""
+    assert is_repo_url(empty_string) is False
+
+    # Test with a non-string object, converting it to string first
+    non_string = 12345
+    assert is_repo_url(str(non_string)) is False
+```
+---- 2024-02-29T00:27:22 cookiecutter/repository.py:21-23 ----
+total usage: {'prompt_tokens': 14850, 'completion_tokens': 6436}
+---- 2024-02-29T00:27:23 cookiecutter/prompt.py:171-229 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7f5f3fb4dea0>
+kwargs = {'undefined': <class 'jinja2.runtime.StrictUndefined'>}
+context = {'cookiecutter': {'__private': '{{ cookiecutter.project_slug }}', '_skip': 'should be skipped', 'choices': ['choice1', 'choice2'], 'dict_var': {'key': '{{ cookiecutter.project_slug }}'}, ...}}
+default_extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def __init__(self, **kwargs):
+        """Initialize the Jinja2 Environment object while loading extensions.
+    
+        Does the following:
+    
+        1. Establishes default_extensions (currently just a Time feature)
+        2. Reads extensions set in the cookiecutter.json _extensions key.
+        3. Attempts to load the extensions. Provides useful error if fails.
+        """
+        context = kwargs.pop('context', {})
+    
+        default_extensions = [
+            'cookiecutter.extensions.JsonifyExtension',
+            'cookiecutter.extensions.RandomStringExtension',
+            'cookiecutter.extensions.SlugifyExtension',
+            'cookiecutter.extensions.UUIDExtension',
+            'jinja2_time.TimeExtension',
+        ]
+        extensions = default_extensions + self._read_extensions(context)
+    
+        try:
+>           super(ExtensionLoaderMixin, self).__init__(extensions=extensions, **kwargs)
+
+cookiecutter/environment.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7f5f3fb4dea0>
+block_start_string = '{%', block_end_string = '%}', variable_start_string = '{{'
+variable_end_string = '}}', comment_start_string = '{#'
+comment_end_string = '#}', line_statement_prefix = None
+line_comment_prefix = None, trim_blocks = False, lstrip_blocks = False
+newline_sequence = '\n', keep_trailing_newline = False
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+optimized = True, undefined = <class 'jinja2.runtime.StrictUndefined'>
+finalize = None, autoescape = False, loader = None, cache_size = 400
+auto_reload = True, bytecode_cache = None, enable_async = False
+
+    def __init__(
+        self,
+        block_start_string: str = BLOCK_START_STRING,
+        block_end_string: str = BLOCK_END_STRING,
+        variable_start_string: str = VARIABLE_START_STRING,
+        variable_end_string: str = VARIABLE_END_STRING,
+        comment_start_string: str = COMMENT_START_STRING,
+        comment_end_string: str = COMMENT_END_STRING,
+        line_statement_prefix: t.Optional[str] = LINE_STATEMENT_PREFIX,
+        line_comment_prefix: t.Optional[str] = LINE_COMMENT_PREFIX,
+        trim_blocks: bool = TRIM_BLOCKS,
+        lstrip_blocks: bool = LSTRIP_BLOCKS,
+        newline_sequence: "te.Literal['\\n', '\\r\\n', '\\r']" = NEWLINE_SEQUENCE,
+        keep_trailing_newline: bool = KEEP_TRAILING_NEWLINE,
+        extensions: t.Sequence[t.Union[str, t.Type["Extension"]]] = (),
+        optimized: bool = True,
+        undefined: t.Type[Undefined] = Undefined,
+        finalize: t.Optional[t.Callable[..., t.Any]] = None,
+        autoescape: t.Union[bool, t.Callable[[t.Optional[str]], bool]] = False,
+        loader: t.Optional["BaseLoader"] = None,
+        cache_size: int = 400,
+        auto_reload: bool = True,
+        bytecode_cache: t.Optional["BytecodeCache"] = None,
+        enable_async: bool = False,
+    ):
+        # !!Important notice!!
+        #   The constructor accepts quite a few arguments that should be
+        #   passed by keyword rather than position.  However it's important to
+        #   not change the order of arguments because it's used at least
+        #   internally in those cases:
+        #       -   spontaneous environments (i18n extension and Template)
+        #       -   unittests
+        #   If parameter changes are required only add parameters at the end
+        #   and don't change the arguments (or the defaults!) of the arguments
+        #   existing already.
+    
+        # lexer / parser information
+        self.block_start_string = block_start_string
+        self.block_end_string = block_end_string
+        self.variable_start_string = variable_start_string
+        self.variable_end_string = variable_end_string
+        self.comment_start_string = comment_start_string
+        self.comment_end_string = comment_end_string
+        self.line_statement_prefix = line_statement_prefix
+        self.line_comment_prefix = line_comment_prefix
+        self.trim_blocks = trim_blocks
+        self.lstrip_blocks = lstrip_blocks
+        self.newline_sequence = newline_sequence
+        self.keep_trailing_newline = keep_trailing_newline
+    
+        # runtime information
+        self.undefined: t.Type[Undefined] = undefined
+        self.optimized = optimized
+        self.finalize = finalize
+        self.autoescape = autoescape
+    
+        # defaults
+        self.filters = DEFAULT_FILTERS.copy()
+        self.tests = DEFAULT_TESTS.copy()
+        self.globals = DEFAULT_NAMESPACE.copy()
+    
+        # set the loader provided
+        self.loader = loader
+        self.cache = create_cache(cache_size)
+        self.bytecode_cache = bytecode_cache
+        self.auto_reload = auto_reload
+    
+        # configurable policies
+        self.policies = DEFAULT_POLICIES.copy()
+    
+        # load extensions
+>       self.extensions = load_extensions(self, extensions)
+
+/usr/local/lib/python3.10/site-packages/jinja2/environment.py:363: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+environment = <cookiecutter.environment.StrictEnvironment object at 0x7f5f3fb4dea0>
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def load_extensions(
+        environment: "Environment",
+        extensions: t.Sequence[t.Union[str, t.Type["Extension"]]],
+    ) -> t.Dict[str, "Extension"]:
+        """Load the extensions from the list and bind it to the environment.
+        Returns a dict of instantiated extensions.
+        """
+        result = {}
+    
+        for extension in extensions:
+            if isinstance(extension, str):
+>               extension = t.cast(t.Type["Extension"], import_string(extension))
+
+/usr/local/lib/python3.10/site-packages/jinja2/environment.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+import_name = 'jinja2_time.TimeExtension', silent = False
+
+    def import_string(import_name: str, silent: bool = False) -> t.Any:
+        """Imports an object based on a string.  This is useful if you want to
+        use import paths as endpoints or something similar.  An import path can
+        be specified either in dotted notation (``xml.sax.saxutils.escape``)
+        or with a colon as object delimiter (``xml.sax.saxutils:escape``).
+    
+        If the `silent` is True the return value will be `None` if the import
+        fails.
+    
+        :return: imported object
+        """
+        try:
+            if ":" in import_name:
+                module, obj = import_name.split(":", 1)
+            elif "." in import_name:
+                module, _, obj = import_name.rpartition(".")
+            else:
+                return __import__(import_name)
+>           return getattr(__import__(module, None, None, [obj]), obj)
+E           ModuleNotFoundError: No module named 'jinja2_time'
+
+/usr/local/lib/python3.10/site-packages/jinja2/utils.py:149: ModuleNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f5f3fa9cc10>
+
+    def test_prompt_for_config_with_undefined_variable(mocker):
+        context = {
+            'cookiecutter': {
+                'project_slug': '{{ cookiecutter.project_name|slugify }}',
+                'project_name': 'test_project',
+                '__private': '{{ cookiecutter.project_slug }}',
+                '_skip': 'should be skipped',
+                'choices': ['choice1', 'choice2'],
+                'dict_var': {'key': '{{ cookiecutter.project_slug }}'}
+            }
+        }
+        mocker.patch('cookiecutter.prompt.read_user_variable', return_value='user_input')
+        mocker.patch('cookiecutter.prompt.read_user_dict', return_value={'user_key': 'user_value'})
+        mocker.patch('cookiecutter.prompt.render_variable', side_effect=UndefinedVariableInTemplate)
+    
+        with pytest.raises(UndefinedVariableInTemplate):
+>           prompt_for_config(context)
+
+coverup-tests/tmp_test_k7ytwqxe.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+cookiecutter/prompt.py:178: in prompt_for_config
+    env = StrictEnvironment(context=context)
+cookiecutter/environment.py:65: in __init__
+    super(StrictEnvironment, self).__init__(undefined=StrictUndefined, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7f5f3fb4dea0>
+kwargs = {'undefined': <class 'jinja2.runtime.StrictUndefined'>}
+context = {'cookiecutter': {'__private': '{{ cookiecutter.project_slug }}', '_skip': 'should be skipped', 'choices': ['choice1', 'choice2'], 'dict_var': {'key': '{{ cookiecutter.project_slug }}'}, ...}}
+default_extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def __init__(self, **kwargs):
+        """Initialize the Jinja2 Environment object while loading extensions.
+    
+        Does the following:
+    
+        1. Establishes default_extensions (currently just a Time feature)
+        2. Reads extensions set in the cookiecutter.json _extensions key.
+        3. Attempts to load the extensions. Provides useful error if fails.
+        """
+        context = kwargs.pop('context', {})
+    
+        default_extensions = [
+            'cookiecutter.extensions.JsonifyExtension',
+            'cookiecutter.extensions.RandomStringExtension',
+            'cookiecutter.extensions.SlugifyExtension',
+            'cookiecutter.extensions.UUIDExtension',
+            'jinja2_time.TimeExtension',
+        ]
+        extensions = default_extensions + self._read_extensions(context)
+    
+        try:
+            super(ExtensionLoaderMixin, self).__init__(extensions=extensions, **kwargs)
+        except ImportError as err:
+>           raise UnknownExtension('Unable to load extension: {}'.format(err))
+E           cookiecutter.exceptions.UnknownExtension: Unable to load extension: No module named 'jinja2_time'
+
+cookiecutter/environment.py:37: UnknownExtension
+
+---- 2024-02-29T00:27:23 cookiecutter/repository.py:21-23 ----
+.                                                                        [100%]
+
+---- 2024-02-29T00:27:23 cookiecutter/repository.py:21-23 ----
+Saved as coverup-tests/test_coverup_14.py
+
+---- 2024-02-29T00:27:29 cookiecutter/replay.py:19-36 ----
+```python
+import json
+import os
+import pytest
+from cookiecutter.replay import dump, get_file_name
+from cookiecutter.utils import make_sure_path_exists
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.replay.make_sure_path_exists', return_value=True)
+
+@pytest.fixture
+def replay_dir(tmp_path):
+    dir_path = tmp_path / "replay"
+    dir_path.mkdir()
+    return str(dir_path)
+
+@pytest.fixture
+def template_name():
+    return "test_template"
+
+@pytest.fixture
+def context():
+    return {"cookiecutter": {"project_slug": "test_project"}}
+
+def test_dump_creates_replay_file(mock_make_sure_path_exists, replay_dir, template_name, context):
+    dump(replay_dir, template_name, context)
+    replay_file = get_file_name(replay_dir, template_name)
+    assert os.path.exists(replay_file)
+    with open(replay_file, 'r') as f:
+        data = json.load(f)
+    assert data == context
+
+def test_dump_raises_ioerror_if_replay_dir_creation_fails(mocker, replay_dir, template_name, context):
+    mocker.patch('cookiecutter.replay.make_sure_path_exists', return_value=False)
+    with pytest.raises(IOError):
+        dump(replay_dir, template_name, context)
+
+def test_dump_raises_typeerror_if_template_name_not_str(replay_dir, context):
+    with pytest.raises(TypeError):
+        dump(replay_dir, 123, context)
+
+def test_dump_raises_typeerror_if_context_not_dict(replay_dir, template_name):
+    with pytest.raises(TypeError):
+        dump(replay_dir, template_name, "not_a_dict")
+
+def test_dump_raises_valueerror_if_context_missing_cookiecutter_key(replay_dir, template_name):
+    with pytest.raises(ValueError):
+        dump(replay_dir, template_name, {})
+```
+---- 2024-02-29T00:27:29 cookiecutter/replay.py:19-36 ----
+total usage: {'prompt_tokens': 16034, 'completion_tokens': 6824}
+---- 2024-02-29T00:27:30 cookiecutter/repository.py:63-130 ----
+```python
+import os
+import pytest
+from cookiecutter.exceptions import RepositoryNotFound
+from cookiecutter.repository import determine_repo_dir
+from unittest.mock import patch
+
+@pytest.fixture
+def cleanup_temp_dir():
+    temp_dirs = []
+
+    yield temp_dirs
+
+    for temp_dir in temp_dirs:
+        if os.path.exists(temp_dir):
+            os.rmdir(temp_dir)
+
+def test_determine_repo_dir_with_directory_existing_locally(cleanup_temp_dir, tmp_path):
+    template = 'local-template'
+    abbreviations = {}
+    clone_to_dir = str(tmp_path)
+    checkout = None
+    no_input = True
+    password = None
+    directory = 'cookiecutter-dir'
+
+    # Create a local template directory with a 'cookiecutter.json' file
+    local_template_path = tmp_path / template
+    local_template_path.mkdir()
+    cookiecutter_json_path = local_template_path / directory / 'cookiecutter.json'
+    cookiecutter_json_path.parent.mkdir()
+    cookiecutter_json_path.touch()
+
+    cleanup_temp_dir.append(str(local_template_path))
+
+    with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+        mock_has_json.return_value = True
+
+        repo_dir, cleanup = determine_repo_dir(
+            template=template,
+            abbreviations=abbreviations,
+            clone_to_dir=clone_to_dir,
+            checkout=checkout,
+            no_input=no_input,
+            password=password,
+            directory=directory
+        )
+
+        expected_repo_dir = str(tmp_path / template / directory)
+        assert repo_dir == expected_repo_dir, "The repo_dir should be the path to the directory containing cookiecutter.json"
+        assert not cleanup, "Cleanup should be False for local repository"
+
+def test_determine_repo_dir_with_directory_not_existing_locally(cleanup_temp_dir, tmp_path):
+    template = 'nonexistent-template'
+    abbreviations = {}
+    clone_to_dir = str(tmp_path)
+    checkout = None
+    no_input = True
+    password = None
+    directory = 'cookiecutter-dir'
+
+    with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+        mock_has_json.return_value = False
+
+        with pytest.raises(RepositoryNotFound) as excinfo:
+            determine_repo_dir(
+                template=template,
+                abbreviations=abbreviations,
+                clone_to_dir=clone_to_dir,
+                checkout=checkout,
+                no_input=no_input,
+                password=password,
+                directory=directory
+            )
+
+        expected_message = (
+            'A valid repository for "nonexistent-template" could not be found in the following '
+            'locations:\n{}\n{}'.format(
+                os.path.join(clone_to_dir, template, directory),
+                os.path.join(clone_to_dir, directory)
+            )
+        )
+        assert str(excinfo.value) == expected_message, "The exception message should list the attempted repository candidate locations"
+```
+---- 2024-02-29T00:27:30 cookiecutter/repository.py:63-130 ----
+total usage: {'prompt_tokens': 18222, 'completion_tokens': 7418}
+---- 2024-02-29T00:27:30 cookiecutter/replay.py:19-36 ----
+.....                                                                    [100%]
+
+---- 2024-02-29T00:27:30 cookiecutter/replay.py:19-36 ----
+Saved as coverup-tests/test_coverup_15.py
+
+---- 2024-02-29T00:27:31 cookiecutter/prompt.py:99-119 ----
+```python
+import json
+import pytest
+from unittest.mock import patch
+from cookiecutter.prompt import read_user_dict
+import click
+
+# Helper function to simulate JSON processing in the prompt
+def process_json(user_input):
+    try:
+        return json.loads(user_input)
+    except json.JSONDecodeError:
+        raise click.BadParameter("Invalid JSON input")
+
+# Test function to cover the missing lines/branches
+def test_read_user_dict_default_value(mocker):
+    # Mock the click.prompt to return the default display value
+    mocker.patch('click.prompt', return_value='default')
+
+    # Call the function with a default dictionary
+    default_dict = {'key': 'value'}
+    result = read_user_dict('Please enter a dictionary', default_dict)
+
+    # Assert that the result is the default dictionary
+    assert result == default_dict
+
+# Test function to cover the case where the user provides a JSON string
+def test_read_user_dict_user_input(mocker):
+    # Mock the click.prompt to return a JSON string
+    user_dict = '{"key": "new_value"}'
+    mocker.patch('click.prompt', return_value=user_dict)
+    mocker.patch('cookiecutter.prompt.process_json', side_effect=process_json)
+
+    # Call the function expecting the user to provide a JSON string
+    default_dict = {'key': 'value'}
+    result = read_user_dict('Please enter a dictionary', default_dict)
+
+    # Assert that the result is the dictionary parsed from the JSON string
+    assert result == json.loads(user_dict)
+
+# Test function to cover the case where the default value is not a dictionary
+def test_read_user_dict_invalid_default():
+    with pytest.raises(TypeError):
+        # Call the function with a non-dictionary default value
+        read_user_dict('Please enter a dictionary', default_value='not_a_dict')
+```
+---- 2024-02-29T00:27:31 cookiecutter/prompt.py:99-119 ----
+total usage: {'prompt_tokens': 19207, 'completion_tokens': 7791}
+---- 2024-02-29T00:27:31 cookiecutter/repository.py:63-130 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+cleanup_temp_dir = ['/tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d0/local-template']
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d0')
+
+    def test_determine_repo_dir_with_directory_existing_locally(cleanup_temp_dir, tmp_path):
+        template = 'local-template'
+        abbreviations = {}
+        clone_to_dir = str(tmp_path)
+        checkout = None
+        no_input = True
+        password = None
+        directory = 'cookiecutter-dir'
+    
+        # Create a local template directory with a 'cookiecutter.json' file
+        local_template_path = tmp_path / template
+        local_template_path.mkdir()
+        cookiecutter_json_path = local_template_path / directory / 'cookiecutter.json'
+        cookiecutter_json_path.parent.mkdir()
+        cookiecutter_json_path.touch()
+    
+        cleanup_temp_dir.append(str(local_template_path))
+    
+        with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+            mock_has_json.return_value = True
+    
+            repo_dir, cleanup = determine_repo_dir(
+                template=template,
+                abbreviations=abbreviations,
+                clone_to_dir=clone_to_dir,
+                checkout=checkout,
+                no_input=no_input,
+                password=password,
+                directory=directory
+            )
+    
+            expected_repo_dir = str(tmp_path / template / directory)
+>           assert repo_dir == expected_repo_dir, "The repo_dir should be the path to the directory containing cookiecutter.json"
+E           AssertionError: The repo_dir should be the path to the directory containing cookiecutter.json
+E           assert 'local-templa...kiecutter-dir' == '/tmp/pytest-...kiecutter-dir'
+E             - /tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d0/local-template/cookiecutter-dir
+E             + local-template/cookiecutter-dir
+
+coverup-tests/tmp_test_6e3hm4yf.py:49: AssertionError
+_________ test_determine_repo_dir_with_directory_not_existing_locally __________
+
+cleanup_temp_dir = []
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d1')
+
+    def test_determine_repo_dir_with_directory_not_existing_locally(cleanup_temp_dir, tmp_path):
+        template = 'nonexistent-template'
+        abbreviations = {}
+        clone_to_dir = str(tmp_path)
+        checkout = None
+        no_input = True
+        password = None
+        directory = 'cookiecutter-dir'
+    
+        with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+            mock_has_json.return_value = False
+    
+            with pytest.raises(RepositoryNotFound) as excinfo:
+                determine_repo_dir(
+                    template=template,
+                    abbreviations=abbreviations,
+                    clone_to_dir=clone_to_dir,
+                    checkout=checkout,
+                    no_input=no_input,
+                    password=password,
+                    directory=directory
+                )
+    
+            expected_message = (
+                'A valid repository for "nonexistent-template" could not be found in the following '
+                'locations:\n{}\n{}'.format(
+                    os.path.join(clone_to_dir, template, directory),
+                    os.path.join(clone_to_dir, directory)
+                )
+            )
+>           assert str(excinfo.value) == expected_message, "The exception message should list the attempted repository candidate locations"
+E           AssertionError: The exception message should list the attempted repository candidate locations
+E           assert 'A valid repo...kiecutter-dir' == 'A valid repo...kiecutter-dir'
+E             Skipping 83 identical leading characters in diff, use -v to show
+E               ocations:
+E             + nonexistent-template/cookiecutter-dir
+E             - /tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d1/nonexistent-template/cookiecutter-dir
+E             ?                                                                                                   -
+E             + /tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d1/nonexistent-template/cookiecutter-dir
+E             - /tmp/pytest-of-root/pytest-7/test_determine_repo_dir_with_d1/cookiecutter-dir
+
+coverup-tests/tmp_test_6e3hm4yf.py:82: AssertionError
+
+---- 2024-02-29T00:27:32 cookiecutter/prompt.py:99-119 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f5ac1e25ba0>
+
+    def test_read_user_dict_user_input(mocker):
+        # Mock the click.prompt to return a JSON string
+        user_dict = '{"key": "new_value"}'
+        mocker.patch('click.prompt', return_value=user_dict)
+        mocker.patch('cookiecutter.prompt.process_json', side_effect=process_json)
+    
+        # Call the function expecting the user to provide a JSON string
+        default_dict = {'key': 'value'}
+        result = read_user_dict('Please enter a dictionary', default_dict)
+    
+        # Assert that the result is the dictionary parsed from the JSON string
+>       assert result == json.loads(user_dict)
+E       assert '{"key": "new_value"}' == {'key': 'new_value'}
+E        +  where {'key': 'new_value'} = <function loads at 0x7f5ac1da5750>('{"key": "new_value"}')
+E        +    where <function loads at 0x7f5ac1da5750> = json.loads
+
+coverup-tests/tmp_test_3203kkvt.py:38: AssertionError
+
+---- 2024-02-29T00:27:33 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import Environment, StrictUndefined
+from cookiecutter.environment import StrictEnvironment
+
+def test_prompt_for_config_with_undefined_variable(mocker):
+    context = {
+        'cookiecutter': {
+            'project_slug': '{{ cookiecutter.project_name|slugify }}',
+            'project_name': 'test_project',
+            '__private': '{{ cookiecutter.project_slug }}',
+            '_skip': 'should be skipped',
+            'choices': ['choice1', 'choice2'],
+            'dict_var': {'key': '{{ cookiecutter.project_slug }}'}
+        }
+    }
+    mocker.patch('cookiecutter.prompt.read_user_variable', return_value='user_input')
+    mocker.patch('cookiecutter.prompt.read_user_dict', return_value={'user_key': 'user_value'})
+    mocker.patch('cookiecutter.prompt.render_variable', side_effect=UndefinedVariableInTemplate)
+    mocker.patch('cookiecutter.environment.StrictEnvironment', return_value=Environment(undefined=StrictUndefined))
+
+    with pytest.raises(UndefinedVariableInTemplate):
+        prompt_for_config(context)
+
+    # Cleanup is not necessary as we are using mocker.patch which is
+    # automatically undone at the end of the test.
+```
+---- 2024-02-29T00:27:33 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 23212, 'completion_tokens': 8066}
+---- 2024-02-29T00:27:34 cookiecutter/prompt.py:171-229 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f8d32644c10>
+
+    def test_prompt_for_config_with_undefined_variable(mocker):
+        context = {
+            'cookiecutter': {
+                'project_slug': '{{ cookiecutter.project_name|slugify }}',
+                'project_name': 'test_project',
+                '__private': '{{ cookiecutter.project_slug }}',
+                '_skip': 'should be skipped',
+                'choices': ['choice1', 'choice2'],
+                'dict_var': {'key': '{{ cookiecutter.project_slug }}'}
+            }
+        }
+        mocker.patch('cookiecutter.prompt.read_user_variable', return_value='user_input')
+        mocker.patch('cookiecutter.prompt.read_user_dict', return_value={'user_key': 'user_value'})
+        mocker.patch('cookiecutter.prompt.render_variable', side_effect=UndefinedVariableInTemplate)
+        mocker.patch('cookiecutter.environment.StrictEnvironment', return_value=Environment(undefined=StrictUndefined))
+    
+        with pytest.raises(UndefinedVariableInTemplate):
+>           prompt_for_config(context)
+
+coverup-tests/tmp_test_mkzwsxtz.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+cookiecutter/prompt.py:178: in prompt_for_config
+    env = StrictEnvironment(context=context)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7f8d322f32b0>
+kwargs = {'context': {'cookiecutter': {'__private': '{{ cookiecutter.project_slug }}', '_skip': 'should be skipped', 'choices': ['choice1', 'choice2'], 'dict_var': {'key': '{{ cookiecutter.project_slug }}'}, ...}}}
+
+    def __init__(self, **kwargs):
+        """Set the standard Cookiecutter StrictEnvironment.
+    
+        Also loading extensions defined in cookiecutter.json's _extensions key.
+        """
+>       super(StrictEnvironment, self).__init__(undefined=StrictUndefined, **kwargs)
+E       TypeError: super() argument 1 must be type, not MagicMock
+
+cookiecutter/environment.py:65: TypeError
+
+---- 2024-02-29T00:27:34 cookiecutter/prompt.py:171-229 ----
+Too many attempts, giving up
+---- 2024-02-29T00:27:44 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import pytest
+import tempfile
+from unittest.mock import patch, MagicMock
+from zipfile import ZipFile, BadZipFile
+
+from cookiecutter.zipfile import unzip, InvalidZipRepository
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_get = mocker.patch('cookiecutter.zipfile.requests.get')
+    mock_response = MagicMock()
+    mock_response.iter_content.return_value = [b'content']
+    mock_get.return_value = mock_response
+    return mock_get
+
+@pytest.fixture
+def mock_os_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.os.path.exists', return_value=True)
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=False)
+
+@pytest.fixture
+def mock_zipfile(mocker):
+    mock_zip_file = mocker.patch('cookiecutter.zipfile.ZipFile')
+    mock_zip_file.return_value.__enter__.return_value.namelist.return_value = ['testdir/', 'testdir/file.txt']
+    return mock_zip_file
+
+@pytest.fixture
+def mock_tempfile_mktemp(mocker):
+    return mocker.patch('cookiecutter.zipfile.tempfile.mkdtemp', return_value='/fake/temp/dir')
+
+def test_unzip_url_exists_no_download(mock_requests_get, mock_os_path_exists, mock_prompt_and_delete, mock_zipfile, mock_tempfile_mktemp):
+    zip_uri = 'https://example.com/test.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = True
+
+    with patch('cookiecutter.zipfile.make_sure_path_exists') as mock_make_sure_path_exists, \
+         patch('cookiecutter.zipfile.os.path.abspath') as mock_abspath:
+        mock_abspath.return_value = '/fake/zip/path'
+        result = unzip(zip_uri, is_url, clone_to_dir, no_input)
+
+    mock_requests_get.assert_not_called()
+    mock_os_path_exists.assert_called_once_with(os.path.join(clone_to_dir, 'test.zip'))
+    mock_prompt_and_delete.assert_called_once_with(os.path.join(clone_to_dir, 'test.zip'), no_input=True)
+    mock_make_sure_path_exists.assert_called_once_with(clone_to_dir)
+    assert result == '/fake/temp/dir/testdir'
+
+    # Cleanup
+    if os.path.exists('/fake/temp/dir'):
+        os.rmdir('/fake/temp/dir')
+```
+---- 2024-02-29T00:27:44 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 26591, 'completion_tokens': 8555}
+---- 2024-02-29T00:27:46 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_requests_get = <MagicMock name='get' id='140422358189728'>
+mock_os_path_exists = <MagicMock name='exists' id='140422355083344'>
+mock_prompt_and_delete = <MagicMock name='prompt_and_delete' id='140422363287744'>
+mock_zipfile = <MagicMock name='ZipFile' id='140422358054848'>
+mock_tempfile_mktemp = <MagicMock name='mkdtemp' id='140422371687008'>
+
+    def test_unzip_url_exists_no_download(mock_requests_get, mock_os_path_exists, mock_prompt_and_delete, mock_zipfile, mock_tempfile_mktemp):
+        zip_uri = 'https://example.com/test.zip'
+        is_url = True
+        clone_to_dir = '.'
+        no_input = True
+    
+        with patch('cookiecutter.zipfile.make_sure_path_exists') as mock_make_sure_path_exists, \
+             patch('cookiecutter.zipfile.os.path.abspath') as mock_abspath:
+            mock_abspath.return_value = '/fake/zip/path'
+>           result = unzip(zip_uri, is_url, clone_to_dir, no_input)
+
+coverup-tests/tmp_test_44p3d_tp.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'https://example.com/test.zip', is_url = True, clone_to_dir = '.'
+no_input = True, password = None
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+>               raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+E               cookiecutter.exceptions.InvalidZipRepository: Zip repository https://example.com/test.zip is empty
+
+cookiecutter/zipfile.py:58: InvalidZipRepository
+
+---- 2024-02-29T00:27:46 cookiecutter/zipfile.py:13-112 ----
+Too many attempts, giving up
+---- 2024-02-29T00:27:49 cookiecutter/prompt.py:99-119 ----
+```python
+import json
+import pytest
+from unittest.mock import patch
+from cookiecutter.prompt import read_user_dict
+import click
+
+# Helper function to simulate JSON processing in the prompt
+def process_json(user_input):
+    try:
+        return json.loads(user_input)
+    except json.JSONDecodeError:
+        raise click.BadParameter("Invalid JSON input")
+
+# Test function to cover the missing lines/branches
+def test_read_user_dict_default_value(mocker):
+    # Mock the click.prompt to return the default display value
+    mocker.patch('click.prompt', return_value='default')
+
+    # Call the function with a default dictionary
+    default_dict = {'key': 'value'}
+    result = read_user_dict('Please enter a dictionary', default_dict)
+
+    # Assert that the result is the default dictionary
+    assert result == default_dict
+
+# Test function to cover the case where the user provides a JSON string
+def test_read_user_dict_user_input(mocker):
+    # Mock the click.prompt to return a JSON string
+    user_dict = '{"key": "new_value"}'
+    mocker.patch('click.prompt', return_value=user_dict)
+    mocker.patch('cookiecutter.prompt.process_json', side_effect=process_json)
+
+    # Call the function expecting the user to provide a JSON string
+    default_dict = {'key': 'value'}
+    result = read_user_dict('Please enter a dictionary', default_dict)
+
+    # Assert that the result is the dictionary parsed from the JSON string
+    assert result == json.loads(user_dict)
+
+# Test function to cover the case where the default value is not a dictionary
+def test_read_user_dict_invalid_default():
+    with pytest.raises(TypeError):
+        # Call the function with a non-dictionary default value
+        read_user_dict('Please enter a dictionary', default_value='not_a_dict')
+```
+---- 2024-02-29T00:27:49 cookiecutter/prompt.py:99-119 ----
+total usage: {'prompt_tokens': 28237, 'completion_tokens': 8928}
+---- 2024-02-29T00:27:50 cookiecutter/prompt.py:99-119 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fd3cafa1ba0>
+
+    def test_read_user_dict_user_input(mocker):
+        # Mock the click.prompt to return a JSON string
+        user_dict = '{"key": "new_value"}'
+        mocker.patch('click.prompt', return_value=user_dict)
+        mocker.patch('cookiecutter.prompt.process_json', side_effect=process_json)
+    
+        # Call the function expecting the user to provide a JSON string
+        default_dict = {'key': 'value'}
+        result = read_user_dict('Please enter a dictionary', default_dict)
+    
+        # Assert that the result is the dictionary parsed from the JSON string
+>       assert result == json.loads(user_dict)
+E       assert '{"key": "new_value"}' == {'key': 'new_value'}
+E        +  where {'key': 'new_value'} = <function loads at 0x7fd3caf1d750>('{"key": "new_value"}')
+E        +    where <function loads at 0x7fd3caf1d750> = json.loads
+
+coverup-tests/tmp_test_sdphkuf1.py:38: AssertionError
+
+---- 2024-02-29T00:27:50 cookiecutter/prompt.py:99-119 ----
+Too many attempts, giving up
+---- 2024-02-29T00:27:53 cookiecutter/repository.py:63-130 ----
+```python
+import os
+import pytest
+from cookiecutter.exceptions import RepositoryNotFound
+from cookiecutter.repository import determine_repo_dir
+from unittest.mock import patch
+
+@pytest.fixture
+def cleanup_temp_dir():
+    temp_dirs = []
+
+    yield temp_dirs
+
+    for temp_dir in temp_dirs:
+        if os.path.exists(temp_dir):
+            os.rmdir(temp_dir)
+
+def test_determine_repo_dir_with_directory_existing_locally(cleanup_temp_dir, tmp_path):
+    template = 'local-template'
+    abbreviations = {}
+    clone_to_dir = str(tmp_path)
+    checkout = None
+    no_input = True
+    password = None
+    directory = 'cookiecutter-dir'
+
+    # Create a local template directory with a 'cookiecutter.json' file
+    local_template_path = tmp_path / template
+    local_template_path.mkdir()
+    cookiecutter_json_path = local_template_path / directory / 'cookiecutter.json'
+    cookiecutter_json_path.parent.mkdir()
+    cookiecutter_json_path.touch()
+
+    cleanup_temp_dir.append(str(local_template_path))
+
+    with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+        mock_has_json.return_value = True
+
+        repo_dir, cleanup = determine_repo_dir(
+            template=template,
+            abbreviations=abbreviations,
+            clone_to_dir=clone_to_dir,
+            checkout=checkout,
+            no_input=no_input,
+            password=password,
+            directory=directory
+        )
+
+        expected_repo_dir = str(local_template_path / directory)
+        assert repo_dir == expected_repo_dir, "The repo_dir should be the path to the directory containing cookiecutter.json"
+        assert not cleanup, "Cleanup should be False for local repository"
+
+def test_determine_repo_dir_with_directory_not_existing_locally(cleanup_temp_dir, tmp_path):
+    template = 'nonexistent-template'
+    abbreviations = {}
+    clone_to_dir = str(tmp_path)
+    checkout = None
+    no_input = True
+    password = None
+    directory = 'cookiecutter-dir'
+
+    with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+        mock_has_json.return_value = False
+
+        with pytest.raises(RepositoryNotFound) as excinfo:
+            determine_repo_dir(
+                template=template,
+                abbreviations=abbreviations,
+                clone_to_dir=clone_to_dir,
+                checkout=checkout,
+                no_input=no_input,
+                password=password,
+                directory=directory
+            )
+
+        expected_message = (
+            'A valid repository for "{}" could not be found in the following '
+            'locations:\n{}\n{}'.format(
+                template,
+                os.path.join(clone_to_dir, template, directory),
+                os.path.join(clone_to_dir, directory)
+            )
+        )
+        assert str(excinfo.value) == expected_message, "The exception message should list the attempted repository candidate locations"
+```
+---- 2024-02-29T00:27:53 cookiecutter/repository.py:63-130 ----
+total usage: {'prompt_tokens': 31954, 'completion_tokens': 9521}
+---- 2024-02-29T00:27:55 cookiecutter/repository.py:63-130 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+cleanup_temp_dir = ['/tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d0/local-template']
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d0')
+
+    def test_determine_repo_dir_with_directory_existing_locally(cleanup_temp_dir, tmp_path):
+        template = 'local-template'
+        abbreviations = {}
+        clone_to_dir = str(tmp_path)
+        checkout = None
+        no_input = True
+        password = None
+        directory = 'cookiecutter-dir'
+    
+        # Create a local template directory with a 'cookiecutter.json' file
+        local_template_path = tmp_path / template
+        local_template_path.mkdir()
+        cookiecutter_json_path = local_template_path / directory / 'cookiecutter.json'
+        cookiecutter_json_path.parent.mkdir()
+        cookiecutter_json_path.touch()
+    
+        cleanup_temp_dir.append(str(local_template_path))
+    
+        with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+            mock_has_json.return_value = True
+    
+            repo_dir, cleanup = determine_repo_dir(
+                template=template,
+                abbreviations=abbreviations,
+                clone_to_dir=clone_to_dir,
+                checkout=checkout,
+                no_input=no_input,
+                password=password,
+                directory=directory
+            )
+    
+            expected_repo_dir = str(local_template_path / directory)
+>           assert repo_dir == expected_repo_dir, "The repo_dir should be the path to the directory containing cookiecutter.json"
+E           AssertionError: The repo_dir should be the path to the directory containing cookiecutter.json
+E           assert 'local-templa...kiecutter-dir' == '/tmp/pytest-...kiecutter-dir'
+E             - /tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d0/local-template/cookiecutter-dir
+E             + local-template/cookiecutter-dir
+
+coverup-tests/tmp_test_97a5sfeg.py:49: AssertionError
+_________ test_determine_repo_dir_with_directory_not_existing_locally __________
+
+cleanup_temp_dir = []
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d1')
+
+    def test_determine_repo_dir_with_directory_not_existing_locally(cleanup_temp_dir, tmp_path):
+        template = 'nonexistent-template'
+        abbreviations = {}
+        clone_to_dir = str(tmp_path)
+        checkout = None
+        no_input = True
+        password = None
+        directory = 'cookiecutter-dir'
+    
+        with patch('cookiecutter.repository.repository_has_cookiecutter_json') as mock_has_json:
+            mock_has_json.return_value = False
+    
+            with pytest.raises(RepositoryNotFound) as excinfo:
+                determine_repo_dir(
+                    template=template,
+                    abbreviations=abbreviations,
+                    clone_to_dir=clone_to_dir,
+                    checkout=checkout,
+                    no_input=no_input,
+                    password=password,
+                    directory=directory
+                )
+    
+            expected_message = (
+                'A valid repository for "{}" could not be found in the following '
+                'locations:\n{}\n{}'.format(
+                    template,
+                    os.path.join(clone_to_dir, template, directory),
+                    os.path.join(clone_to_dir, directory)
+                )
+            )
+>           assert str(excinfo.value) == expected_message, "The exception message should list the attempted repository candidate locations"
+E           AssertionError: The exception message should list the attempted repository candidate locations
+E           assert 'A valid repo...kiecutter-dir' == 'A valid repo...kiecutter-dir'
+E             Skipping 83 identical leading characters in diff, use -v to show
+E               ocations:
+E             + nonexistent-template/cookiecutter-dir
+E             - /tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d1/nonexistent-template/cookiecutter-dir
+E             ?                                                                                                   -
+E             + /tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d1/nonexistent-template/cookiecutter-dir
+E             - /tmp/pytest-of-root/pytest-8/test_determine_repo_dir_with_d1/cookiecutter-dir
+
+coverup-tests/tmp_test_97a5sfeg.py:83: AssertionError
+
+---- 2024-02-29T00:27:55 cookiecutter/repository.py:63-130 ----
+Too many attempts, giving up

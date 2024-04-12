@@ -19,7 +19,7 @@ def parse_args():
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use for the first CoverUp')
 
     def other_system(value):
-        coda_choices = ['codamosa-gpt4', 'codamosa-codex']
+        coda_choices = ['codamosa-gpt4', 'codamosa-codex', 'codamosa-gpt4-isolated', 'codamosa-codex-isolated']
         if not (value.startswith('coverup-') or value in coda_choices):
             raise argparse.ArgumentTypeError(f'invalid choice: select {", ".join(coda_choices)} or coverup-..config..')
         return value
@@ -217,6 +217,12 @@ if __name__ == "__main__":
         module_info[module]['lines'] = summ['covered_lines'] + summ['missing_lines']
         module_info[module]['branches'] = summ['covered_branches'] + summ['missing_branches']
 
+    # show missing modules
+    for i in range(len(datasets)):
+        missing = set(mod['name'] for mod in suite['modules']) - set(datasets[i]['data'].keys())
+        if missing:
+            print(f"Missing in {datasets[i]['name']}: {', '.join(sorted(missing))}")
+            print()
 
     if args.plot or args.histogram:
         import matplotlib.pyplot as plt
@@ -320,7 +326,7 @@ if __name__ == "__main__":
                 data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in dataset]
                 data = [d for d in data if d is not None]
 
-                print(f"{name + ' ' + short_label + ':':25} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
+                print(f"{name + ' ' + short_label + ':':30} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
                       f"{median(data):.1f}% median, {min(data):.1f}% min, {max(data):.1f}% max, " +\
                       f"{sum(c==100 for c in data)} @ 100%")
 

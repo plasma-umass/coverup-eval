@@ -1,0 +1,3021 @@
+---- 2024-02-29T18:41:51 startup ----
+Command: /usr/local/bin/coverup --write-requirements-to requirements.txt --source-dir ./semantic_release --tests-dir coverup-tests --pytest-args --rootdir . -c /dev/null --log-file coverup-log-3 --checkpoint coverup-ckpt.json semantic_release/ci_checks.py semantic_release/dist.py semantic_release/helpers.py semantic_release/hvcs.py semantic_release/pypi.py semantic_release/settings.py
+---- 2024-02-29T18:41:53 semantic_release/hvcs.py:399-426 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, lines 413-426 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Gitlab(Base):
+                @classmethod
+                @LoggedFunction(logger)
+                def post_release_changelog(
+                    cls, owner: str, repo: str, version: str, changelog: str
+                ) -> bool:
+                    """Post release changelog
+            
+                    :param owner: The owner namespace of the repository
+                    :param repo: The repository name
+                    :param version: The version number
+                    :param changelog: The release notes for this version
+            
+                    :return: The status of the request
+                    """
+       413:         ref = "v" + version
+       414:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())
+       415:         gl.auth()
+       416:         try:
+       417:             tag = gl.projects.get(owner + "/" + repo).tags.get(ref)
+       418:             tag.set_release_description(changelog)
+       419:         except gitlab.exceptions.GitlabGetError:
+       420:             logger.debug(f"Tag {ref} was not found for project {owner}/{repo}")
+       421:             return False
+       422:         except gitlab.exceptions.GitlabUpdateError:
+       423:             logger.debug(f"Failed to update tag {ref} for project {owner}/{repo}")
+       424:             return False
+            
+       426:         return True
+
+```
+
+---- 2024-02-29T18:41:54 semantic_release/settings.py:97-118 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/settings.py, module semantic_release.settings, does not achieve full coverage:
+when tested, lines 103-118 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def current_changelog_components() -> List[Callable]:
+                """Get the currently-configured changelog components
+            
+                :raises ImproperConfigurationError: if ImportError or AttributeError is raised
+                :returns: List of component functions
+                """
+       103:     component_paths = config.get("changelog_components").split(",")
+       104:     components = list()
+            
+       106:     for path in component_paths:
+       107:         try:
+                        # All except the last part is the import path
+       109:             parts = path.split(".")
+       110:             module = ".".join(parts[:-1])
+                        # The final part is the name of the component function
+       112:             components.append(getattr(importlib.import_module(module), parts[-1]))
+       113:         except (ImportError, AttributeError) as error:
+       114:             raise ImproperConfigurationError(
+       115:                 f'Unable to import changelog component "{path}"'
+                        )
+            
+       118:     return components
+
+```
+
+---- 2024-02-29T18:41:54 semantic_release/dist.py:25-28 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/dist.py, module semantic_release.dist, does not achieve full coverage:
+when tested, lines 26-28 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def build_dists():
+        26:     command = config.get("build_command")
+        27:     logger.info(f"Running {command}")
+        28:     run(command)
+
+```
+
+---- 2024-02-29T18:41:54 semantic_release/helpers.py:16-39 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/helpers.py, module semantic_release.helpers, does not achieve full coverage:
+when tested, branches 29->39, 34->36 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def build_requests_session(
+                raise_for_status=True, retry: Union[bool, int, Retry] = True
+            ) -> Session:
+                """
+                Create a requests session.
+                :param raise_for_status: If True, a hook to invoke raise_for_status be installed
+                :param retry: If true, it will use default Retry configuration. if an integer, it will use default Retry
+                configuration with given integer as total retry count. if Retry instance, it will use this instance.
+                :return: configured requests Session
+                """
+                session = Session()
+                if raise_for_status:
+                    session.hooks = {"response": [lambda r, *args, **kwargs: r.raise_for_status()]}
+        29:     if retry:
+                    if isinstance(retry, bool):
+                        retry = Retry()
+                    elif isinstance(retry, int):
+                        retry = Retry(retry)
+        34:         elif not isinstance(retry, Retry):
+                        raise ValueError("retry should be a bool, int or Retry instance.")
+        36:         adapter = HTTPAdapter(max_retries=retry)
+                    session.mount("http://", adapter)
+                    session.mount("https://", adapter)
+        39:     return session
+
+```
+
+---- 2024-02-29T18:41:54 semantic_release/hvcs.py:245-272 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, branch 263->272 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Github(Base):
+                @classmethod
+                @LoggedFunction(logger)
+                def post_release_changelog(
+                    cls, owner: str, repo: str, version: str, changelog: str
+                ) -> bool:
+                    """Post release changelog
+            
+                    :param owner: The owner namespace of the repository
+                    :param repo: The repository name
+                    :param version: The version number
+                    :param changelog: The release notes for this version
+            
+                    :return: The status of the request
+                    """
+                    tag = f"v{version}"
+                    logger.debug(f"Attempting to create release for {tag}")
+                    success = Github.create_release(owner, repo, tag, changelog)
+            
+       263:         if not success:
+                        logger.debug("Unsuccessful, looking for an existing release to update")
+                        release_id = Github.get_release(owner, repo, tag)
+                        if release_id:
+                            logger.debug(f"Updating release {release_id}")
+                            success = Github.edit_release(owner, repo, release_id, changelog)
+                        else:
+                            logger.debug(f"Existing release not found")
+            
+       272:         return success
+
+```
+
+---- 2024-02-29T18:41:54 semantic_release/hvcs.py:274-314 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, branch 294->297 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Github(Base):
+                @classmethod
+                @LoggedFunction(logger)
+                def upload_asset(
+                    cls, owner: str, repo: str, release_id: int, file: str, label: str = None
+                ) -> bool:
+                    """Upload an asset to an existing release
+            
+                    https://docs.github.com/rest/reference/repos#upload-a-release-asset
+            
+                    :param owner: The owner namespace of the repository
+                    :param repo: The repository name
+                    :param release_id: ID of the release to upload to
+                    :param file: Path of the file to upload
+                    :param label: Custom label for this file
+            
+                    :return: The status of the request
+                    """
+                    url = f"https://uploads.github.com/repos/{owner}/{repo}/releases/{release_id}/assets"
+            
+                    content_type = mimetypes.guess_type(file, strict=False)[0]
+       294:         if not content_type:
+                        content_type = "application/octet-stream"
+            
+       297:         try:
+                        response = Github.session().post(
+                            url,
+                            params={"name": os.path.basename(file), "label": label},
+                            headers={
+                                "Content-Type": content_type,
+                            },
+                            data=open(file, "rb").read(),
+                        )
+            
+                        logger.debug(
+                            f"Asset upload on Github completed, url: {response.url}, status code: {response.status_code}"
+                        )
+            
+                        return True
+                    except HTTPError as e:
+                        logger.warning(f"Asset upload {file} on Github has failed: {e}")
+                        return False
+
+```
+
+---- 2024-02-29T18:41:54 semantic_release/hvcs.py:373-397 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, branch 394->387 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Gitlab(Base):
+                @staticmethod
+                @LoggedFunction(logger)
+                def check_build_status(owner: str, repo: str, ref: str) -> bool:
+                    """Check last build status
+            
+                    :param owner: The owner namespace of the repository. It includes all groups and subgroups.
+                    :param repo: The repository name
+                    :param ref: The sha1 hash of the commit ref
+            
+                    :return: the status of the pipeline (False if a job failed)
+                    """
+                    gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())
+                    gl.auth()
+                    jobs = gl.projects.get(owner + "/" + repo).commits.get(ref).statuses.list()
+       387:         for job in jobs:
+                        if job["status"] not in ["success", "skipped"]:
+                            if job["status"] == "pending":
+                                logger.debug(
+                                    f"check_build_status: job {job['name']} is still in pending status"
+                                )
+                                return False
+       394:                 elif job["status"] == "failed" and not job["allow_failure"]:
+                                logger.debug(f"check_build_status: job {job['name']} failed")
+                                return False
+                    return True
+
+```
+
+---- 2024-02-29T18:42:06 semantic_release/dist.py:25-28 ----
+```python
+import pytest
+from semantic_release import dist
+from semantic_release.history import config
+from unittest.mock import patch
+
+def test_build_dists_runs_build_command(mocker):
+    # Mock the config to return a specific build command
+    mocker.patch('semantic_release.history.config.get', return_value='echo "Building..."')
+
+    # Mock the logger to prevent actual logging during the test
+    mock_logger = mocker.patch('semantic_release.dist.logger')
+
+    # Mock the run function to prevent the actual command from running
+    mock_run = mocker.patch('semantic_release.dist.run')
+
+    # Call the function under test
+    dist.build_dists()
+
+    # Assert that the build command was retrieved from the config
+    config.get.assert_called_once_with("build_command")
+
+    # Assert that the logger was called with the correct message
+    mock_logger.info.assert_called_once_with('Running echo "Building..."')
+
+    # Assert that the run function was called with the correct command
+    mock_run.assert_called_once_with('echo "Building..."')
+```
+---- 2024-02-29T18:42:06 semantic_release/dist.py:25-28 ----
+total usage: {'prompt_tokens': 234, 'completion_tokens': 211}
+---- 2024-02-29T18:42:08 semantic_release/dist.py:25-28 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_l2wyyoyd.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/site-packages/git/__init__.py:166: in <module>
+    refresh()
+/usr/local/lib/python3.10/site-packages/git/__init__.py:153: in refresh
+    if not Git.refresh(path=path):
+/usr/local/lib/python3.10/site-packages/git/cmd.py:391: in refresh
+    raise ImportError(err)
+E   ImportError: Bad git executable.
+E   The git executable must be specified in one of the following ways:
+E       - be included in your $PATH
+E       - be set via $GIT_PYTHON_GIT_EXECUTABLE
+E       - explicitly set via git.refresh()
+E   
+E   All git commands will error until this is rectified.
+E   
+E   This initial warning can be silenced or aggravated in the future by setting the
+E   $GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+E       - quiet|q|silence|s|none|n|0: for no warning or exception
+E       - warn|w|warning|1: for a printed warning
+E       - error|e|raise|r|2: for a raised exception
+E   
+E   Example:
+E       export GIT_PYTHON_REFRESH=quiet
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_l2wyyoyd.py:3: in <module>
+    from semantic_release.history import config
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:41: in exec_module
+    exec(code, module.__dict__)
+semantic_release/history/__init__.py:16: in <module>
+    from ..vcs_helpers import get_commit_log, get_last_version
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:41: in exec_module
+    exec(code, module.__dict__)
+semantic_release/vcs_helpers.py:12: in <module>
+    from git import GitCommandError, InvalidGitRepositoryError, Repo, TagObject
+/usr/local/lib/python3.10/site-packages/git/__init__.py:168: in <module>
+    raise ImportError("Failed to initialize: {0}".format(_exc)) from _exc
+E   ImportError: Failed to initialize: Bad git executable.
+E   The git executable must be specified in one of the following ways:
+E       - be included in your $PATH
+E       - be set via $GIT_PYTHON_GIT_EXECUTABLE
+E       - explicitly set via git.refresh()
+E   
+E   All git commands will error until this is rectified.
+E   
+E   This initial warning can be silenced or aggravated in the future by setting the
+E   $GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+E       - quiet|q|silence|s|none|n|0: for no warning or exception
+E       - warn|w|warning|1: for a printed warning
+E       - error|e|raise|r|2: for a raised exception
+E   
+E   Example:
+E       export GIT_PYTHON_REFRESH=quiet
+
+---- 2024-02-29T18:42:08 semantic_release/hvcs.py:245-272 ----
+```python
+import pytest
+from unittest.mock import patch
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github(mocker):
+    mocker.patch('semantic_release.hvcs.Github.create_release', return_value=False)
+    mocker.patch('semantic_release.hvcs.Github.get_release', return_value=None)
+    mocker.patch('semantic_release.hvcs.Github.edit_release', return_value=True)
+    mocker.patch('semantic_release.hvcs.logger')
+
+def test_post_release_changelog_without_existing_release(mock_github):
+    owner = 'owner'
+    repo = 'repo'
+    version = '1.0.0'
+    changelog = 'Some changes'
+
+    success = Github.post_release_changelog(owner, repo, version, changelog)
+
+    assert not success
+    Github.create_release.assert_called_once_with(owner, repo, f'v{version}', changelog)
+    Github.get_release.assert_called_once_with(owner, repo, f'v{version}')
+    Github.edit_release.assert_not_called()
+```
+---- 2024-02-29T18:42:08 semantic_release/hvcs.py:245-272 ----
+total usage: {'prompt_tokens': 670, 'completion_tokens': 420}
+---- 2024-02-29T18:42:10 semantic_release/hvcs.py:245-272 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:42:10 semantic_release/hvcs.py:245-272 ----
+
+This test still lacks coverage: branch 263->272 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T18:42:10 semantic_release/settings.py:97-118 ----
+```python
+import pytest
+from semantic_release import ImproperConfigurationError
+from semantic_release.settings import config, current_changelog_components
+from unittest.mock import patch, MagicMock
+
+def test_current_changelog_components_success(mocker):
+    # Mock the config to return a valid component path
+    mocker.patch.object(config, 'get', return_value='os.path.join')
+    # Mock importlib.import_module to return a mock module with a 'join' attribute
+    mock_module = MagicMock()
+    mock_module.join = lambda x, y: None
+    mocker.patch('importlib.import_module', return_value=mock_module)
+
+    components = current_changelog_components()
+    assert len(components) == 1
+    assert components[0] == mock_module.join
+
+def test_current_changelog_components_failure(mocker):
+    # Mock the config to return an invalid component path
+    mocker.patch.object(config, 'get', return_value='invalid.module.path')
+    # Mock importlib.import_module to raise ImportError
+    mocker.patch('importlib.import_module', side_effect=ImportError)
+
+    with pytest.raises(ImproperConfigurationError):
+        current_changelog_components()
+
+def test_current_changelog_components_attribute_error(mocker):
+    # Mock the config to return a valid module but invalid attribute
+    mocker.patch.object(config, 'get', return_value='os.path.invalid_attribute')
+    # Mock importlib.import_module to return a mock module without the 'invalid_attribute' attribute
+    mock_module = MagicMock()
+    mocker.patch('importlib.import_module', return_value=mock_module)
+
+    with pytest.raises(ImproperConfigurationError):
+        current_changelog_components()
+```
+---- 2024-02-29T18:42:10 semantic_release/settings.py:97-118 ----
+total usage: {'prompt_tokens': 1081, 'completion_tokens': 753}
+---- 2024-02-29T18:42:11 semantic_release/hvcs.py:373-397 ----
+```python
+import pytest
+from unittest.mock import MagicMock
+from semantic_release.hvcs import Gitlab
+from semantic_release import logger
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gl = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+    mock_gl.return_value.auth.return_value = True
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_gl.return_value.projects.get.return_value = mock_project
+    mock_project.commits.get.return_value = mock_commit
+    return mock_gl, mock_commit
+
+def test_check_build_status_with_failed_job_not_allowed_failure(mock_gitlab, mocker):
+    mock_gl, mock_commit = mock_gitlab
+    mock_commit.statuses.list.return_value = [
+        {'name': 'test_job', 'status': 'failed', 'allow_failure': False}
+    ]
+    mocker.spy(logger, 'debug')
+
+    result = Gitlab.check_build_status('owner', 'repo', 'ref')
+
+    assert not result
+    logger.debug.assert_called_with("check_build_status: job test_job failed")
+
+def test_check_build_status_with_failed_job_allowed_failure(mock_gitlab, mocker):
+    mock_gl, mock_commit = mock_gitlab
+    mock_commit.statuses.list.return_value = [
+        {'name': 'test_job', 'status': 'failed', 'allow_failure': True}
+    ]
+    mocker.spy(logger, 'debug')
+
+    result = Gitlab.check_build_status('owner', 'repo', 'ref')
+
+    assert result
+    logger.debug.assert_not_called()
+```
+---- 2024-02-29T18:42:11 semantic_release/hvcs.py:373-397 ----
+total usage: {'prompt_tokens': 1538, 'completion_tokens': 1067}
+---- 2024-02-29T18:42:12 semantic_release/settings.py:97-118 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f2d92cac070>
+
+    def test_current_changelog_components_attribute_error(mocker):
+        # Mock the config to return a valid module but invalid attribute
+        mocker.patch.object(config, 'get', return_value='os.path.invalid_attribute')
+        # Mock importlib.import_module to return a mock module without the 'invalid_attribute' attribute
+        mock_module = MagicMock()
+        mocker.patch('importlib.import_module', return_value=mock_module)
+    
+>       with pytest.raises(ImproperConfigurationError):
+E       Failed: DID NOT RAISE <class 'semantic_release.errors.ImproperConfigurationError'>
+
+coverup-tests/tmp_test_hc0z18wr.py:34: Failed
+
+---- 2024-02-29T18:42:13 semantic_release/hvcs.py:373-397 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_qm38vx69.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_qm38vx69.py:4: in <module>
+    from semantic_release import logger
+E   ImportError: cannot import name 'logger' from 'semantic_release' (/output/semantic_release/__init__.py)
+
+---- 2024-02-29T18:42:19 semantic_release/hvcs.py:274-314 ----
+```python
+import os
+import pytest
+from unittest.mock import MagicMock
+from requests.exceptions import HTTPError
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_response(mocker):
+    mock = mocker.MagicMock()
+    mock.post.return_value.__enter__.return_value.status_code = 200
+    return mock
+
+@pytest.fixture
+def mock_open(mocker):
+    mock = mocker.mock_open(read_data=b"test data")
+    mocker.patch("builtins.open", mock)
+    return mock
+
+@pytest.fixture
+def mock_mimetypes(mocker):
+    mocker.patch("mimetypes.guess_type", return_value=(None, None))
+
+@pytest.fixture
+def mock_os_path(mocker):
+    mocker.patch("os.path.basename", return_value="testfile")
+
+@pytest.fixture
+def mock_logger(mocker):
+    return mocker.patch("semantic_release.hvcs.logger")
+
+@pytest.fixture
+def mock_session(mock_response, mocker):
+    mocker.patch.object(Github, 'session', return_value=mock_response)
+
+def test_upload_asset_without_content_type(
+    mock_open, mock_mimetypes, mock_os_path, mock_logger, mock_session
+):
+    owner = "owner"
+    repo = "repo"
+    release_id = 123
+    file = "path/to/file"
+    label = "custom label"
+
+    assert Github.upload_asset(owner, repo, release_id, file, label) is True
+    mock_open.assert_called_once_with(file, "rb")
+    mock_logger.debug.assert_called_once()
+    mock_logger.warning.assert_not_called()
+
+def test_upload_asset_http_error(
+    mock_open, mock_mimetypes, mock_os_path, mock_logger, mock_session, mocker
+):
+    mock_session().post.side_effect = HTTPError("Error message")
+
+    owner = "owner"
+    repo = "repo"
+    release_id = 123
+    file = "path/to/file"
+    label = "custom label"
+
+    assert Github.upload_asset(owner, repo, release_id, file, label) is False
+    mock_open.assert_called_once_with(file, "rb")
+    mock_logger.debug.assert_not_called()
+    mock_logger.warning.assert_called_once()
+```
+---- 2024-02-29T18:42:19 semantic_release/hvcs.py:274-314 ----
+total usage: {'prompt_tokens': 2065, 'completion_tokens': 1505}
+---- 2024-02-29T18:42:20 semantic_release/dist.py:25-28 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+
+# Assuming the semantic_release.dist module is structured as follows:
+# semantic_release/
+# ├── dist.py
+# └── history.py
+
+# We will mock the necessary parts of the history module as well
+# since the ImportError indicates an issue with the git executable,
+# which is likely used in the history module.
+
+@pytest.fixture
+def mock_config_get(mocker):
+    return mocker.patch('semantic_release.history.config.get', return_value='echo "Building..."')
+
+@pytest.fixture
+def mock_logger_info(mocker):
+    return mocker.patch('semantic_release.dist.logger.info')
+
+@pytest.fixture
+def mock_run(mocker):
+    return mocker.patch('semantic_release.dist.run')
+
+def test_build_dists_runs_build_command(mock_config_get, mock_logger_info, mock_run):
+    # Import the build_dists function within the test to avoid ImportError
+    from semantic_release.dist import build_dists
+
+    # Call the function under test
+    build_dists()
+
+    # Assert that the build command was retrieved from the config
+    mock_config_get.assert_called_once_with("build_command")
+
+    # Assert that the logger was called with the correct message
+    mock_logger_info.assert_called_once_with('Running echo "Building..."')
+
+    # Assert that the run function was called with the correct command
+    mock_run.assert_called_once_with('echo "Building..."')
+```
+---- 2024-02-29T18:42:20 semantic_release/dist.py:25-28 ----
+total usage: {'prompt_tokens': 3288, 'completion_tokens': 1790}
+---- 2024-02-29T18:42:20 semantic_release/hvcs.py:274-314 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_open = <MagicMock name='open' spec='builtin_function_or_method' id='139782154744688'>
+mock_mimetypes = None, mock_os_path = None
+mock_logger = <MagicMock name='logger' id='139782151883312'>
+mock_session = None
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f2191c3e7d0>
+
+    def test_upload_asset_http_error(
+        mock_open, mock_mimetypes, mock_os_path, mock_logger, mock_session, mocker
+    ):
+>       mock_session().post.side_effect = HTTPError("Error message")
+E       TypeError: 'NoneType' object is not callable
+
+coverup-tests/tmp_test_3129lu7k.py:52: TypeError
+
+---- 2024-02-29T18:42:21 semantic_release/dist.py:25-28 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+thing = <module 'semantic_release' from '/output/semantic_release/__init__.py'>
+comp = 'history', import_path = 'semantic_release.history'
+
+    def _dot_lookup(thing, comp, import_path):
+        try:
+>           return getattr(thing, comp)
+E           AttributeError: module 'semantic_release' has no attribute 'history'
+
+/usr/local/lib/python3.10/unittest/mock.py:1238: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+    # __init__.py
+    # Copyright (C) 2008, 2009 Michael Trier (mtrier@gmail.com) and contributors
+    #
+    # This module is part of GitPython and is released under
+    # the BSD License: https://opensource.org/license/bsd-3-clause/
+    # flake8: noqa
+    # @PydevCodeAnalysisIgnore
+    from git.exc import *  # @NoMove @IgnorePep8
+    import inspect
+    import os
+    import sys
+    import os.path as osp
+    
+    from typing import Optional
+    from git.types import PathLike
+    
+    __version__ = '3.1.40'
+    
+    
+    # { Initialization
+    def _init_externals() -> None:
+        """Initialize external projects by putting them into the path"""
+        if __version__ == '3.1.40' and "PYOXIDIZER" not in os.environ:
+            sys.path.insert(1, osp.join(osp.dirname(__file__), "ext", "gitdb"))
+    
+        try:
+            import gitdb
+        except ImportError as e:
+            raise ImportError("'gitdb' could not be found in your PYTHONPATH") from e
+        # END verify import
+    
+    
+    # } END initialization
+    
+    
+    #################
+    _init_externals()
+    #################
+    
+    # { Imports
+    
+    try:
+        from git.config import GitConfigParser  # @NoMove @IgnorePep8
+        from git.objects import *  # @NoMove @IgnorePep8
+        from git.refs import *  # @NoMove @IgnorePep8
+        from git.diff import *  # @NoMove @IgnorePep8
+        from git.db import *  # @NoMove @IgnorePep8
+        from git.cmd import Git  # @NoMove @IgnorePep8
+        from git.repo import Repo  # @NoMove @IgnorePep8
+        from git.remote import *  # @NoMove @IgnorePep8
+        from git.index import *  # @NoMove @IgnorePep8
+        from git.util import (  # @NoMove @IgnorePep8
+            LockFile,
+            BlockingLockFile,
+            Stats,
+            Actor,
+            rmtree,
+        )
+    except GitError as _exc:
+        raise ImportError("%s: %s" % (_exc.__class__.__name__, _exc)) from _exc
+    
+    # } END imports
+    
+    # __all__ must be statically defined by py.typed support
+    # __all__ = [name for name, obj in locals().items() if not (name.startswith("_") or inspect.ismodule(obj))]
+    __all__ = [
+        "Actor",
+        "AmbiguousObjectName",
+        "BadName",
+        "BadObject",
+        "BadObjectType",
+        "BaseIndexEntry",
+        "Blob",
+        "BlobFilter",
+        "BlockingLockFile",
+        "CacheError",
+        "CheckoutError",
+        "CommandError",
+        "Commit",
+        "Diff",
+        "DiffIndex",
+        "Diffable",
+        "FetchInfo",
+        "Git",
+        "GitCmdObjectDB",
+        "GitCommandError",
+        "GitCommandNotFound",
+        "GitConfigParser",
+        "GitDB",
+        "GitError",
+        "HEAD",
+        "Head",
+        "HookExecutionError",
+        "IndexEntry",
+        "IndexFile",
+        "IndexObject",
+        "InvalidDBRoot",
+        "InvalidGitRepositoryError",
+        "List",
+        "LockFile",
+        "NULL_TREE",
+        "NoSuchPathError",
+        "ODBError",
+        "Object",
+        "Optional",
+        "ParseError",
+        "PathLike",
+        "PushInfo",
+        "RefLog",
+        "RefLogEntry",
+        "Reference",
+        "Remote",
+        "RemoteProgress",
+        "RemoteReference",
+        "Repo",
+        "RepositoryDirtyError",
+        "RootModule",
+        "RootUpdateProgress",
+        "Sequence",
+        "StageType",
+        "Stats",
+        "Submodule",
+        "SymbolicReference",
+        "TYPE_CHECKING",
+        "Tag",
+        "TagObject",
+        "TagReference",
+        "Tree",
+        "TreeModifier",
+        "Tuple",
+        "Union",
+        "UnmergedEntriesError",
+        "UnsafeOptionError",
+        "UnsafeProtocolError",
+        "UnsupportedOperation",
+        "UpdateProgress",
+        "WorkTreeRepositoryUnsupported",
+        "remove_password_if_present",
+        "rmtree",
+        "safe_decode",
+        "to_hex_sha",
+    ]
+    
+    # { Initialize git executable path
+    GIT_OK = None
+    
+    
+    def refresh(path: Optional[PathLike] = None) -> None:
+        """Convenience method for setting the git executable path."""
+        global GIT_OK
+        GIT_OK = False
+    
+        if not Git.refresh(path=path):
+            return
+        if not FetchInfo.refresh():
+            return  # type: ignore [unreachable]
+    
+        GIT_OK = True
+    
+    
+    # } END initialize git executable path
+    
+    
+    #################
+    try:
+>       refresh()
+
+/usr/local/lib/python3.10/site-packages/git/__init__.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = None
+
+    def refresh(path: Optional[PathLike] = None) -> None:
+        """Convenience method for setting the git executable path."""
+        global GIT_OK
+        GIT_OK = False
+    
+>       if not Git.refresh(path=path):
+
+/usr/local/lib/python3.10/site-packages/git/__init__.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'git.cmd.Git'>, path = None
+
+    @classmethod
+    def refresh(cls, path: Union[None, PathLike] = None) -> bool:
+        """This gets called by the refresh function (see the top level __init__)."""
+        # discern which path to refresh with
+        if path is not None:
+            new_git = os.path.expanduser(path)
+            new_git = os.path.abspath(new_git)
+        else:
+            new_git = os.environ.get(cls._git_exec_env_var, cls.git_exec_name)
+    
+        # keep track of the old and new git executable path
+        old_git = cls.GIT_PYTHON_GIT_EXECUTABLE
+        cls.GIT_PYTHON_GIT_EXECUTABLE = new_git
+    
+        # test if the new git executable path is valid
+    
+        # - a GitCommandNotFound error is spawned by ourselves
+        # - a PermissionError is spawned if the git executable provided
+        #   cannot be executed for whatever reason
+    
+        has_git = False
+        try:
+            cls().version()
+            has_git = True
+        except (GitCommandNotFound, PermissionError):
+            pass
+    
+        # warn or raise exception if test failed
+        if not has_git:
+            err = (
+                dedent(
+                    """\
+                Bad git executable.
+                The git executable must be specified in one of the following ways:
+                    - be included in your $PATH
+                    - be set via $%s
+                    - explicitly set via git.refresh()
+                """
+                )
+                % cls._git_exec_env_var
+            )
+    
+            # revert to whatever the old_git was
+            cls.GIT_PYTHON_GIT_EXECUTABLE = old_git
+    
+            if old_git is None:
+                # on the first refresh (when GIT_PYTHON_GIT_EXECUTABLE is
+                # None) we only are quiet, warn, or error depending on the
+                # GIT_PYTHON_REFRESH value
+    
+                # determine what the user wants to happen during the initial
+                # refresh we expect GIT_PYTHON_REFRESH to either be unset or
+                # be one of the following values:
+                #   0|q|quiet|s|silence
+                #   1|w|warn|warning
+                #   2|r|raise|e|error
+    
+                mode = os.environ.get(cls._refresh_env_var, "raise").lower()
+    
+                quiet = ["quiet", "q", "silence", "s", "none", "n", "0"]
+                warn = ["warn", "w", "warning", "1"]
+                error = ["error", "e", "raise", "r", "2"]
+    
+                if mode in quiet:
+                    pass
+                elif mode in warn or mode in error:
+                    err = (
+                        dedent(
+                            """\
+                        %s
+                        All git commands will error until this is rectified.
+    
+                        This initial warning can be silenced or aggravated in the future by setting the
+                        $%s environment variable. Use one of the following values:
+                            - %s: for no warning or exception
+                            - %s: for a printed warning
+                            - %s: for a raised exception
+    
+                        Example:
+                            export %s=%s
+                        """
+                        )
+                        % (
+                            err,
+                            cls._refresh_env_var,
+                            "|".join(quiet),
+                            "|".join(warn),
+                            "|".join(error),
+                            cls._refresh_env_var,
+                            quiet[0],
+                        )
+                    )
+    
+                    if mode in warn:
+                        print("WARNING: %s" % err)
+                    else:
+>                       raise ImportError(err)
+E                       ImportError: Bad git executable.
+E                       The git executable must be specified in one of the following ways:
+E                           - be included in your $PATH
+E                           - be set via $GIT_PYTHON_GIT_EXECUTABLE
+E                           - explicitly set via git.refresh()
+E                       
+E                       All git commands will error until this is rectified.
+E                       
+E                       This initial warning can be silenced or aggravated in the future by setting the
+E                       $GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+E                           - quiet|q|silence|s|none|n|0: for no warning or exception
+E                           - warn|w|warning|1: for a printed warning
+E                           - error|e|raise|r|2: for a raised exception
+E                       
+E                       Example:
+E                           export GIT_PYTHON_REFRESH=quiet
+
+/usr/local/lib/python3.10/site-packages/git/cmd.py:391: ImportError
+
+The above exception was the direct cause of the following exception:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f276cdec130>
+
+    @pytest.fixture
+    def mock_config_get(mocker):
+>       return mocker.patch('semantic_release.history.config.get', return_value='echo "Building..."')
+
+coverup-tests/tmp_test_q9nbz3mv.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1421: in __enter__
+    self.target = self.getter()
+/usr/local/lib/python3.10/unittest/mock.py:1608: in <lambda>
+    getter = lambda: _importer(target)
+/usr/local/lib/python3.10/unittest/mock.py:1251: in _importer
+    thing = _dot_lookup(thing, comp, import_path)
+/usr/local/lib/python3.10/unittest/mock.py:1240: in _dot_lookup
+    __import__(import_path)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:41: in exec_module
+    exec(code, module.__dict__)
+semantic_release/history/__init__.py:16: in <module>
+    from ..vcs_helpers import get_commit_log, get_last_version
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:41: in exec_module
+    exec(code, module.__dict__)
+semantic_release/vcs_helpers.py:12: in <module>
+    from git import GitCommandError, InvalidGitRepositoryError, Repo, TagObject
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    # __init__.py
+    # Copyright (C) 2008, 2009 Michael Trier (mtrier@gmail.com) and contributors
+    #
+    # This module is part of GitPython and is released under
+    # the BSD License: https://opensource.org/license/bsd-3-clause/
+    # flake8: noqa
+    # @PydevCodeAnalysisIgnore
+    from git.exc import *  # @NoMove @IgnorePep8
+    import inspect
+    import os
+    import sys
+    import os.path as osp
+    
+    from typing import Optional
+    from git.types import PathLike
+    
+    __version__ = '3.1.40'
+    
+    
+    # { Initialization
+    def _init_externals() -> None:
+        """Initialize external projects by putting them into the path"""
+        if __version__ == '3.1.40' and "PYOXIDIZER" not in os.environ:
+            sys.path.insert(1, osp.join(osp.dirname(__file__), "ext", "gitdb"))
+    
+        try:
+            import gitdb
+        except ImportError as e:
+            raise ImportError("'gitdb' could not be found in your PYTHONPATH") from e
+        # END verify import
+    
+    
+    # } END initialization
+    
+    
+    #################
+    _init_externals()
+    #################
+    
+    # { Imports
+    
+    try:
+        from git.config import GitConfigParser  # @NoMove @IgnorePep8
+        from git.objects import *  # @NoMove @IgnorePep8
+        from git.refs import *  # @NoMove @IgnorePep8
+        from git.diff import *  # @NoMove @IgnorePep8
+        from git.db import *  # @NoMove @IgnorePep8
+        from git.cmd import Git  # @NoMove @IgnorePep8
+        from git.repo import Repo  # @NoMove @IgnorePep8
+        from git.remote import *  # @NoMove @IgnorePep8
+        from git.index import *  # @NoMove @IgnorePep8
+        from git.util import (  # @NoMove @IgnorePep8
+            LockFile,
+            BlockingLockFile,
+            Stats,
+            Actor,
+            rmtree,
+        )
+    except GitError as _exc:
+        raise ImportError("%s: %s" % (_exc.__class__.__name__, _exc)) from _exc
+    
+    # } END imports
+    
+    # __all__ must be statically defined by py.typed support
+    # __all__ = [name for name, obj in locals().items() if not (name.startswith("_") or inspect.ismodule(obj))]
+    __all__ = [
+        "Actor",
+        "AmbiguousObjectName",
+        "BadName",
+        "BadObject",
+        "BadObjectType",
+        "BaseIndexEntry",
+        "Blob",
+        "BlobFilter",
+        "BlockingLockFile",
+        "CacheError",
+        "CheckoutError",
+        "CommandError",
+        "Commit",
+        "Diff",
+        "DiffIndex",
+        "Diffable",
+        "FetchInfo",
+        "Git",
+        "GitCmdObjectDB",
+        "GitCommandError",
+        "GitCommandNotFound",
+        "GitConfigParser",
+        "GitDB",
+        "GitError",
+        "HEAD",
+        "Head",
+        "HookExecutionError",
+        "IndexEntry",
+        "IndexFile",
+        "IndexObject",
+        "InvalidDBRoot",
+        "InvalidGitRepositoryError",
+        "List",
+        "LockFile",
+        "NULL_TREE",
+        "NoSuchPathError",
+        "ODBError",
+        "Object",
+        "Optional",
+        "ParseError",
+        "PathLike",
+        "PushInfo",
+        "RefLog",
+        "RefLogEntry",
+        "Reference",
+        "Remote",
+        "RemoteProgress",
+        "RemoteReference",
+        "Repo",
+        "RepositoryDirtyError",
+        "RootModule",
+        "RootUpdateProgress",
+        "Sequence",
+        "StageType",
+        "Stats",
+        "Submodule",
+        "SymbolicReference",
+        "TYPE_CHECKING",
+        "Tag",
+        "TagObject",
+        "TagReference",
+        "Tree",
+        "TreeModifier",
+        "Tuple",
+        "Union",
+        "UnmergedEntriesError",
+        "UnsafeOptionError",
+        "UnsafeProtocolError",
+        "UnsupportedOperation",
+        "UpdateProgress",
+        "WorkTreeRepositoryUnsupported",
+        "remove_password_if_present",
+        "rmtree",
+        "safe_decode",
+        "to_hex_sha",
+    ]
+    
+    # { Initialize git executable path
+    GIT_OK = None
+    
+    
+    def refresh(path: Optional[PathLike] = None) -> None:
+        """Convenience method for setting the git executable path."""
+        global GIT_OK
+        GIT_OK = False
+    
+        if not Git.refresh(path=path):
+            return
+        if not FetchInfo.refresh():
+            return  # type: ignore [unreachable]
+    
+        GIT_OK = True
+    
+    
+    # } END initialize git executable path
+    
+    
+    #################
+    try:
+        refresh()
+    except Exception as _exc:
+>       raise ImportError("Failed to initialize: {0}".format(_exc)) from _exc
+E       ImportError: Failed to initialize: Bad git executable.
+E       The git executable must be specified in one of the following ways:
+E           - be included in your $PATH
+E           - be set via $GIT_PYTHON_GIT_EXECUTABLE
+E           - explicitly set via git.refresh()
+E       
+E       All git commands will error until this is rectified.
+E       
+E       This initial warning can be silenced or aggravated in the future by setting the
+E       $GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+E           - quiet|q|silence|s|none|n|0: for no warning or exception
+E           - warn|w|warning|1: for a printed warning
+E           - error|e|raise|r|2: for a raised exception
+E       
+E       Example:
+E           export GIT_PYTHON_REFRESH=quiet
+
+/usr/local/lib/python3.10/site-packages/git/__init__.py:168: ImportError
+
+---- 2024-02-29T18:42:24 semantic_release/hvcs.py:373-397 ----
+```python
+import pytest
+from unittest.mock import MagicMock
+from semantic_release.hvcs import Gitlab
+from semantic_release.hvcs import logger
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gl = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+    mock_gl.return_value.auth.return_value = True
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_gl.return_value.projects.get.return_value = mock_project
+    mock_project.commits.get.return_value = mock_commit
+    return mock_gl, mock_commit
+
+def test_check_build_status_with_failed_job_not_allowed_failure(mock_gitlab, mocker):
+    mock_gl, mock_commit = mock_gitlab
+    mock_commit.statuses.list.return_value = [
+        {'name': 'test_job', 'status': 'failed', 'allow_failure': False}
+    ]
+    mocker.spy(logger, 'debug')
+
+    result = Gitlab.check_build_status('owner', 'repo', 'ref')
+
+    assert not result
+    logger.debug.assert_called_with("check_build_status: job test_job failed")
+
+def test_check_build_status_with_failed_job_allowed_failure(mock_gitlab, mocker):
+    mock_gl, mock_commit = mock_gitlab
+    mock_commit.statuses.list.return_value = [
+        {'name': 'test_job', 'status': 'failed', 'allow_failure': True}
+    ]
+    mocker.spy(logger, 'debug')
+
+    result = Gitlab.check_build_status('owner', 'repo', 'ref')
+
+    assert result
+    logger.debug.assert_not_called()
+```
+---- 2024-02-29T18:42:24 semantic_release/hvcs.py:373-397 ----
+total usage: {'prompt_tokens': 4244, 'completion_tokens': 2107}
+---- 2024-02-29T18:42:26 semantic_release/hvcs.py:373-397 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+EE                                                                       [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_check_build_status_with_failed_job_not_allowed_failure _
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f94cfe3b8e0>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+>       mock_gl = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+
+coverup-tests/tmp_test_bureyy_1.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f94cfe3b490>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+__ ERROR at setup of test_check_build_status_with_failed_job_allowed_failure ___
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f94d0c98a30>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+>       mock_gl = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+
+coverup-tests/tmp_test_bureyy_1.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f94d0c991e0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-02-29T18:42:28 semantic_release/hvcs.py:245-272 ----
+```python
+import pytest
+from unittest.mock import patch
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github(mocker):
+    mocker.patch('semantic_release.hvcs.Github.create_release', return_value=False)
+    mocker.patch('semantic_release.hvcs.Github.get_release', return_value='123')
+    mocker.patch('semantic_release.hvcs.Github.edit_release', return_value=True)
+    mocker.patch('semantic_release.hvcs.logger')
+
+def test_post_release_changelog_with_existing_release(mock_github):
+    owner = 'owner'
+    repo = 'repo'
+    version = '1.0.0'
+    changelog = 'Some changes'
+
+    success = Github.post_release_changelog(owner, repo, version, changelog)
+
+    assert success
+    Github.create_release.assert_called_once_with(owner, repo, f'v{version}', changelog)
+    Github.get_release.assert_called_once_with(owner, repo, f'v{version}')
+    Github.edit_release.assert_called_once_with(owner, repo, '123', changelog)
+```
+---- 2024-02-29T18:42:28 semantic_release/hvcs.py:245-272 ----
+total usage: {'prompt_tokens': 4930, 'completion_tokens': 2326}
+---- 2024-02-29T18:42:28 semantic_release/hvcs.py:399-426 ----
+```python
+import pytest
+from unittest.mock import MagicMock, patch
+from semantic_release.hvcs import Gitlab
+from semantic_release import logger
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gl = mocker.MagicMock()
+    mocker.patch('semantic_release.hvcs.gitlab.Gitlab', return_value=mock_gl)
+    return mock_gl
+
+def test_post_release_changelog_success(mock_gitlab):
+    mock_gitlab.auth.return_value = None
+    mock_project = MagicMock()
+    mock_gitlab.projects.get.return_value = mock_project
+    mock_tag = MagicMock()
+    mock_project.tags.get.return_value = mock_tag
+
+    assert Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('Changelog content')
+
+def test_post_release_changelog_tag_not_found(mock_gitlab, mocker):
+    mock_gitlab.auth.return_value = None
+    mock_gitlab.projects.get.side_effect = gitlab.exceptions.GitlabGetError
+    mock_logger = mocker.patch.object(logger, 'debug')
+
+    assert not Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_logger.assert_called_once_with('Tag v1.0.0 was not found for project owner/repo')
+
+def test_post_release_changelog_update_error(mock_gitlab, mocker):
+    mock_gitlab.auth.return_value = None
+    mock_project = MagicMock()
+    mock_gitlab.projects.get.return_value = mock_project
+    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabUpdateError
+    mock_logger = mocker.patch.object(logger, 'debug')
+
+    assert not Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_logger.assert_called_once_with('Failed to update tag v1.0.0 for project owner/repo')
+```
+---- 2024-02-29T18:42:28 semantic_release/hvcs.py:399-426 ----
+total usage: {'prompt_tokens': 5423, 'completion_tokens': 2758}
+---- 2024-02-29T18:42:28 semantic_release/settings.py:97-118 ----
+```python
+import pytest
+from semantic_release import ImproperConfigurationError
+from semantic_release.settings import config, current_changelog_components
+from unittest.mock import patch, MagicMock
+
+def test_current_changelog_components_success(mocker):
+    # Mock the config to return a valid component path
+    mocker.patch.object(config, 'get', return_value='os.path.join')
+    # Mock importlib.import_module to return a mock module with a 'join' attribute
+    mock_module = MagicMock()
+    mock_module.join = lambda x, y: None
+    mocker.patch('importlib.import_module', return_value=mock_module)
+
+    components = current_changelog_components()
+    assert len(components) == 1
+    assert components[0] == mock_module.join
+
+def test_current_changelog_components_failure(mocker):
+    # Mock the config to return an invalid component path
+    mocker.patch.object(config, 'get', return_value='invalid.module.path')
+    # Mock importlib.import_module to raise ImportError
+    mocker.patch('importlib.import_module', side_effect=ImportError)
+
+    with pytest.raises(ImproperConfigurationError):
+        current_changelog_components()
+
+def test_current_changelog_components_attribute_error(mocker):
+    # Mock the config to return a valid module but invalid attribute
+    mocker.patch.object(config, 'get', return_value='os.path.invalid_attribute')
+    # Mock importlib.import_module to return a mock module without the 'invalid_attribute' attribute
+    mock_module = MagicMock()
+    mock_module.invalid_attribute = AttributeError()
+    mocker.patch('importlib.import_module', return_value=mock_module)
+
+    with pytest.raises(ImproperConfigurationError):
+        current_changelog_components()
+```
+---- 2024-02-29T18:42:28 semantic_release/settings.py:97-118 ----
+total usage: {'prompt_tokens': 6358, 'completion_tokens': 3099}
+---- 2024-02-29T18:42:29 semantic_release/hvcs.py:245-272 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:42:29 semantic_release/hvcs.py:245-272 ----
+
+This test still lacks coverage: branch 263->272 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T18:42:30 semantic_release/hvcs.py:399-426 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_aj_z1ng2.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_aj_z1ng2.py:4: in <module>
+    from semantic_release import logger
+E   ImportError: cannot import name 'logger' from 'semantic_release' (/output/semantic_release/__init__.py)
+
+---- 2024-02-29T18:42:30 semantic_release/settings.py:97-118 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fae022b0100>
+
+    def test_current_changelog_components_attribute_error(mocker):
+        # Mock the config to return a valid module but invalid attribute
+        mocker.patch.object(config, 'get', return_value='os.path.invalid_attribute')
+        # Mock importlib.import_module to return a mock module without the 'invalid_attribute' attribute
+        mock_module = MagicMock()
+        mock_module.invalid_attribute = AttributeError()
+        mocker.patch('importlib.import_module', return_value=mock_module)
+    
+>       with pytest.raises(ImproperConfigurationError):
+E       Failed: DID NOT RAISE <class 'semantic_release.errors.ImproperConfigurationError'>
+
+coverup-tests/tmp_test_5cv_0gg2.py:35: Failed
+
+---- 2024-02-29T18:42:31 semantic_release/dist.py:25-28 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+
+# Assuming the semantic_release.dist module is structured as follows:
+# semantic_release/
+# ├── dist.py
+# └── history.py
+
+# We will mock the necessary parts of the history module as well
+# since the ImportError indicates an issue with the git executable,
+# which is likely used in the history module.
+
+@pytest.fixture
+def mock_config_get(mocker):
+    return mocker.patch('semantic_release.history.config.get', return_value='echo "Building..."')
+
+@pytest.fixture
+def mock_logger_info(mocker):
+    return mocker.patch('semantic_release.dist.logger.info')
+
+@pytest.fixture
+def mock_run(mocker):
+    return mocker.patch('semantic_release.dist.run')
+
+def test_build_dists_runs_build_command(mock_config_get, mock_logger_info, mock_run):
+    # Import the build_dists function within the test to avoid ImportError
+    from semantic_release.dist import build_dists
+
+    # Call the function under test
+    build_dists()
+
+    # Assert that the build command was retrieved from the config
+    mock_config_get.assert_called_once_with("build_command")
+
+    # Assert that the logger was called with the correct message
+    mock_logger_info.assert_called_once_with('Running echo "Building..."')
+
+    # Assert that the run function was called with the correct command
+    mock_run.assert_called_once_with('echo "Building..."')
+```
+---- 2024-02-29T18:42:31 semantic_release/dist.py:25-28 ----
+total usage: {'prompt_tokens': 11973, 'completion_tokens': 3384}
+---- 2024-02-29T18:42:32 semantic_release/dist.py:25-28 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+thing = <module 'semantic_release' from '/output/semantic_release/__init__.py'>
+comp = 'history', import_path = 'semantic_release.history'
+
+    def _dot_lookup(thing, comp, import_path):
+        try:
+>           return getattr(thing, comp)
+E           AttributeError: module 'semantic_release' has no attribute 'history'
+
+/usr/local/lib/python3.10/unittest/mock.py:1238: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+    # __init__.py
+    # Copyright (C) 2008, 2009 Michael Trier (mtrier@gmail.com) and contributors
+    #
+    # This module is part of GitPython and is released under
+    # the BSD License: https://opensource.org/license/bsd-3-clause/
+    # flake8: noqa
+    # @PydevCodeAnalysisIgnore
+    from git.exc import *  # @NoMove @IgnorePep8
+    import inspect
+    import os
+    import sys
+    import os.path as osp
+    
+    from typing import Optional
+    from git.types import PathLike
+    
+    __version__ = '3.1.40'
+    
+    
+    # { Initialization
+    def _init_externals() -> None:
+        """Initialize external projects by putting them into the path"""
+        if __version__ == '3.1.40' and "PYOXIDIZER" not in os.environ:
+            sys.path.insert(1, osp.join(osp.dirname(__file__), "ext", "gitdb"))
+    
+        try:
+            import gitdb
+        except ImportError as e:
+            raise ImportError("'gitdb' could not be found in your PYTHONPATH") from e
+        # END verify import
+    
+    
+    # } END initialization
+    
+    
+    #################
+    _init_externals()
+    #################
+    
+    # { Imports
+    
+    try:
+        from git.config import GitConfigParser  # @NoMove @IgnorePep8
+        from git.objects import *  # @NoMove @IgnorePep8
+        from git.refs import *  # @NoMove @IgnorePep8
+        from git.diff import *  # @NoMove @IgnorePep8
+        from git.db import *  # @NoMove @IgnorePep8
+        from git.cmd import Git  # @NoMove @IgnorePep8
+        from git.repo import Repo  # @NoMove @IgnorePep8
+        from git.remote import *  # @NoMove @IgnorePep8
+        from git.index import *  # @NoMove @IgnorePep8
+        from git.util import (  # @NoMove @IgnorePep8
+            LockFile,
+            BlockingLockFile,
+            Stats,
+            Actor,
+            rmtree,
+        )
+    except GitError as _exc:
+        raise ImportError("%s: %s" % (_exc.__class__.__name__, _exc)) from _exc
+    
+    # } END imports
+    
+    # __all__ must be statically defined by py.typed support
+    # __all__ = [name for name, obj in locals().items() if not (name.startswith("_") or inspect.ismodule(obj))]
+    __all__ = [
+        "Actor",
+        "AmbiguousObjectName",
+        "BadName",
+        "BadObject",
+        "BadObjectType",
+        "BaseIndexEntry",
+        "Blob",
+        "BlobFilter",
+        "BlockingLockFile",
+        "CacheError",
+        "CheckoutError",
+        "CommandError",
+        "Commit",
+        "Diff",
+        "DiffIndex",
+        "Diffable",
+        "FetchInfo",
+        "Git",
+        "GitCmdObjectDB",
+        "GitCommandError",
+        "GitCommandNotFound",
+        "GitConfigParser",
+        "GitDB",
+        "GitError",
+        "HEAD",
+        "Head",
+        "HookExecutionError",
+        "IndexEntry",
+        "IndexFile",
+        "IndexObject",
+        "InvalidDBRoot",
+        "InvalidGitRepositoryError",
+        "List",
+        "LockFile",
+        "NULL_TREE",
+        "NoSuchPathError",
+        "ODBError",
+        "Object",
+        "Optional",
+        "ParseError",
+        "PathLike",
+        "PushInfo",
+        "RefLog",
+        "RefLogEntry",
+        "Reference",
+        "Remote",
+        "RemoteProgress",
+        "RemoteReference",
+        "Repo",
+        "RepositoryDirtyError",
+        "RootModule",
+        "RootUpdateProgress",
+        "Sequence",
+        "StageType",
+        "Stats",
+        "Submodule",
+        "SymbolicReference",
+        "TYPE_CHECKING",
+        "Tag",
+        "TagObject",
+        "TagReference",
+        "Tree",
+        "TreeModifier",
+        "Tuple",
+        "Union",
+        "UnmergedEntriesError",
+        "UnsafeOptionError",
+        "UnsafeProtocolError",
+        "UnsupportedOperation",
+        "UpdateProgress",
+        "WorkTreeRepositoryUnsupported",
+        "remove_password_if_present",
+        "rmtree",
+        "safe_decode",
+        "to_hex_sha",
+    ]
+    
+    # { Initialize git executable path
+    GIT_OK = None
+    
+    
+    def refresh(path: Optional[PathLike] = None) -> None:
+        """Convenience method for setting the git executable path."""
+        global GIT_OK
+        GIT_OK = False
+    
+        if not Git.refresh(path=path):
+            return
+        if not FetchInfo.refresh():
+            return  # type: ignore [unreachable]
+    
+        GIT_OK = True
+    
+    
+    # } END initialize git executable path
+    
+    
+    #################
+    try:
+>       refresh()
+
+/usr/local/lib/python3.10/site-packages/git/__init__.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = None
+
+    def refresh(path: Optional[PathLike] = None) -> None:
+        """Convenience method for setting the git executable path."""
+        global GIT_OK
+        GIT_OK = False
+    
+>       if not Git.refresh(path=path):
+
+/usr/local/lib/python3.10/site-packages/git/__init__.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'git.cmd.Git'>, path = None
+
+    @classmethod
+    def refresh(cls, path: Union[None, PathLike] = None) -> bool:
+        """This gets called by the refresh function (see the top level __init__)."""
+        # discern which path to refresh with
+        if path is not None:
+            new_git = os.path.expanduser(path)
+            new_git = os.path.abspath(new_git)
+        else:
+            new_git = os.environ.get(cls._git_exec_env_var, cls.git_exec_name)
+    
+        # keep track of the old and new git executable path
+        old_git = cls.GIT_PYTHON_GIT_EXECUTABLE
+        cls.GIT_PYTHON_GIT_EXECUTABLE = new_git
+    
+        # test if the new git executable path is valid
+    
+        # - a GitCommandNotFound error is spawned by ourselves
+        # - a PermissionError is spawned if the git executable provided
+        #   cannot be executed for whatever reason
+    
+        has_git = False
+        try:
+            cls().version()
+            has_git = True
+        except (GitCommandNotFound, PermissionError):
+            pass
+    
+        # warn or raise exception if test failed
+        if not has_git:
+            err = (
+                dedent(
+                    """\
+                Bad git executable.
+                The git executable must be specified in one of the following ways:
+                    - be included in your $PATH
+                    - be set via $%s
+                    - explicitly set via git.refresh()
+                """
+                )
+                % cls._git_exec_env_var
+            )
+    
+            # revert to whatever the old_git was
+            cls.GIT_PYTHON_GIT_EXECUTABLE = old_git
+    
+            if old_git is None:
+                # on the first refresh (when GIT_PYTHON_GIT_EXECUTABLE is
+                # None) we only are quiet, warn, or error depending on the
+                # GIT_PYTHON_REFRESH value
+    
+                # determine what the user wants to happen during the initial
+                # refresh we expect GIT_PYTHON_REFRESH to either be unset or
+                # be one of the following values:
+                #   0|q|quiet|s|silence
+                #   1|w|warn|warning
+                #   2|r|raise|e|error
+    
+                mode = os.environ.get(cls._refresh_env_var, "raise").lower()
+    
+                quiet = ["quiet", "q", "silence", "s", "none", "n", "0"]
+                warn = ["warn", "w", "warning", "1"]
+                error = ["error", "e", "raise", "r", "2"]
+    
+                if mode in quiet:
+                    pass
+                elif mode in warn or mode in error:
+                    err = (
+                        dedent(
+                            """\
+                        %s
+                        All git commands will error until this is rectified.
+    
+                        This initial warning can be silenced or aggravated in the future by setting the
+                        $%s environment variable. Use one of the following values:
+                            - %s: for no warning or exception
+                            - %s: for a printed warning
+                            - %s: for a raised exception
+    
+                        Example:
+                            export %s=%s
+                        """
+                        )
+                        % (
+                            err,
+                            cls._refresh_env_var,
+                            "|".join(quiet),
+                            "|".join(warn),
+                            "|".join(error),
+                            cls._refresh_env_var,
+                            quiet[0],
+                        )
+                    )
+    
+                    if mode in warn:
+                        print("WARNING: %s" % err)
+                    else:
+>                       raise ImportError(err)
+E                       ImportError: Bad git executable.
+E                       The git executable must be specified in one of the following ways:
+E                           - be included in your $PATH
+E                           - be set via $GIT_PYTHON_GIT_EXECUTABLE
+E                           - explicitly set via git.refresh()
+E                       
+E                       All git commands will error until this is rectified.
+E                       
+E                       This initial warning can be silenced or aggravated in the future by setting the
+E                       $GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+E                           - quiet|q|silence|s|none|n|0: for no warning or exception
+E                           - warn|w|warning|1: for a printed warning
+E                           - error|e|raise|r|2: for a raised exception
+E                       
+E                       Example:
+E                           export GIT_PYTHON_REFRESH=quiet
+
+/usr/local/lib/python3.10/site-packages/git/cmd.py:391: ImportError
+
+The above exception was the direct cause of the following exception:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f8e26960130>
+
+    @pytest.fixture
+    def mock_config_get(mocker):
+>       return mocker.patch('semantic_release.history.config.get', return_value='echo "Building..."')
+
+coverup-tests/tmp_test_9s8g92qo.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1421: in __enter__
+    self.target = self.getter()
+/usr/local/lib/python3.10/unittest/mock.py:1608: in <lambda>
+    getter = lambda: _importer(target)
+/usr/local/lib/python3.10/unittest/mock.py:1251: in _importer
+    thing = _dot_lookup(thing, comp, import_path)
+/usr/local/lib/python3.10/unittest/mock.py:1240: in _dot_lookup
+    __import__(import_path)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:41: in exec_module
+    exec(code, module.__dict__)
+semantic_release/history/__init__.py:16: in <module>
+    from ..vcs_helpers import get_commit_log, get_last_version
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:41: in exec_module
+    exec(code, module.__dict__)
+semantic_release/vcs_helpers.py:12: in <module>
+    from git import GitCommandError, InvalidGitRepositoryError, Repo, TagObject
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    # __init__.py
+    # Copyright (C) 2008, 2009 Michael Trier (mtrier@gmail.com) and contributors
+    #
+    # This module is part of GitPython and is released under
+    # the BSD License: https://opensource.org/license/bsd-3-clause/
+    # flake8: noqa
+    # @PydevCodeAnalysisIgnore
+    from git.exc import *  # @NoMove @IgnorePep8
+    import inspect
+    import os
+    import sys
+    import os.path as osp
+    
+    from typing import Optional
+    from git.types import PathLike
+    
+    __version__ = '3.1.40'
+    
+    
+    # { Initialization
+    def _init_externals() -> None:
+        """Initialize external projects by putting them into the path"""
+        if __version__ == '3.1.40' and "PYOXIDIZER" not in os.environ:
+            sys.path.insert(1, osp.join(osp.dirname(__file__), "ext", "gitdb"))
+    
+        try:
+            import gitdb
+        except ImportError as e:
+            raise ImportError("'gitdb' could not be found in your PYTHONPATH") from e
+        # END verify import
+    
+    
+    # } END initialization
+    
+    
+    #################
+    _init_externals()
+    #################
+    
+    # { Imports
+    
+    try:
+        from git.config import GitConfigParser  # @NoMove @IgnorePep8
+        from git.objects import *  # @NoMove @IgnorePep8
+        from git.refs import *  # @NoMove @IgnorePep8
+        from git.diff import *  # @NoMove @IgnorePep8
+        from git.db import *  # @NoMove @IgnorePep8
+        from git.cmd import Git  # @NoMove @IgnorePep8
+        from git.repo import Repo  # @NoMove @IgnorePep8
+        from git.remote import *  # @NoMove @IgnorePep8
+        from git.index import *  # @NoMove @IgnorePep8
+        from git.util import (  # @NoMove @IgnorePep8
+            LockFile,
+            BlockingLockFile,
+            Stats,
+            Actor,
+            rmtree,
+        )
+    except GitError as _exc:
+        raise ImportError("%s: %s" % (_exc.__class__.__name__, _exc)) from _exc
+    
+    # } END imports
+    
+    # __all__ must be statically defined by py.typed support
+    # __all__ = [name for name, obj in locals().items() if not (name.startswith("_") or inspect.ismodule(obj))]
+    __all__ = [
+        "Actor",
+        "AmbiguousObjectName",
+        "BadName",
+        "BadObject",
+        "BadObjectType",
+        "BaseIndexEntry",
+        "Blob",
+        "BlobFilter",
+        "BlockingLockFile",
+        "CacheError",
+        "CheckoutError",
+        "CommandError",
+        "Commit",
+        "Diff",
+        "DiffIndex",
+        "Diffable",
+        "FetchInfo",
+        "Git",
+        "GitCmdObjectDB",
+        "GitCommandError",
+        "GitCommandNotFound",
+        "GitConfigParser",
+        "GitDB",
+        "GitError",
+        "HEAD",
+        "Head",
+        "HookExecutionError",
+        "IndexEntry",
+        "IndexFile",
+        "IndexObject",
+        "InvalidDBRoot",
+        "InvalidGitRepositoryError",
+        "List",
+        "LockFile",
+        "NULL_TREE",
+        "NoSuchPathError",
+        "ODBError",
+        "Object",
+        "Optional",
+        "ParseError",
+        "PathLike",
+        "PushInfo",
+        "RefLog",
+        "RefLogEntry",
+        "Reference",
+        "Remote",
+        "RemoteProgress",
+        "RemoteReference",
+        "Repo",
+        "RepositoryDirtyError",
+        "RootModule",
+        "RootUpdateProgress",
+        "Sequence",
+        "StageType",
+        "Stats",
+        "Submodule",
+        "SymbolicReference",
+        "TYPE_CHECKING",
+        "Tag",
+        "TagObject",
+        "TagReference",
+        "Tree",
+        "TreeModifier",
+        "Tuple",
+        "Union",
+        "UnmergedEntriesError",
+        "UnsafeOptionError",
+        "UnsafeProtocolError",
+        "UnsupportedOperation",
+        "UpdateProgress",
+        "WorkTreeRepositoryUnsupported",
+        "remove_password_if_present",
+        "rmtree",
+        "safe_decode",
+        "to_hex_sha",
+    ]
+    
+    # { Initialize git executable path
+    GIT_OK = None
+    
+    
+    def refresh(path: Optional[PathLike] = None) -> None:
+        """Convenience method for setting the git executable path."""
+        global GIT_OK
+        GIT_OK = False
+    
+        if not Git.refresh(path=path):
+            return
+        if not FetchInfo.refresh():
+            return  # type: ignore [unreachable]
+    
+        GIT_OK = True
+    
+    
+    # } END initialize git executable path
+    
+    
+    #################
+    try:
+        refresh()
+    except Exception as _exc:
+>       raise ImportError("Failed to initialize: {0}".format(_exc)) from _exc
+E       ImportError: Failed to initialize: Bad git executable.
+E       The git executable must be specified in one of the following ways:
+E           - be included in your $PATH
+E           - be set via $GIT_PYTHON_GIT_EXECUTABLE
+E           - explicitly set via git.refresh()
+E       
+E       All git commands will error until this is rectified.
+E       
+E       This initial warning can be silenced or aggravated in the future by setting the
+E       $GIT_PYTHON_REFRESH environment variable. Use one of the following values:
+E           - quiet|q|silence|s|none|n|0: for no warning or exception
+E           - warn|w|warning|1: for a printed warning
+E           - error|e|raise|r|2: for a raised exception
+E       
+E       Example:
+E           export GIT_PYTHON_REFRESH=quiet
+
+/usr/local/lib/python3.10/site-packages/git/__init__.py:168: ImportError
+
+---- 2024-02-29T18:42:32 semantic_release/dist.py:25-28 ----
+Too many attempts, giving up
+---- 2024-02-29T18:42:37 semantic_release/hvcs.py:373-397 ----
+```python
+import pytest
+from unittest.mock import MagicMock, patch
+from semantic_release.hvcs import Gitlab
+from semantic_release.hvcs import logger
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    with patch('semantic_release.hvcs.gitlab') as mock_gitlab_module:
+        mock_gl = mock_gitlab_module.Gitlab.return_value
+        mock_gl.auth.return_value = True
+        mock_project = MagicMock()
+        mock_commit = MagicMock()
+        mock_gl.projects.get.return_value = mock_project
+        mock_project.commits.get.return_value = mock_commit
+        yield mock_gl, mock_commit
+
+def test_check_build_status_with_failed_job_not_allowed_failure(mock_gitlab, mocker):
+    mock_gl, mock_commit = mock_gitlab
+    mock_commit.statuses.list.return_value = [
+        {'name': 'test_job', 'status': 'failed', 'allow_failure': False}
+    ]
+    mocker.spy(logger, 'debug')
+
+    result = Gitlab.check_build_status('owner', 'repo', 'ref')
+
+    assert not result
+    logger.debug.assert_called_with("check_build_status: job test_job failed")
+
+def test_check_build_status_with_failed_job_allowed_failure(mock_gitlab, mocker):
+    mock_gl, mock_commit = mock_gitlab
+    mock_commit.statuses.list.return_value = [
+        {'name': 'test_job', 'status': 'failed', 'allow_failure': True}
+    ]
+    mocker.spy(logger, 'debug')
+
+    result = Gitlab.check_build_status('owner', 'repo', 'ref')
+
+    assert result
+    logger.debug.assert_not_called()
+```
+---- 2024-02-29T18:42:37 semantic_release/hvcs.py:373-397 ----
+total usage: {'prompt_tokens': 14252, 'completion_tokens': 3713}
+---- 2024-02-29T18:42:38 semantic_release/hvcs.py:274-314 ----
+```python
+import os
+import pytest
+from unittest.mock import MagicMock
+from requests.exceptions import HTTPError
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_response(mocker):
+    mock = mocker.MagicMock()
+    mock.post.return_value.__enter__.return_value.status_code = 200
+    return mock
+
+@pytest.fixture
+def mock_open(mocker):
+    mock = mocker.mock_open(read_data=b"test data")
+    mocker.patch("builtins.open", mock)
+    return mock
+
+@pytest.fixture
+def mock_mimetypes(mocker):
+    mocker.patch("mimetypes.guess_type", return_value=(None, None))
+
+@pytest.fixture
+def mock_os_path(mocker):
+    mocker.patch("os.path.basename", return_value="testfile")
+
+@pytest.fixture
+def mock_logger(mocker):
+    return mocker.patch("semantic_release.hvcs.logger")
+
+@pytest.fixture
+def mock_session(mock_response, mocker):
+    session_mock = mocker.MagicMock()
+    session_mock.post.return_value.__enter__.return_value.status_code = 200
+    mocker.patch.object(Github, 'session', return_value=session_mock)
+    return session_mock
+
+def test_upload_asset_without_content_type(
+    mock_open, mock_mimetypes, mock_os_path, mock_logger, mock_session
+):
+    owner = "owner"
+    repo = "repo"
+    release_id = 123
+    file = "path/to/file"
+    label = "custom label"
+
+    assert Github.upload_asset(owner, repo, release_id, file, label) is True
+    mock_open.assert_called_once_with(file, "rb")
+    mock_logger.debug.assert_called_once()
+    mock_logger.warning.assert_not_called()
+
+def test_upload_asset_http_error(
+    mock_open, mock_mimetypes, mock_os_path, mock_logger, mocker
+):
+    session_mock = mocker.MagicMock()
+    session_mock.post.side_effect = HTTPError("Error message")
+    mocker.patch.object(Github, 'session', return_value=session_mock)
+
+    owner = "owner"
+    repo = "repo"
+    release_id = 123
+    file = "path/to/file"
+    label = "custom label"
+
+    assert Github.upload_asset(owner, repo, release_id, file, label) is False
+    mock_open.assert_called_once_with(file, "rb")
+    mock_logger.debug.assert_not_called()
+    mock_logger.warning.assert_called_once()
+```
+---- 2024-02-29T18:42:38 semantic_release/hvcs.py:274-314 ----
+total usage: {'prompt_tokens': 15416, 'completion_tokens': 4199}
+---- 2024-02-29T18:42:39 semantic_release/hvcs.py:373-397 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_with at 0x7faff4771870>
+args = (<MagicMock name='debug' spec='method' id='140393702537584'>, 'check_build_status: job test_job failed')
+kwargs = {}, __tracebackhide__ = True
+msg = "expected call not found.\nExpected: debug('check_build_status: job test_job failed')\nActual: debug('check_build_stat...At index 0 diff: 'check_build_status -> False' != 'check_build_status: job test_job failed'\n  Use -v to get more diff"
+__mock_self = <MagicMock name='debug' spec='method' id='140393702537584'>
+actual_args = ('check_build_status -> False',), actual_kwargs = {}
+introspection = "\nArgs:\nassert ('check_build...us -> False',) == ('check_build..._job failed',)\n  At index 0 diff: 'check_build_status -> False' != 'check_build_status: job test_job failed'\n  Use -v to get more diff"
+@py_assert2 = ('check_build_status: job test_job failed',), @py_assert1 = None
+@py_format4 = "('check_build...us -> False',) == ('check_build..._job failed',)\n~At index 0 diff: 'check_build_status -> False' != 'check_build_status: job test_job failed'\n~Use -v to get more diff"
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:459: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='debug' spec='method' id='140393702537584'>
+args = ('check_build_status: job test_job failed',), kwargs = {}
+expected = call('', ('check_build_status: job test_job failed',), {})
+actual = call('', ('check_build_status -> False',), {})
+_error_message = <function NonCallableMock.assert_called_with.<locals>._error_message at 0x7faff43cb010>
+cause = None
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\nActual: %s'
+                    % (expected, actual))
+            raise AssertionError(error_message)
+    
+        def _error_message():
+            msg = self._format_mock_failure_message(args, kwargs)
+            return msg
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        actual = self._call_matcher(self.call_args)
+        if actual != expected:
+            cause = expected if isinstance(expected, Exception) else None
+>           raise AssertionError(_error_message()) from cause
+E           AssertionError: expected call not found.
+E           Expected: debug('check_build_status: job test_job failed')
+E           Actual: debug('check_build_status -> False')
+
+/usr/local/lib/python3.10/unittest/mock.py:919: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_gitlab = (<MagicMock name='gitlab.Gitlab()' id='140393718048528'>, <MagicMock name='gitlab.Gitlab().projects.get().commits.get()' id='140393697052080'>)
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7faff46e78b0>
+
+    def test_check_build_status_with_failed_job_not_allowed_failure(mock_gitlab, mocker):
+        mock_gl, mock_commit = mock_gitlab
+        mock_commit.statuses.list.return_value = [
+            {'name': 'test_job', 'status': 'failed', 'allow_failure': False}
+        ]
+        mocker.spy(logger, 'debug')
+    
+        result = Gitlab.check_build_status('owner', 'repo', 'ref')
+    
+        assert not result
+>       logger.debug.assert_called_with("check_build_status: job test_job failed")
+
+coverup-tests/tmp_test_87pvuc9m.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = ('check_build_status: job test_job failed',), kwargs = {}
+
+    def assert_called_with(*args, **kwargs):
+>       return mock.assert_called_with(*args, **kwargs)
+E       AssertionError: expected call not found.
+E       Expected: debug('check_build_status: job test_job failed')
+E       Actual: debug('check_build_status -> False')
+E       
+E       pytest introspection follows:
+E       
+E       Args:
+E       assert ('check_build...us -> False',) == ('check_build..._job failed',)
+E         At index 0 diff: 'check_build_status -> False' != 'check_build_status: job test_job failed'
+E         Use -v to get more diff
+
+/usr/local/lib/python3.10/unittest/mock.py:204: AssertionError
+___________ test_check_build_status_with_failed_job_allowed_failure ____________
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_not_called at 0x7faff47716c0>
+args = (<MagicMock name='debug' spec='method' id='140393696613264'>,)
+kwargs = {}, __tracebackhide__ = True
+msg = 'Expected \'debug\' to not have been called. Called 2 times.\nCalls: [call("check_build_status(\'owner\', \'repo\', \'...uild...tus -> True\',) == ()\n  Left contains one more item: \'check_build_status -> True\'\n  Use -v to get more diff'
+__mock_self = <MagicMock name='debug' spec='method' id='140393696613264'>
+actual_args = ('check_build_status -> True',), actual_kwargs = {}
+introspection = "\nArgs:\nassert ('check_build...tus -> True',) == ()\n  Left contains one more item: 'check_build_status -> True'\n  Use -v to get more diff"
+@py_assert2 = (), @py_assert1 = None
+@py_format4 = "('check_build...tus -> True',) == ()\n~Left contains one more item: 'check_build_status -> True'\n~Use -v to get more diff"
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:459: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='debug' spec='method' id='140393696613264'>
+
+    def assert_not_called(self):
+        """assert that the mock was never called.
+        """
+        if self.call_count != 0:
+            msg = ("Expected '%s' to not have been called. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'debug' to not have been called. Called 2 times.
+E           Calls: [call("check_build_status('owner', 'repo', 'ref')"),
+E            call('check_build_status -> True')].
+
+/usr/local/lib/python3.10/unittest/mock.py:880: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_gitlab = (<MagicMock name='gitlab.Gitlab()' id='140393717750016'>, <MagicMock name='gitlab.Gitlab().projects.get().commits.get()' id='140393718478544'>)
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7faff5a63580>
+
+    def test_check_build_status_with_failed_job_allowed_failure(mock_gitlab, mocker):
+        mock_gl, mock_commit = mock_gitlab
+        mock_commit.statuses.list.return_value = [
+            {'name': 'test_job', 'status': 'failed', 'allow_failure': True}
+        ]
+        mocker.spy(logger, 'debug')
+    
+        result = Gitlab.check_build_status('owner', 'repo', 'ref')
+    
+        assert result
+>       logger.debug.assert_not_called()
+
+coverup-tests/tmp_test_87pvuc9m.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (), kwargs = {}
+
+    def assert_not_called(*args, **kwargs):
+>       return mock.assert_not_called(*args, **kwargs)
+E       AssertionError: Expected 'debug' to not have been called. Called 2 times.
+E       Calls: [call("check_build_status('owner', 'repo', 'ref')"),
+E        call('check_build_status -> True')].
+E       
+E       pytest introspection follows:
+E       
+E       Args:
+E       assert ('check_build...tus -> True',) == ()
+E         Left contains one more item: 'check_build_status -> True'
+E         Use -v to get more diff
+
+/usr/local/lib/python3.10/unittest/mock.py:208: AssertionError
+
+---- 2024-02-29T18:42:39 semantic_release/hvcs.py:373-397 ----
+Too many attempts, giving up
+---- 2024-02-29T18:42:40 semantic_release/hvcs.py:274-314 ----
+..                                                                       [100%]
+
+---- 2024-02-29T18:42:40 semantic_release/hvcs.py:274-314 ----
+
+This test still lacks coverage: branch 294->297 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T18:42:46 semantic_release/hvcs.py:399-426 ----
+```python
+import pytest
+from unittest.mock import MagicMock, patch
+from semantic_release.hvcs import Gitlab
+import semantic_release.hvcs
+import gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gl = mocker.MagicMock()
+    mocker.patch('semantic_release.hvcs.gitlab.Gitlab', return_value=mock_gl)
+    return mock_gl
+
+def test_post_release_changelog_success(mock_gitlab):
+    mock_gitlab.auth.return_value = None
+    mock_project = MagicMock()
+    mock_gitlab.projects.get.return_value = mock_project
+    mock_tag = MagicMock()
+    mock_project.tags.get.return_value = mock_tag
+
+    assert Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('Changelog content')
+
+def test_post_release_changelog_tag_not_found(mock_gitlab, mocker):
+    mock_gitlab.auth.return_value = None
+    mock_gitlab.projects.get.side_effect = gitlab.exceptions.GitlabGetError
+    mock_logger = mocker.patch.object(semantic_release.hvcs.logger, 'debug')
+
+    assert not Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_logger.assert_called_once_with('Tag v1.0.0 was not found for project owner/repo')
+
+def test_post_release_changelog_update_error(mock_gitlab, mocker):
+    mock_gitlab.auth.return_value = None
+    mock_project = MagicMock()
+    mock_gitlab.projects.get.return_value = mock_project
+    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabUpdateError
+    mock_logger = mocker.patch.object(semantic_release.hvcs.logger, 'debug')
+
+    assert not Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_logger.assert_called_once_with('Failed to update tag v1.0.0 for project owner/repo')
+```
+---- 2024-02-29T18:42:46 semantic_release/hvcs.py:399-426 ----
+total usage: {'prompt_tokens': 16528, 'completion_tokens': 4648}
+---- 2024-02-29T18:42:46 semantic_release/hvcs.py:245-272 ----
+```python
+import pytest
+from unittest.mock import patch
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github(mocker):
+    mocker.patch('semantic_release.hvcs.Github.create_release', return_value=False)
+    mocker.patch('semantic_release.hvcs.Github.get_release', return_value=None)
+    mocker.patch('semantic_release.hvcs.logger')
+
+def test_post_release_changelog_without_success_and_no_existing_release(mock_github):
+    owner = 'owner'
+    repo = 'repo'
+    version = '1.0.0'
+    changelog = 'Some changes'
+
+    success = Github.post_release_changelog(owner, repo, version, changelog)
+
+    assert not success
+    Github.create_release.assert_called_once_with(owner, repo, f'v{version}', changelog)
+    Github.get_release.assert_called_once_with(owner, repo, f'v{version}')
+```
+---- 2024-02-29T18:42:46 semantic_release/hvcs.py:245-272 ----
+total usage: {'prompt_tokens': 17474, 'completion_tokens': 4834}
+---- 2024-02-29T18:42:48 semantic_release/hvcs.py:245-272 ----
+.                                                                        [100%]
+
+---- 2024-02-29T18:42:48 semantic_release/hvcs.py:245-272 ----
+
+This test still lacks coverage: branch 263->272 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T18:42:48 semantic_release/hvcs.py:245-272 ----
+Too many attempts, giving up
+---- 2024-02-29T18:42:48 semantic_release/hvcs.py:399-426 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fde78fa99c0>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+        mock_gl = mocker.MagicMock()
+>       mocker.patch('semantic_release.hvcs.gitlab.Gitlab', return_value=mock_gl)
+
+coverup-tests/tmp_test_1gjjj4d8.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fde78e68880>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+_________ ERROR at setup of test_post_release_changelog_tag_not_found __________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fde78c8d1e0>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+        mock_gl = mocker.MagicMock()
+>       mocker.patch('semantic_release.hvcs.gitlab.Gitlab', return_value=mock_gl)
+
+coverup-tests/tmp_test_1gjjj4d8.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fde79ce33d0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+__________ ERROR at setup of test_post_release_changelog_update_error __________
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fde7872e9b0>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+        mock_gl = mocker.MagicMock()
+>       mocker.patch('semantic_release.hvcs.gitlab.Gitlab', return_value=mock_gl)
+
+coverup-tests/tmp_test_1gjjj4d8.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:419: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:229: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fde785d5900>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-02-29T18:42:51 semantic_release/settings.py:97-118 ----
+```python
+import pytest
+from semantic_release import ImproperConfigurationError
+from semantic_release.settings import config, current_changelog_components
+from unittest.mock import patch, MagicMock
+
+def test_current_changelog_components_success(mocker):
+    # Mock the config to return a valid component path
+    mocker.patch.object(config, 'get', return_value='os.path.join')
+    # Mock importlib.import_module to return a mock module with a 'join' attribute
+    mock_module = MagicMock()
+    mock_module.join = lambda x, y: None
+    mocker.patch('importlib.import_module', return_value=mock_module)
+
+    components = current_changelog_components()
+    assert len(components) == 1
+    assert components[0] == mock_module.join
+
+def test_current_changelog_components_failure(mocker):
+    # Mock the config to return an invalid component path
+    mocker.patch.object(config, 'get', return_value='invalid.module.path')
+    # Mock importlib.import_module to raise ImportError
+    mocker.patch('importlib.import_module', side_effect=ImportError)
+
+    with pytest.raises(ImproperConfigurationError):
+        current_changelog_components()
+
+def test_current_changelog_components_attribute_error(mocker):
+    # Mock the config to return a valid module but invalid attribute
+    mocker.patch.object(config, 'get', return_value='os.path.invalid_attribute')
+    # Mock importlib.import_module to return a mock module without the 'invalid_attribute' attribute
+    mocker.patch('importlib.import_module', return_value=MagicMock())
+
+    with pytest.raises(ImproperConfigurationError):
+        current_changelog_components()
+```
+---- 2024-02-29T18:42:51 semantic_release/settings.py:97-118 ----
+total usage: {'prompt_tokens': 18950, 'completion_tokens': 5161}
+---- 2024-02-29T18:42:52 semantic_release/settings.py:97-118 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fbceefa4910>
+
+    def test_current_changelog_components_attribute_error(mocker):
+        # Mock the config to return a valid module but invalid attribute
+        mocker.patch.object(config, 'get', return_value='os.path.invalid_attribute')
+        # Mock importlib.import_module to return a mock module without the 'invalid_attribute' attribute
+        mocker.patch('importlib.import_module', return_value=MagicMock())
+    
+>       with pytest.raises(ImproperConfigurationError):
+E       Failed: DID NOT RAISE <class 'semantic_release.errors.ImproperConfigurationError'>
+
+coverup-tests/tmp_test_2_36xfve.py:33: Failed
+
+---- 2024-02-29T18:42:52 semantic_release/settings.py:97-118 ----
+Too many attempts, giving up
+---- 2024-02-29T18:43:06 semantic_release/hvcs.py:399-426 ----
+```python
+import pytest
+from unittest.mock import MagicMock, patch
+from semantic_release.hvcs import Gitlab
+import semantic_release.hvcs
+import gitlab.exceptions
+from gitlab.v4.objects import Project, ProjectTag
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gl = mocker.MagicMock()
+    mocker.patch('semantic_release.hvcs.gitlab.Gitlab', return_value=mock_gl)
+    mocker.patch('semantic_release.hvcs.gitlab.Gitlab.auth')
+    mocker.patch('semantic_release.hvcs.gitlab.Gitlab.projects.get', return_value=MagicMock(spec=Project))
+    return mock_gl
+
+def test_post_release_changelog_success(mock_gitlab, mocker):
+    mock_tag = mocker.MagicMock(spec=ProjectTag)
+    mock_gitlab.projects.get.return_value.tags.get.return_value = mock_tag
+
+    assert Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_gitlab.projects.get.return_value.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('Changelog content')
+
+def test_post_release_changelog_tag_not_found(mock_gitlab, mocker):
+    mock_gitlab.projects.get.return_value.tags.get.side_effect = gitlab.exceptions.GitlabGetError
+    mock_logger = mocker.patch.object(semantic_release.hvcs.logger, 'debug')
+
+    assert not Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_logger.assert_called_once_with('Tag v1.0.0 was not found for project owner/repo')
+
+def test_post_release_changelog_update_error(mock_gitlab, mocker):
+    mock_tag = mocker.MagicMock(spec=ProjectTag)
+    mock_gitlab.projects.get.return_value.tags.get.return_value = mock_tag
+    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError
+    mock_logger = mocker.patch.object(semantic_release.hvcs.logger, 'debug')
+
+    assert not Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'Changelog content')
+    mock_logger.assert_called_once_with('Failed to update tag v1.0.0 for project owner/repo')
+```
+---- 2024-02-29T18:43:06 semantic_release/hvcs.py:399-426 ----
+total usage: {'prompt_tokens': 22006, 'completion_tokens': 5650}
+---- 2024-02-29T18:43:08 semantic_release/hvcs.py:399-426 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_5x_poi37.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:210: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_5x_poi37.py:5: in <module>
+    import gitlab.exceptions
+E   ModuleNotFoundError: No module named 'gitlab.exceptions'
+
+---- 2024-02-29T18:43:08 semantic_release/hvcs.py:399-426 ----
+Too many attempts, giving up
+---- 2024-02-29T18:43:21 semantic_release/hvcs.py:274-314 ----
+```python
+import os
+import pytest
+from unittest.mock import MagicMock
+from requests.exceptions import HTTPError
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_response(mocker):
+    mock = mocker.MagicMock()
+    mock.post.return_value.__enter__.return_value.status_code = 200
+    return mock
+
+@pytest.fixture
+def mock_open(mocker):
+    mock = mocker.mock_open(read_data=b"test data")
+    mocker.patch("builtins.open", mock)
+    return mock
+
+@pytest.fixture
+def mock_mimetypes(mocker):
+    mocker.patch("mimetypes.guess_type", return_value=(None, None))
+
+@pytest.fixture
+def mock_os_path(mocker):
+    mocker.patch("os.path.basename", return_value="testfile")
+
+@pytest.fixture
+def mock_logger(mocker):
+    return mocker.patch("semantic_release.hvcs.logger")
+
+@pytest.fixture
+def mock_session(mock_response, mocker):
+    session_mock = mocker.MagicMock()
+    session_mock.post.return_value.__enter__.return_value.status_code = 200
+    mocker.patch.object(Github, 'session', return_value=session_mock)
+    return session_mock
+
+def test_upload_asset_without_content_type(
+    mock_open, mock_mimetypes, mock_os_path, mock_logger, mock_session
+):
+    owner = "owner"
+    repo = "repo"
+    release_id = 123
+    file = "path/to/file"
+    label = "custom label"
+
+    assert Github.upload_asset(owner, repo, release_id, file, label) is True
+    mock_open.assert_called_once_with(file, "rb")
+    mock_logger.debug.assert_called_once()
+    mock_logger.warning.assert_not_called()
+
+def test_upload_asset_http_error(
+    mock_open, mock_mimetypes, mock_os_path, mock_logger, mock_session, mocker
+):
+    mock_session.post.side_effect = HTTPError("Error message")
+
+    owner = "owner"
+    repo = "repo"
+    release_id = 123
+    file = "path/to/file"
+    label = "custom label"
+
+    assert Github.upload_asset(owner, repo, release_id, file, label) is False
+    mock_open.assert_called_once_with(file, "rb")
+    mock_logger.debug.assert_not_called()
+    mock_logger.warning.assert_called_once()
+```
+---- 2024-02-29T18:43:21 semantic_release/hvcs.py:274-314 ----
+total usage: {'prompt_tokens': 23697, 'completion_tokens': 6116}
+---- 2024-02-29T18:43:23 semantic_release/hvcs.py:274-314 ----
+..                                                                       [100%]
+
+---- 2024-02-29T18:43:23 semantic_release/hvcs.py:274-314 ----
+
+This test still lacks coverage: branch 294->297 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-02-29T18:43:23 semantic_release/hvcs.py:274-314 ----
+Too many attempts, giving up
+---- 2024-02-29T18:51:54 semantic_release/helpers.py:16-39 ----
+Error: <class 'openai.error.Timeout'> Request timed out
+---- 2024-02-29T18:52:01 semantic_release/helpers.py:16-39 ----
+```python
+import pytest
+from requests import Session, adapters
+from requests.packages.urllib3.util.retry import Retry
+from semantic_release.helpers import build_requests_session
+
+def test_build_requests_session_with_retry_as_int(mocker):
+    # Mock the Session and HTTPAdapter to ensure no actual HTTP requests are made
+    mock_session = mocker.patch('requests.Session', autospec=True)
+    mock_adapter = mocker.patch('requests.adapters.HTTPAdapter', autospec=True)
+    
+    # Call the function with retry as an integer
+    session_instance = build_requests_session(retry=3)
+    
+    # Assertions to check if the session is correctly configured
+    assert mock_session.called
+    assert mock_adapter.called_with(max_retries=Retry(3))
+    assert mock_session.return_value.mount.called_with("http://", mock_adapter.return_value)
+    assert mock_session.return_value.mount.called_with("https://", mock_adapter.return_value)
+    
+    # Clean up by unpatching
+    mocker.stopall()
+```
+---- 2024-02-29T18:52:01 semantic_release/helpers.py:16-39 ----
+total usage: {'prompt_tokens': 24149, 'completion_tokens': 6318}
+---- 2024-02-29T18:52:02 semantic_release/helpers.py:16-39 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f8e470f0970>
+
+    def test_build_requests_session_with_retry_as_int(mocker):
+        # Mock the Session and HTTPAdapter to ensure no actual HTTP requests are made
+        mock_session = mocker.patch('requests.Session', autospec=True)
+        mock_adapter = mocker.patch('requests.adapters.HTTPAdapter', autospec=True)
+    
+        # Call the function with retry as an integer
+        session_instance = build_requests_session(retry=3)
+    
+        # Assertions to check if the session is correctly configured
+>       assert mock_session.called
+E       AssertionError: assert False
+E        +  where False = <MagicMock name='Session' spec='Session' id='140249054259680'>.called
+
+coverup-tests/tmp_test_zfhfo9te.py:15: AssertionError
+
+---- 2024-02-29T18:52:17 semantic_release/helpers.py:16-39 ----
+```python
+import pytest
+from requests import Session, adapters
+from requests.packages.urllib3.util.retry import Retry
+from semantic_release.helpers import build_requests_session
+
+def test_build_requests_session_with_retry_as_int(mocker):
+    # Mock the Session and HTTPAdapter to ensure no actual HTTP requests are made
+    mock_session = mocker.patch('requests.Session')
+    mock_adapter = mocker.patch('requests.adapters.HTTPAdapter')
+    
+    # Call the function with retry as an integer
+    session_instance = build_requests_session(retry=3)
+    
+    # Assertions to check if the session is correctly configured
+    assert mock_session.called
+    mock_adapter.assert_called_with(max_retries=Retry(3))
+    mock_session.return_value.mount.assert_any_call("http://", mock_adapter.return_value)
+    mock_session.return_value.mount.assert_any_call("https://", mock_adapter.return_value)
+    
+    # Clean up by unpatching
+    mocker.stopall()
+```
+---- 2024-02-29T18:52:17 semantic_release/helpers.py:16-39 ----
+total usage: {'prompt_tokens': 25019, 'completion_tokens': 6512}
+---- 2024-02-29T18:52:19 semantic_release/helpers.py:16-39 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fbfeabad240>
+
+    def test_build_requests_session_with_retry_as_int(mocker):
+        # Mock the Session and HTTPAdapter to ensure no actual HTTP requests are made
+        mock_session = mocker.patch('requests.Session')
+        mock_adapter = mocker.patch('requests.adapters.HTTPAdapter')
+    
+        # Call the function with retry as an integer
+        session_instance = build_requests_session(retry=3)
+    
+        # Assertions to check if the session is correctly configured
+>       assert mock_session.called
+E       AssertionError: assert False
+E        +  where False = <MagicMock name='Session' id='140462253592240'>.called
+
+coverup-tests/tmp_test_wwmhlfh7.py:15: AssertionError
+
+---- 2024-02-29T18:52:34 semantic_release/helpers.py:16-39 ----
+```python
+import pytest
+from requests import Session
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from semantic_release.helpers import build_requests_session
+
+def test_build_requests_session_with_retry_as_int(mocker):
+    # Mock the HTTPAdapter to ensure no actual HTTP requests are made
+    mock_adapter = mocker.patch('requests.adapters.HTTPAdapter', autospec=True)
+    # Create a real Session instance to avoid mocking the return value of the constructor
+    session_instance = Session()
+    mocker.patch('requests.Session', return_value=session_instance)
+
+    # Call the function with retry as an integer
+    returned_session = build_requests_session(retry=3)
+
+    # Assertions to check if the session is correctly configured
+    assert isinstance(returned_session, Session)
+    mock_adapter.assert_called_with(max_retries=Retry(3))
+    assert session_instance.mount.call_count == 2
+    session_instance.mount.assert_any_call("http://", mock_adapter.return_value)
+    session_instance.mount.assert_any_call("https://", mock_adapter.return_value)
+```
+---- 2024-02-29T18:52:34 semantic_release/helpers.py:16-39 ----
+total usage: {'prompt_tokens': 26285, 'completion_tokens': 6731}
+---- 2024-02-29T18:52:35 semantic_release/helpers.py:16-39 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_with at 0x7ff0fa54d870>
+args = (<MagicMock name='HTTPAdapter' spec='HTTPAdapter' id='140672976205040'>,)
+kwargs = {'max_retries': Retry(total=3, connect=None, read=None, redirect=None, status=None)}
+__tracebackhide__ = True
+msg = 'expected call not found.\nExpected: HTTPAdapter(max_retries=Retry(total=3, connect=None, read=None, redirect=None, status=None))\nActual: not called.'
+__mock_self = <MagicMock name='HTTPAdapter' spec='HTTPAdapter' id='140672976205040'>
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:459: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='HTTPAdapter' spec='HTTPAdapter' id='140672976205040'>
+args = ()
+kwargs = {'max_retries': Retry(total=3, connect=None, read=None, redirect=None, status=None)}
+expected = 'HTTPAdapter(max_retries=Retry(total=3, connect=None, read=None, redirect=None, status=None))'
+actual = 'not called.'
+error_message = 'expected call not found.\nExpected: HTTPAdapter(max_retries=Retry(total=3, connect=None, read=None, redirect=None, status=None))\nActual: not called.'
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\nActual: %s'
+                    % (expected, actual))
+>           raise AssertionError(error_message)
+E           AssertionError: expected call not found.
+E           Expected: HTTPAdapter(max_retries=Retry(total=3, connect=None, read=None, redirect=None, status=None))
+E           Actual: not called.
+
+/usr/local/lib/python3.10/unittest/mock.py:910: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7ff0fac6aa10>
+
+    def test_build_requests_session_with_retry_as_int(mocker):
+        # Mock the HTTPAdapter to ensure no actual HTTP requests are made
+        mock_adapter = mocker.patch('requests.adapters.HTTPAdapter', autospec=True)
+        # Create a real Session instance to avoid mocking the return value of the constructor
+        session_instance = Session()
+        mocker.patch('requests.Session', return_value=session_instance)
+    
+        # Call the function with retry as an integer
+        returned_session = build_requests_session(retry=3)
+    
+        # Assertions to check if the session is correctly configured
+        assert isinstance(returned_session, Session)
+>       mock_adapter.assert_called_with(max_retries=Retry(3))
+E       AssertionError: expected call not found.
+E       Expected: HTTPAdapter(max_retries=Retry(total=3, connect=None, read=None, redirect=None, status=None))
+E       Actual: not called.
+
+coverup-tests/tmp_test_kejgmesu.py:19: AssertionError
+
+---- 2024-02-29T18:52:35 semantic_release/helpers.py:16-39 ----
+Too many attempts, giving up
