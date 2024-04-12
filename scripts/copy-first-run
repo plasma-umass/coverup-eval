@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
+#
+# Copies the CoverUp output directory for a package, removing the tests and other
+# outputs from runs 2 and 3, so that only the first run is left over.
+#
 
-if [ "$#" -lt 1 ]; then
-    echo "Use: $0 project"
+if [ "$#" -lt 2 ]; then
+    echo "Use: $0 package config"
     exit 1
 fi
 
-P="output/good.ablated/$1"
+P="output/good.$2/$1"
 
 if [ -d $P ]; then
     echo "$P already exists"
@@ -17,6 +21,7 @@ run() {
     eval $1 || exit 1
 }
 
+run "mkdir -p output/good.$2"
 run "cp -a output/good/$1 $P"
 
 saved=$(grep '^Saved as coverup-tests/test_coverup_' $P/coverup-log-2 | head -n 1)
