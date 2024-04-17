@@ -34,6 +34,10 @@ def parse_args():
     ap.add_argument('--histogram', choices=['coverage', 'delta', 'lines', 'lines+branches'],
                     help='draw a histogram')
 
+    ap.add_argument('--title', type=str, help='specify different title for --plot')
+
+    ap.add_argument('--out', type=Path, help='specify alternative output file for --plot')
+
     return ap.parse_args()
 
 args = parse_args()
@@ -271,7 +275,11 @@ if __name__ == "__main__":
             fig.savefig('histogram.pdf')
         else:
             fig, ax = plt.subplots()
-            ax.set_title(f'Coverage increase {datasets[0]["name"]} vs. {datasets[1]["name"]} (larger is better)', size=20)
+            if args.title:
+                ax.set_title(args.title, size=20)
+            else:
+                ax.set_title(f'Coverage increase {datasets[0]["name"]} vs. {datasets[1]["name"]} (larger is better)', size=20)
+
             ax.set_ylabel('% coverage increase', size=18)
 
             colors = ['green' if d>0 else 'black' for d in cov_delta]
@@ -283,7 +291,10 @@ if __name__ == "__main__":
             fig.set_size_inches(16, 8)
             fig.tight_layout()
 
-            fig.savefig('plot.pdf')
+            if args.out:
+                fig.savefig(args.out)
+            else:
+                fig.savefig('plot.pdf')
 
     else:
         from tabulate import tabulate
