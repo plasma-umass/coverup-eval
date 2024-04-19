@@ -60,5 +60,5 @@ done
 # measure final coverage
 if ! [ -e /output/final.json ]; then
     run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest -qq --disable-warnings $PYTEST_ARGS coverup-tests"
-    run "chown -R $OWNER final.json"
+    run "chown $OWNER final.json"
 fi
