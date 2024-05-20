@@ -12,4 +12,4 @@ cd /output
 run "/eval/scripts/reenable-disabled-tests coverup-tests"
 
 COVERUP_ARGS+=" --isolate-tests"
-SLIPCOVER_ARGS+=" --isolate-tests"
+PYTEST_ARGS+=" --cleanslate"
