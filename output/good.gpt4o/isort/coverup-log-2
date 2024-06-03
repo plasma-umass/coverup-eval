@@ -1,0 +1,105 @@
+---- 2024-05-31T16:16:34 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --isolate-tests --prompt-family gpt-v1 --source-dir ./isort --tests-dir coverup-tests --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json isort/exceptions.py isort/format.py
+---- 2024-05-31T16:17:12 isort/format.py:44-74 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from isort/format.py, module isort.format, does not achieve full coverage:
+when tested, lines 60-74 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def show_unified_diff(
+                *,
+                file_input: str,
+                file_output: str,
+                file_path: Optional[Path],
+                output: Optional[TextIO] = None,
+                color_output: bool = False,
+            ):
+                """Shows a unified_diff for the provided input and output against the provided file path.
+            
+                - **file_input**: A string that represents the contents of a file before changes.
+                - **file_output**: A string that represents the contents of a file after changes.
+                - **file_path**: A Path object that represents the file path of the file being changed.
+                - **output**: A stream to output the diff to. If non is provided uses sys.stdout.
+                - **color_output**: Use color in output if True.
+                """
+        60:     printer = create_terminal_printer(color_output, output)
+        61:     file_name = "" if file_path is None else str(file_path)
+        62:     file_mtime = str(
+        63:         datetime.now() if file_path is None else datetime.fromtimestamp(file_path.stat().st_mtime)
+                )
+        65:     unified_diff_lines = unified_diff(
+        66:         file_input.splitlines(keepends=True),
+        67:         file_output.splitlines(keepends=True),
+        68:         fromfile=file_name + ":before",
+        69:         tofile=file_name + ":after",
+        70:         fromfiledate=file_mtime,
+        71:         tofiledate=str(datetime.now()),
+                )
+        73:     for line in unified_diff_lines:
+        74:         printer.diff_line(line)
+
+```
+
+---- 2024-05-31T16:17:21 isort/format.py:44-74 ----
+```python
+import pytest
+from io import StringIO
+from pathlib import Path
+from datetime import datetime
+from isort.format import show_unified_diff
+
+def test_show_unified_diff(mocker):
+    # Mock create_terminal_printer to avoid actual printing
+    mock_printer = mocker.Mock()
+    mock_create_terminal_printer = mocker.patch('isort.format.create_terminal_printer', return_value=mock_printer)
+
+    # Create temporary file path
+    temp_file = Path("temp_file.txt")
+    temp_file.touch()
+    temp_file_mtime = datetime.fromtimestamp(temp_file.stat().st_mtime)
+
+    # Define input and output strings
+    file_input = "line1\nline2\nline3\n"
+    file_output = "line1\nline2 modified\nline3\n"
+
+    # Call the function
+    show_unified_diff(
+        file_input=file_input,
+        file_output=file_output,
+        file_path=temp_file,
+        output=None,
+        color_output=False
+    )
+
+    # Assertions
+    mock_create_terminal_printer.assert_called_once_with(False, None)
+    mock_printer.diff_line.assert_called()  # Ensure diff_line was called
+
+    # Clean up
+    temp_file.unlink()
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    temp_file = Path("temp_file.txt")
+    if temp_file.exists():
+        temp_file.unlink()
+```
+---- 2024-05-31T16:17:21 isort/format.py:44-74 ----
+total usage: {'prompt_tokens': 548, 'completion_tokens': 287}
+---- 2024-05-31T16:17:24 isort/format.py:44-74 ----
+.                                                                        [100%]
+
+---- 2024-05-31T16:17:24 isort/format.py:44-74 ----
+Saved as /output/coverup-tests/test_coverup_23.py
+

@@ -47,7 +47,7 @@ COVERUP_ARGS+=" --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \
 # set Python path so the package can be 'import'ed
 export PYTHONPATH=$SRC
 
-# run coverup twice: once to get stated, then another to help fill any gaps
+# run coverup three times: once to get stated, then another to help fill any gaps
 for RUN in 1 2 3; do
     if ! [ -e coverup-ckpt-$RUN.json ]; then
         # run CoverUp on it
@@ -59,6 +59,6 @@ done
 
 # measure final coverage
 if ! [ -e /output/final.json ]; then
-    run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest -qq --disable-warnings $PYTEST_ARGS coverup-tests"
+    run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest -qq --disable-warnings $PYTEST_ARGS $PYTEST_FINAL_ARGS coverup-tests"
     run "chown $OWNER final.json"
 fi

@@ -1,0 +1,2270 @@
+---- 2024-05-31T16:38:05 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --isolate-tests --prompt-family gpt-v1 --source-dir ./semantic_release --tests-dir coverup-tests --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json semantic_release/ci_checks.py semantic_release/dist.py semantic_release/helpers.py semantic_release/hvcs.py semantic_release/pypi.py semantic_release/settings.py
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:373-397 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, lines 384-397 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Gitlab(Base):
+                @staticmethod
+                @LoggedFunction(logger)
+                def check_build_status(owner: str, repo: str, ref: str) -> bool:
+                    """Check last build status
+            
+                    :param owner: The owner namespace of the repository. It includes all groups and subgroups.
+                    :param repo: The repository name
+                    :param ref: The sha1 hash of the commit ref
+            
+                    :return: the status of the pipeline (False if a job failed)
+                    """
+       384:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())
+       385:         gl.auth()
+       386:         jobs = gl.projects.get(owner + "/" + repo).commits.get(ref).statuses.list()
+       387:         for job in jobs:
+       388:             if job["status"] not in ["success", "skipped"]:
+       389:                 if job["status"] == "pending":
+       390:                     logger.debug(
+       391:                         f"check_build_status: job {job['name']} is still in pending status"
+                                )
+       393:                     return False
+       394:                 elif job["status"] == "failed" and not job["allow_failure"]:
+       395:                     logger.debug(f"check_build_status: job {job['name']} failed")
+       396:                     return False
+       397:         return True
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:399-426 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, lines 413-426 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Gitlab(Base):
+                @classmethod
+                @LoggedFunction(logger)
+                def post_release_changelog(
+                    cls, owner: str, repo: str, version: str, changelog: str
+                ) -> bool:
+                    """Post release changelog
+            
+                    :param owner: The owner namespace of the repository
+                    :param repo: The repository name
+                    :param version: The version number
+                    :param changelog: The release notes for this version
+            
+                    :return: The status of the request
+                    """
+       413:         ref = "v" + version
+       414:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())
+       415:         gl.auth()
+       416:         try:
+       417:             tag = gl.projects.get(owner + "/" + repo).tags.get(ref)
+       418:             tag.set_release_description(changelog)
+       419:         except gitlab.exceptions.GitlabGetError:
+       420:             logger.debug(f"Tag {ref} was not found for project {owner}/{repo}")
+       421:             return False
+       422:         except gitlab.exceptions.GitlabUpdateError:
+       423:             logger.debug(f"Failed to update tag {ref} for project {owner}/{repo}")
+       424:             return False
+            
+       426:         return True
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:67-87 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, lines 76-78, 83, 86-87 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class TokenAuth(AuthBase):
+                """
+                requests Authentication for token based authorization
+                """
+            
+                def __init__(self, token):
+                    self.token = token
+            
+                def __eq__(self, other):
+        76:         return all(
+        77:             [
+        78:                 self.token == getattr(other, "token", None),
+                        ]
+                    )
+            
+                def __ne__(self, other):
+        83:         return not self == other
+            
+                def __call__(self, r):
+        86:         r.headers["Authorization"] = f"token {self.token}"
+        87:         return r
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:429-439 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, lines 435-439 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @LoggedFunction(logger)
+            def get_hvcs() -> Base:
+                """Get HVCS helper class
+            
+                :raises ImproperConfigurationError: if the hvcs option provided is not valid
+                """
+       435:     hvcs = config.get("hvcs")
+       436:     try:
+       437:         return globals()[hvcs.capitalize()]
+       438:     except KeyError:
+       439:         raise ImproperConfigurationError('"{0}" is not a valid option for hvcs.')
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/dist.py:12-17 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/dist.py, module semantic_release.dist, does not achieve full coverage:
+when tested, lines 13-17 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def should_build():
+        13:     upload_pypi = config.get("upload_to_pypi")
+        14:     upload_release = config.get("upload_to_release")
+        15:     build_command = config.get("build_command")
+        16:     build_command = build_command if build_command != "false" else False
+        17:     return bool(build_command and (upload_pypi or upload_release))
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/ci_checks.py:42-52 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/ci_checks.py, module semantic_release.ci_checks, does not achieve full coverage:
+when tested, lines 50-52 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @checker
+            def semaphore(branch: str):
+                """
+                Performs necessary checks to ensure that the semaphore build is successful,
+                on the correct branch and not a pull-request.
+            
+                :param branch:  The branch the environment should be running against.
+                """
+        50:     assert os.environ.get("BRANCH_NAME") == branch
+        51:     assert os.environ.get("PULL_REQUEST_NUMBER") is None
+        52:     assert os.environ.get("SEMAPHORE_THREAD_RESULT") != "failed"
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:274-314 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, line 295 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Github(Base):
+                @classmethod
+                @LoggedFunction(logger)
+                def upload_asset(
+                    cls, owner: str, repo: str, release_id: int, file: str, label: str = None
+                ) -> bool:
+                    """Upload an asset to an existing release
+            
+                    https://docs.github.com/rest/reference/repos#upload-a-release-asset
+            
+                    :param owner: The owner namespace of the repository
+                    :param repo: The repository name
+                    :param release_id: ID of the release to upload to
+                    :param file: Path of the file to upload
+                    :param label: Custom label for this file
+            
+                    :return: The status of the request
+                    """
+                    url = f"https://uploads.github.com/repos/{owner}/{repo}/releases/{release_id}/assets"
+            
+                    content_type = mimetypes.guess_type(file, strict=False)[0]
+       294:         if not content_type:
+       295:             content_type = "application/octet-stream"
+            
+                    try:
+                        response = Github.session().post(
+                            url,
+                            params={"name": os.path.basename(file), "label": label},
+                            headers={
+                                "Content-Type": content_type,
+                            },
+                            data=open(file, "rb").read(),
+                        )
+            
+                        logger.debug(
+                            f"Asset upload on Github completed, url: {response.url}, status code: {response.status_code}"
+                        )
+            
+                        return True
+                    except HTTPError as e:
+                        logger.warning(f"Asset upload {file} on Github has failed: {e}")
+                        return False
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:348-355 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, lines 354-355 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Gitlab(Base):
+                @staticmethod
+                def domain() -> str:
+                    """Gitlab domain property
+            
+                    :return: The Gitlab instance domain
+                    """
+       354:         domain = config.get("hvcs_domain", os.environ.get("CI_SERVER_HOST"))
+       355:         return domain if domain else "gitlab.com"
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/helpers.py:16-39 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/helpers.py, module semantic_release.helpers, does not achieve full coverage:
+when tested, branch 29->39 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def build_requests_session(
+                raise_for_status=True, retry: Union[bool, int, Retry] = True
+            ) -> Session:
+                """
+                Create a requests session.
+                :param raise_for_status: If True, a hook to invoke raise_for_status be installed
+                :param retry: If true, it will use default Retry configuration. if an integer, it will use default Retry
+                configuration with given integer as total retry count. if Retry instance, it will use this instance.
+                :return: configured requests Session
+                """
+                session = Session()
+                if raise_for_status:
+                    session.hooks = {"response": [lambda r, *args, **kwargs: r.raise_for_status()]}
+        29:     if retry:
+                    if isinstance(retry, bool):
+                        retry = Retry()
+                    elif isinstance(retry, int):
+                        retry = Retry(retry)
+                    elif not isinstance(retry, Retry):
+                        raise ValueError("retry should be a bool, int or Retry instance.")
+                    adapter = HTTPAdapter(max_retries=retry)
+                    session.mount("http://", adapter)
+                    session.mount("https://", adapter)
+        39:     return session
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/hvcs.py:198-219 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/hvcs.py, module semantic_release.hvcs, does not achieve full coverage:
+when tested, branch 217->219 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class Github(Base):
+                @classmethod
+                @LoggedFunction(logger)
+                def get_release(cls, owner: str, repo: str, tag: str) -> Optional[int]:
+                    """Get a release by its tag name
+            
+                    https://docs.github.com/rest/reference/repos#get-a-release-by-tag-name
+            
+                    :param owner: The owner namespace of the repository
+                    :param repo: The repository name
+                    :param tag: Tag to get release for
+            
+                    :return: ID of found release
+                    """
+                    try:
+                        response = Github.session().get(
+                            f"{Github.api_url()}/repos/{owner}/{repo}/releases/tags/{tag}"
+                        )
+                        return response.json().get("id")
+                    except HTTPError as e:
+       217:             if e.response.status_code != 404:
+                            logger.debug(f"Get release by tag on Github has failed: {e}")
+       219:             return None
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/ci_checks.py:118-138 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/ci_checks.py, module semantic_release.ci_checks, does not achieve full coverage:
+when tested, branch 137->exit does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def check(branch: str = "master"):
+                """
+                Detects the current CI environment, if any, and performs necessary
+                environment checks.
+            
+                :param branch: The branch that should be the current branch.
+                """
+                if os.environ.get("TRAVIS") == "true":
+                    travis(branch)
+                elif os.environ.get("SEMAPHORE") == "true":
+                    semaphore(branch)
+                elif os.environ.get("FRIGG") == "true":
+                    frigg(branch)
+                elif os.environ.get("CIRCLECI") == "true":
+                    circle(branch)
+                elif os.environ.get("GITLAB_CI") == "true":
+                    gitlab(branch)
+                elif os.environ.get("JENKINS_URL") is not None:
+                    jenkins(branch)
+       137:     elif "BITBUCKET_BUILD_NUMBER" in os.environ:
+                    bitbucket(branch)
+
+```
+
+---- 2024-05-31T16:38:13 semantic_release/settings.py:64-74 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from semantic_release/settings.py, module semantic_release.settings, does not achieve full coverage:
+when tested, branch 69->74 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def _config_from_pyproject(path):
+                if os.path.isfile(path):
+                    try:
+                        with open(path, "r") as f:
+                            pyproject = tomlkit.loads(f.read())
+        69:             if pyproject:
+                            return pyproject.get("tool", {}).get("semantic_release", {})
+                    except TOMLKitError as e:
+                        logger.debug(f"Could not decode pyproject.toml: {e}")
+            
+        74:     return {}
+
+```
+
+---- 2024-05-31T16:38:16 semantic_release/hvcs.py:429-439 ----
+```python
+import pytest
+from semantic_release.hvcs import get_hvcs, ImproperConfigurationError
+from semantic_release.config import config
+
+def test_get_hvcs_invalid_option(mocker):
+    # Mock the config to return an invalid hvcs option
+    mocker.patch.object(config, 'get', return_value='invalid_hvcs')
+
+    with pytest.raises(ImproperConfigurationError) as excinfo:
+        get_hvcs()
+
+    assert str(excinfo.value) == '"invalid_hvcs" is not a valid option for hvcs.'
+```
+---- 2024-05-31T16:38:16 semantic_release/hvcs.py:429-439 ----
+total usage: {'prompt_tokens': 307, 'completion_tokens': 116}
+---- 2024-05-31T16:38:16 semantic_release/ci_checks.py:42-52 ----
+```python
+import os
+import pytest
+from semantic_release.ci_checks import semaphore
+
+def test_semaphore(mocker):
+    # Set up the environment variables to trigger the missing lines
+    mocker.patch.dict(os.environ, {
+        "BRANCH_NAME": "main",
+        "PULL_REQUEST_NUMBER": None,
+        "SEMAPHORE_THREAD_RESULT": "passed"
+    })
+
+    # Call the semaphore function with the expected branch name
+    semaphore("main")
+
+    # Assertions to verify the environment variables are set correctly
+    assert os.environ.get("BRANCH_NAME") == "main"
+    assert os.environ.get("PULL_REQUEST_NUMBER") is None
+    assert os.environ.get("SEMAPHORE_THREAD_RESULT") == "passed"
+```
+---- 2024-05-31T16:38:16 semantic_release/ci_checks.py:42-52 ----
+total usage: {'prompt_tokens': 616, 'completion_tokens': 270}
+---- 2024-05-31T16:38:17 semantic_release/hvcs.py:67-87 ----
+```python
+import pytest
+from requests.auth import AuthBase
+from semantic_release.hvcs import TokenAuth
+
+def test_token_auth_eq():
+    token1 = "test_token_1"
+    token2 = "test_token_2"
+    auth1 = TokenAuth(token1)
+    auth2 = TokenAuth(token1)
+    auth3 = TokenAuth(token2)
+    
+    assert auth1 == auth2
+    assert auth1 != auth3
+
+def test_token_auth_ne():
+    token1 = "test_token_1"
+    token2 = "test_token_2"
+    auth1 = TokenAuth(token1)
+    auth2 = TokenAuth(token2)
+    
+    assert auth1 != auth2
+
+def test_token_auth_call(mocker):
+    token = "test_token"
+    auth = TokenAuth(token)
+    request = mocker.Mock()
+    request.headers = {}
+    
+    auth(request)
+    
+    assert request.headers["Authorization"] == f"token {token}"
+```
+---- 2024-05-31T16:38:17 semantic_release/hvcs.py:67-87 ----
+total usage: {'prompt_tokens': 956, 'completion_tokens': 471}
+---- 2024-05-31T16:38:18 semantic_release/hvcs.py:348-355 ----
+```python
+import os
+import pytest
+from unittest import mock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_config(mocker):
+    return mocker.patch('semantic_release.hvcs.config.get')
+
+def test_gitlab_domain_with_config(mock_config):
+    mock_config.return_value = 'custom.gitlab.com'
+    assert Gitlab.domain() == 'custom.gitlab.com'
+
+def test_gitlab_domain_with_env_var(mock_config):
+    mock_config.return_value = None
+    with mock.patch.dict(os.environ, {'CI_SERVER_HOST': 'env.gitlab.com'}):
+        assert Gitlab.domain() == 'env.gitlab.com'
+
+def test_gitlab_domain_default(mock_config):
+    mock_config.return_value = None
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert Gitlab.domain() == 'gitlab.com'
+```
+---- 2024-05-31T16:38:18 semantic_release/hvcs.py:348-355 ----
+total usage: {'prompt_tokens': 1227, 'completion_tokens': 647}
+---- 2024-05-31T16:38:18 semantic_release/ci_checks.py:118-138 ----
+```python
+import os
+import pytest
+from semantic_release.ci_checks import check
+
+def test_check_bitbucket(mocker):
+    # Set up the environment variable to simulate Bitbucket environment
+    mocker.patch.dict(os.environ, {"BITBUCKET_BUILD_NUMBER": "123"})
+
+    # Mock the bitbucket function to verify it gets called
+    mock_bitbucket = mocker.patch("semantic_release.ci_checks.bitbucket")
+
+    # Call the check function
+    check("master")
+
+    # Assert that the bitbucket function was called with the correct branch
+    mock_bitbucket.assert_called_once_with("master")
+
+    # Clean up the environment variable
+    del os.environ["BITBUCKET_BUILD_NUMBER"]
+```
+---- 2024-05-31T16:38:18 semantic_release/ci_checks.py:118-138 ----
+total usage: {'prompt_tokens': 1612, 'completion_tokens': 793}
+---- 2024-05-31T16:38:18 semantic_release/hvcs.py:429-439 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_ybjte2sz.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_ybjte2sz.py:3: in <module>
+    from semantic_release.config import config
+E   ModuleNotFoundError: No module named 'semantic_release.config'
+
+---- 2024-05-31T16:38:18 semantic_release/ci_checks.py:42-52 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f23a4241270>
+
+    def test_semaphore(mocker):
+        # Set up the environment variables to trigger the missing lines
+>       mocker.patch.dict(os.environ, {
+            "BRANCH_NAME": "main",
+            "PULL_REQUEST_NUMBER": None,
+            "SEMAPHORE_THREAD_RESULT": "passed"
+        })
+
+coverup-tests/tmp_test_5humoq4t.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:364: in dict
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1891: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1837: in __enter__
+    self._patch_dict()
+/usr/local/lib/python3.10/unittest/mock.py:1862: in _patch_dict
+    in_dict.update(values)
+/usr/local/lib/python3.10/_collections_abc.py:991: in update
+    self[key] = other[key]
+/usr/local/lib/python3.10/os.py:684: in __setitem__
+    value = self.encodevalue(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = None
+
+    def encode(value):
+        if not isinstance(value, str):
+>           raise TypeError("str expected, not %s" % type(value).__name__)
+E           TypeError: str expected, not NoneType
+
+/usr/local/lib/python3.10/os.py:756: TypeError
+
+---- 2024-05-31T16:38:18 semantic_release/helpers.py:16-39 ----
+```python
+import pytest
+from requests import Session
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from semantic_release.helpers import build_requests_session
+
+def test_build_requests_session_with_retry_bool():
+    session = build_requests_session(retry=True)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_int():
+    session = build_requests_session(retry=5)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_instance():
+    retry_instance = Retry(total=3)
+    session = build_requests_session(retry=retry_instance)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_invalid_retry():
+    with pytest.raises(ValueError, match="retry should be a bool, int or Retry instance."):
+        build_requests_session(retry="invalid")
+
+@pytest.fixture(autouse=True)
+def cleanup(mocker):
+    # Clean up any global state or side effects here
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T16:38:18 semantic_release/helpers.py:16-39 ----
+total usage: {'prompt_tokens': 2052, 'completion_tokens': 1076}
+---- 2024-05-31T16:38:18 semantic_release/hvcs.py:198-219 ----
+```python
+import pytest
+from unittest.mock import patch, Mock
+from requests import HTTPError
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github_session(mocker):
+    mock_session = mocker.patch('semantic_release.hvcs.Github.session')
+    return mock_session
+
+def test_get_release_handles_non_404_http_error(mock_github_session):
+    mock_response = Mock()
+    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))
+    mock_github_session.return_value.get.return_value = mock_response
+
+    with patch('semantic_release.hvcs.logger') as mock_logger:
+        result = Github.get_release('owner', 'repo', 'tag')
+        assert result is None
+        mock_logger.debug.assert_called_once_with('Get release by tag on Github has failed: ')
+
+def test_get_release_handles_404_http_error(mock_github_session):
+    mock_response = Mock()
+    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))
+    mock_github_session.return_value.get.return_value = mock_response
+
+    with patch('semantic_release.hvcs.logger') as mock_logger:
+        result = Github.get_release('owner', 'repo', 'tag')
+        assert result is None
+        mock_logger.debug.assert_not_called()
+```
+---- 2024-05-31T16:38:18 semantic_release/hvcs.py:198-219 ----
+total usage: {'prompt_tokens': 2445, 'completion_tokens': 1346}
+---- 2024-05-31T16:38:19 semantic_release/hvcs.py:67-87 ----
+...                                                                      [100%]
+
+---- 2024-05-31T16:38:19 semantic_release/hvcs.py:67-87 ----
+Saved as /output/coverup-tests/test_coverup_44.py
+
+---- 2024-05-31T16:38:19 semantic_release/ci_checks.py:118-138 ----
+.                                                                        [100%]
+
+---- 2024-05-31T16:38:19 semantic_release/ci_checks.py:118-138 ----
+This test still lacks coverage: branch 137->exit does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T16:38:19 semantic_release/hvcs.py:348-355 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_config = <MagicMock name='get' id='139878675443056'>
+
+    def test_gitlab_domain_with_env_var(mock_config):
+        mock_config.return_value = None
+        with mock.patch.dict(os.environ, {'CI_SERVER_HOST': 'env.gitlab.com'}):
+>           assert Gitlab.domain() == 'env.gitlab.com'
+E           AssertionError: assert 'gitlab.com' == 'env.gitlab.com'
+E             - env.gitlab.com
+E             ? ----
+E             + gitlab.com
+
+coverup-tests/tmp_test_dyf7rwjr.py:17: AssertionError
+
+---- 2024-05-31T16:38:19 semantic_release/dist.py:12-17 ----
+```python
+import pytest
+from unittest.mock import patch
+
+# Assuming the function should_build is imported from semantic_release.dist
+from semantic_release.dist import should_build
+
+@pytest.fixture
+def mock_config(mocker):
+    config = {
+        "upload_to_pypi": None,
+        "upload_to_release": None,
+        "build_command": None
+    }
+    mocker.patch('semantic_release.dist.config', config)
+    return config
+
+def test_should_build_with_build_command_false(mock_config):
+    mock_config["build_command"] = "false"
+    mock_config["upload_to_pypi"] = True
+    assert not should_build()
+
+def test_should_build_with_no_uploads(mock_config):
+    mock_config["build_command"] = "build"
+    mock_config["upload_to_pypi"] = False
+    mock_config["upload_to_release"] = False
+    assert not should_build()
+
+def test_should_build_with_upload_pypi(mock_config):
+    mock_config["build_command"] = "build"
+    mock_config["upload_to_pypi"] = True
+    assert should_build()
+
+def test_should_build_with_upload_release(mock_config):
+    mock_config["build_command"] = "build"
+    mock_config["upload_to_release"] = True
+    assert should_build()
+```
+---- 2024-05-31T16:38:19 semantic_release/dist.py:12-17 ----
+total usage: {'prompt_tokens': 2731, 'completion_tokens': 1607}
+---- 2024-05-31T16:38:20 semantic_release/hvcs.py:274-314 ----
+```python
+import pytest
+import mimetypes
+import os
+from unittest.mock import patch, mock_open
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github_session(mocker):
+    mock_session = mocker.patch('semantic_release.hvcs.Github.session')
+    mock_response = mocker.Mock()
+    mock_response.url = "https://uploads.github.com/repos/owner/repo/releases/1/assets"
+    mock_response.status_code = 200
+    mock_session.return_value.post.return_value = mock_response
+    return mock_session
+
+def test_upload_asset_no_content_type(mocker, mock_github_session):
+    owner = "owner"
+    repo = "repo"
+    release_id = 1
+    file_path = "testfile.unknown"
+    label = "testlabel"
+
+    # Ensure the file exists and can be read
+    mocker.patch("builtins.open", mock_open(read_data="file content"))
+    mocker.patch("os.path.basename", return_value="testfile.unknown")
+    mocker.patch("mimetypes.guess_type", return_value=(None, None))
+
+    result = Github.upload_asset(owner, repo, release_id, file_path, label)
+
+    # Assertions to verify the postconditions
+    assert result is True
+    mock_github_session.return_value.post.assert_called_once()
+    args, kwargs = mock_github_session.return_value.post.call_args
+    assert kwargs['headers']['Content-Type'] == "application/octet-stream"
+
+    # Clean up
+    mocker.stopall()
+```
+---- 2024-05-31T16:38:20 semantic_release/hvcs.py:274-314 ----
+total usage: {'prompt_tokens': 3257, 'completion_tokens': 1924}
+---- 2024-05-31T16:38:20 semantic_release/helpers.py:16-39 ----
+....                                                                     [100%]
+
+---- 2024-05-31T16:38:20 semantic_release/helpers.py:16-39 ----
+This test still lacks coverage: branch 29->39 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T16:38:20 semantic_release/hvcs.py:198-219 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_github_session = <MagicMock name='session' id='139768306926016'>
+
+    def test_get_release_handles_non_404_http_error(mock_github_session):
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))
+        mock_github_session.return_value.get.return_value = mock_response
+    
+        with patch('semantic_release.hvcs.logger') as mock_logger:
+            result = Github.get_release('owner', 'repo', 'tag')
+>           assert result is None
+E           AssertionError: assert <Mock name='session().get().json().get()' id='139768295357552'> is None
+
+coverup-tests/tmp_test_08k1jq38.py:18: AssertionError
+
+---- 2024-05-31T16:38:20 semantic_release/hvcs.py:429-439 ----
+```python
+import pytest
+from semantic_release.hvcs import get_hvcs, ImproperConfigurationError
+from semantic_release import config
+
+def test_get_hvcs_invalid_option(mocker):
+    # Mock the config to return an invalid hvcs option
+    mocker.patch.object(config, 'get', return_value='invalid_hvcs')
+
+    with pytest.raises(ImproperConfigurationError) as excinfo:
+        get_hvcs()
+
+    assert str(excinfo.value) == '"invalid_hvcs" is not a valid option for hvcs.'
+```
+---- 2024-05-31T16:38:21 semantic_release/hvcs.py:429-439 ----
+total usage: {'prompt_tokens': 3858, 'completion_tokens': 2039}
+---- 2024-05-31T16:38:21 semantic_release/settings.py:64-74 ----
+```python
+import os
+import pytest
+import tomlkit
+from unittest import mock
+from semantic_release.settings import _config_from_pyproject
+
+def test_config_from_pyproject_with_valid_pyproject(mocker):
+    mocker.patch("os.path.isfile", return_value=True)
+    mock_open = mock.mock_open(read_data='[tool.semantic_release]\nversion="1.0.0"')
+    mocker.patch("builtins.open", mock_open)
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {"semantic_release": {"version": "1.0.0"}}
+
+def test_config_from_pyproject_with_invalid_pyproject(mocker):
+    mocker.patch("os.path.isfile", return_value=True)
+    mock_open = mock.mock_open(read_data='invalid toml content')
+    mocker.patch("builtins.open", mock_open)
+    mocker.patch("semantic_release.settings.logger.debug")
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {}
+    semantic_release.settings.logger.debug.assert_called_once()
+
+def test_config_from_pyproject_with_no_file(mocker):
+    mocker.patch("os.path.isfile", return_value=False)
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {}
+```
+---- 2024-05-31T16:38:21 semantic_release/settings.py:64-74 ----
+total usage: {'prompt_tokens': 4150, 'completion_tokens': 2309}
+---- 2024-05-31T16:38:21 semantic_release/ci_checks.py:42-52 ----
+```python
+import os
+import pytest
+from semantic_release.ci_checks import semaphore
+
+def test_semaphore(mocker):
+    # Set up the environment variables to trigger the missing lines
+    mocker.patch.dict(os.environ, {
+        "BRANCH_NAME": "main",
+        "PULL_REQUEST_NUMBER": "",
+        "SEMAPHORE_THREAD_RESULT": "passed"
+    })
+
+    # Call the semaphore function with the expected branch name
+    semaphore("main")
+
+    # Assertions to verify the environment variables are set correctly
+    assert os.environ.get("BRANCH_NAME") == "main"
+    assert os.environ.get("PULL_REQUEST_NUMBER") == ""
+    assert os.environ.get("SEMAPHORE_THREAD_RESULT") == "passed"
+```
+---- 2024-05-31T16:38:21 semantic_release/ci_checks.py:42-52 ----
+total usage: {'prompt_tokens': 5088, 'completion_tokens': 2461}
+---- 2024-05-31T16:38:21 semantic_release/dist.py:12-17 ----
+....                                                                     [100%]
+
+---- 2024-05-31T16:38:21 semantic_release/dist.py:12-17 ----
+Saved as /output/coverup-tests/test_coverup_45.py
+
+---- 2024-05-31T16:38:22 semantic_release/hvcs.py:274-314 ----
+.                                                                        [100%]
+
+---- 2024-05-31T16:38:22 semantic_release/hvcs.py:274-314 ----
+Saved as /output/coverup-tests/test_coverup_46.py
+
+---- 2024-05-31T16:38:22 semantic_release/hvcs.py:429-439 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_dkzx5q5x.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_dkzx5q5x.py:3: in <module>
+    from semantic_release import config
+E   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)
+
+---- 2024-05-31T16:38:23 semantic_release/settings.py:64-74 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fdd30acdf60>
+
+    def test_config_from_pyproject_with_valid_pyproject(mocker):
+        mocker.patch("os.path.isfile", return_value=True)
+        mock_open = mock.mock_open(read_data='[tool.semantic_release]\nversion="1.0.0"')
+        mocker.patch("builtins.open", mock_open)
+    
+        result = _config_from_pyproject("pyproject.toml")
+    
+>       assert result == {"semantic_release": {"version": "1.0.0"}}
+E       AssertionError: assert {'version': '1.0.0'} == {'semantic_re...on': '1.0.0'}}
+E         Left contains 1 more item:
+E         {'version': '1.0.0'}
+E         Right contains 1 more item:
+E         {'semantic_release': {'version': '1.0.0'}}
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_zuxn_op5.py:14: AssertionError
+
+---- 2024-05-31T16:38:23 semantic_release/ci_checks.py:118-138 ----
+```python
+import os
+import pytest
+from semantic_release.ci_checks import check
+
+def test_check_bitbucket(mocker):
+    # Set up the environment variable to simulate Bitbucket environment
+    mocker.patch.dict(os.environ, {"BITBUCKET_BUILD_NUMBER": "123"}, clear=True)
+
+    # Mock the bitbucket function to verify it gets called
+    mock_bitbucket = mocker.patch("semantic_release.ci_checks.bitbucket")
+
+    # Call the check function
+    check("master")
+
+    # Assert that the bitbucket function was called with the correct branch
+    mock_bitbucket.assert_called_once_with("master")
+```
+---- 2024-05-31T16:38:23 semantic_release/ci_checks.py:118-138 ----
+total usage: {'prompt_tokens': 5659, 'completion_tokens': 2590}
+---- 2024-05-31T16:38:23 semantic_release/ci_checks.py:42-52 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+args = ('main',), kwargs = {}
+
+    def func_wrapper(*args, **kwargs):
+        try:
+>           func(*args, **kwargs)
+
+semantic_release/ci_checks.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+branch = 'main'
+
+    @checker
+    def semaphore(branch: str):
+        """
+        Performs necessary checks to ensure that the semaphore build is successful,
+        on the correct branch and not a pull-request.
+    
+        :param branch:  The branch the environment should be running against.
+        """
+        assert os.environ.get("BRANCH_NAME") == branch
+>       assert os.environ.get("PULL_REQUEST_NUMBER") is None
+E       AssertionError
+
+semantic_release/ci_checks.py:51: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fcc54d61270>
+
+    def test_semaphore(mocker):
+        # Set up the environment variables to trigger the missing lines
+        mocker.patch.dict(os.environ, {
+            "BRANCH_NAME": "main",
+            "PULL_REQUEST_NUMBER": "",
+            "SEMAPHORE_THREAD_RESULT": "passed"
+        })
+    
+        # Call the semaphore function with the expected branch name
+>       semaphore("main")
+
+coverup-tests/tmp_test_6e571umq.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = ('main',), kwargs = {}
+
+    def func_wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+            return True
+        except AssertionError:
+>           raise CiVerificationError(
+                "The verification check for the environment did not pass."
+            )
+E           semantic_release.errors.CiVerificationError: The verification check for the environment did not pass.
+
+semantic_release/ci_checks.py:23: CiVerificationError
+
+---- 2024-05-31T16:38:23 semantic_release/hvcs.py:399-426 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gitlab = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+    mock_instance = mock_gitlab.return_value
+    mock_instance.auth.return_value = None
+    return mock_instance
+
+def test_post_release_changelog_success(mock_gitlab):
+    mock_project = MagicMock()
+    mock_tag = MagicMock()
+    mock_project.tags.get.return_value = mock_tag
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('changelog')
+    assert result is True
+
+def test_post_release_changelog_tag_not_found(mock_gitlab):
+    mock_project = MagicMock()
+    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    assert result is False
+
+def test_post_release_changelog_update_error(mock_gitlab):
+    mock_project = MagicMock()
+    mock_tag = MagicMock()
+    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError
+    mock_project.tags.get.return_value = mock_tag
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('changelog')
+    assert result is False
+```
+---- 2024-05-31T16:38:23 semantic_release/hvcs.py:399-426 ----
+total usage: {'prompt_tokens': 6152, 'completion_tokens': 3081}
+---- 2024-05-31T16:38:24 semantic_release/hvcs.py:348-355 ----
+```python
+import os
+import pytest
+from unittest import mock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_config(mocker):
+    return mocker.patch('semantic_release.hvcs.config.get')
+
+def test_gitlab_domain_with_config(mock_config):
+    mock_config.return_value = 'custom.gitlab.com'
+    assert Gitlab.domain() == 'custom.gitlab.com'
+
+def test_gitlab_domain_with_env_var(mock_config):
+    mock_config.return_value = ''
+    with mock.patch.dict(os.environ, {'CI_SERVER_HOST': 'env.gitlab.com'}):
+        assert Gitlab.domain() == 'env.gitlab.com'
+
+def test_gitlab_domain_default(mock_config):
+    mock_config.return_value = ''
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert Gitlab.domain() == 'gitlab.com'
+```
+---- 2024-05-31T16:38:24 semantic_release/hvcs.py:348-355 ----
+total usage: {'prompt_tokens': 6764, 'completion_tokens': 3255}
+---- 2024-05-31T16:38:25 semantic_release/ci_checks.py:118-138 ----
+.                                                                        [100%]
+
+---- 2024-05-31T16:38:25 semantic_release/ci_checks.py:118-138 ----
+This test still lacks coverage: branch 137->exit does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T16:38:25 semantic_release/hvcs.py:399-426 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f7e91addf90>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+>       mock_gitlab = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+
+coverup-tests/tmp_test_1xd_p44k.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f7e91addff0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-05-31T16:38:25 semantic_release/hvcs.py:373-397 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+    mock_gitlab_instance.return_value.auth.return_value = None
+    return mock_gitlab_instance
+
+def test_check_build_status_pending(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "pending", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is False
+
+def test_check_build_status_failed(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "failed", "name": "test_job", "allow_failure": False}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is False
+
+def test_check_build_status_success(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "success", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is True
+
+def test_check_build_status_skipped(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "skipped", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is True
+```
+---- 2024-05-31T16:38:25 semantic_release/hvcs.py:373-397 ----
+total usage: {'prompt_tokens': 7265, 'completion_tokens': 3791}
+---- 2024-05-31T16:38:25 semantic_release/hvcs.py:429-439 ----
+```python
+import pytest
+from semantic_release.hvcs import get_hvcs, ImproperConfigurationError
+from semantic_release.config import get_config
+
+def test_get_hvcs_invalid_option(mocker):
+    # Mock the config to return an invalid hvcs option
+    mocker.patch('semantic_release.hvcs.config.get', return_value='invalid_hvcs')
+
+    with pytest.raises(ImproperConfigurationError) as excinfo:
+        get_hvcs()
+
+    assert str(excinfo.value) == '"invalid_hvcs" is not a valid option for hvcs.'
+```
+---- 2024-05-31T16:38:25 semantic_release/hvcs.py:429-439 ----
+total usage: {'prompt_tokens': 8173, 'completion_tokens': 3911}
+---- 2024-05-31T16:38:26 semantic_release/hvcs.py:348-355 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_config = <MagicMock name='get' id='139887188323696'>
+
+    def test_gitlab_domain_with_env_var(mock_config):
+        mock_config.return_value = ''
+        with mock.patch.dict(os.environ, {'CI_SERVER_HOST': 'env.gitlab.com'}):
+>           assert Gitlab.domain() == 'env.gitlab.com'
+E           AssertionError: assert 'gitlab.com' == 'env.gitlab.com'
+E             - env.gitlab.com
+E             ? ----
+E             + gitlab.com
+
+coverup-tests/tmp_test_dk6opge0.py:17: AssertionError
+
+---- 2024-05-31T16:38:27 semantic_release/helpers.py:16-39 ----
+```python
+import pytest
+from requests import Session
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from semantic_release.helpers import build_requests_session
+
+def test_build_requests_session_without_retry():
+    session = build_requests_session(retry=False)
+    assert isinstance(session, Session)
+    assert not isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert not isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_bool():
+    session = build_requests_session(retry=True)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_int():
+    session = build_requests_session(retry=5)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_instance():
+    retry_instance = Retry(total=3)
+    session = build_requests_session(retry=retry_instance)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_invalid_retry():
+    with pytest.raises(ValueError, match="retry should be a bool, int or Retry instance."):
+        build_requests_session(retry="invalid")
+
+@pytest.fixture(autouse=True)
+def cleanup(mocker):
+    # Clean up any global state or side effects here
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T16:38:27 semantic_release/helpers.py:16-39 ----
+total usage: {'prompt_tokens': 8936, 'completion_tokens': 4247}
+---- 2024-05-31T16:38:27 semantic_release/hvcs.py:373-397 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f089d156ec0>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+>       mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+
+coverup-tests/tmp_test_z7srsxyu.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f089d157eb0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-05-31T16:38:27 semantic_release/hvcs.py:429-439 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+ImportError while importing test module '/output/coverup-tests/tmp_test_oh834q7c.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_oh834q7c.py:3: in <module>
+    from semantic_release.config import get_config
+E   ModuleNotFoundError: No module named 'semantic_release.config'
+
+---- 2024-05-31T16:38:27 semantic_release/hvcs.py:429-439 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:28 semantic_release/settings.py:64-74 ----
+```python
+import os
+import pytest
+import tomlkit
+from unittest import mock
+from semantic_release.settings import _config_from_pyproject
+
+def test_config_from_pyproject_with_valid_pyproject(mocker):
+    mocker.patch("os.path.isfile", return_value=True)
+    mock_open = mock.mock_open(read_data='[tool.semantic_release]\nversion="1.0.0"')
+    mocker.patch("builtins.open", mock_open)
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {"version": "1.0.0"}
+
+def test_config_from_pyproject_with_invalid_pyproject(mocker):
+    mocker.patch("os.path.isfile", return_value=True)
+    mock_open = mock.mock_open(read_data='invalid toml content')
+    mocker.patch("builtins.open", mock_open)
+    mocker.patch("semantic_release.settings.logger.debug")
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {}
+    semantic_release.settings.logger.debug.assert_called_once()
+
+def test_config_from_pyproject_with_no_file(mocker):
+    mocker.patch("os.path.isfile", return_value=False)
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {}
+```
+---- 2024-05-31T16:38:28 semantic_release/settings.py:64-74 ----
+total usage: {'prompt_tokens': 9760, 'completion_tokens': 4512}
+---- 2024-05-31T16:38:28 semantic_release/hvcs.py:198-219 ----
+```python
+import pytest
+from unittest.mock import patch, Mock
+from requests import HTTPError
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github_session(mocker):
+    mock_session = mocker.patch('semantic_release.hvcs.Github.session')
+    return mock_session
+
+def test_get_release_handles_non_404_http_error(mock_github_session):
+    mock_response = Mock()
+    mock_response.json.return_value = {}
+    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))
+    mock_github_session.return_value.get.return_value = mock_response
+
+    with patch('semantic_release.hvcs.logger') as mock_logger:
+        result = Github.get_release('owner', 'repo', 'tag')
+        assert result is None
+        mock_logger.debug.assert_called_once_with('Get release by tag on Github has failed: ')
+
+def test_get_release_handles_404_http_error(mock_github_session):
+    mock_response = Mock()
+    mock_response.json.return_value = {}
+    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))
+    mock_github_session.return_value.get.return_value = mock_response
+
+    with patch('semantic_release.hvcs.logger') as mock_logger:
+        result = Github.get_release('owner', 'repo', 'tag')
+        assert result is None
+        mock_logger.debug.assert_not_called()
+```
+---- 2024-05-31T16:38:28 semantic_release/hvcs.py:198-219 ----
+total usage: {'prompt_tokens': 10620, 'completion_tokens': 4798}
+---- 2024-05-31T16:38:28 semantic_release/helpers.py:16-39 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_build_requests_session_without_retry():
+        session = build_requests_session(retry=False)
+        assert isinstance(session, Session)
+>       assert not isinstance(session.get_adapter("http://"), HTTPAdapter)
+E       AssertionError: assert not True
+E        +  where True = isinstance(<requests.adapters.HTTPAdapter object at 0x7f6098b8dde0>, HTTPAdapter)
+E        +    where <requests.adapters.HTTPAdapter object at 0x7f6098b8dde0> = <bound method Session.get_adapter of <requests.sessions.Session object at 0x7f6098b8f4c0>>('http://')
+E        +      where <bound method Session.get_adapter of <requests.sessions.Session object at 0x7f6098b8f4c0>> = <requests.sessions.Session object at 0x7f6098b8f4c0>.get_adapter
+
+coverup-tests/tmp_test_xyt_yrpi.py:10: AssertionError
+
+---- 2024-05-31T16:38:28 semantic_release/ci_checks.py:118-138 ----
+```python
+import os
+import pytest
+from semantic_release.ci_checks import check
+
+def test_check_bitbucket(mocker):
+    # Set up the environment variable to simulate Bitbucket environment
+    mocker.patch.dict(os.environ, {"BITBUCKET_BUILD_NUMBER": "123"}, clear=True)
+
+    # Mock the bitbucket function to verify it gets called
+    mock_bitbucket = mocker.patch("semantic_release.ci_checks.bitbucket")
+
+    # Call the check function
+    check("master")
+
+    # Assert that the bitbucket function was called with the correct branch
+    mock_bitbucket.assert_called_once_with("master")
+
+    # Clean up the environment variable
+    mocker.stopall()
+```
+---- 2024-05-31T16:38:28 semantic_release/ci_checks.py:118-138 ----
+total usage: {'prompt_tokens': 11360, 'completion_tokens': 4941}
+---- 2024-05-31T16:38:29 semantic_release/hvcs.py:348-355 ----
+```python
+import os
+import pytest
+from unittest import mock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_config(mocker):
+    return mocker.patch('semantic_release.hvcs.config.get')
+
+def test_gitlab_domain_with_config(mock_config):
+    mock_config.return_value = 'custom.gitlab.com'
+    assert Gitlab.domain() == 'custom.gitlab.com'
+
+def test_gitlab_domain_with_env_var(mock_config):
+    mock_config.return_value = None
+    with mock.patch.dict(os.environ, {'CI_SERVER_HOST': 'env.gitlab.com'}):
+        assert Gitlab.domain() == 'env.gitlab.com'
+
+def test_gitlab_domain_default(mock_config):
+    mock_config.return_value = None
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert Gitlab.domain() == 'gitlab.com'
+```
+---- 2024-05-31T16:38:29 semantic_release/hvcs.py:348-355 ----
+total usage: {'prompt_tokens': 12310, 'completion_tokens': 5117}
+---- 2024-05-31T16:38:29 semantic_release/settings.py:64-74 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fb764bf0310>
+
+    def test_config_from_pyproject_with_invalid_pyproject(mocker):
+        mocker.patch("os.path.isfile", return_value=True)
+        mock_open = mock.mock_open(read_data='invalid toml content')
+        mocker.patch("builtins.open", mock_open)
+        mocker.patch("semantic_release.settings.logger.debug")
+    
+        result = _config_from_pyproject("pyproject.toml")
+    
+        assert result == {}
+>       semantic_release.settings.logger.debug.assert_called_once()
+E       NameError: name 'semantic_release' is not defined
+
+coverup-tests/tmp_test_3tvalhw2.py:25: NameError
+
+---- 2024-05-31T16:38:30 semantic_release/hvcs.py:198-219 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_once_with at 0x7f8ddd66b760>
+args = (<MagicMock name='logger.debug' id='140247280618560'>, 'Get release by tag on Github has failed: ')
+kwargs = {}, __tracebackhide__ = True
+msg = "Expected 'debug' to be called once. Called 0 times."
+__mock_self = <MagicMock name='logger.debug' id='140247280618560'>
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='logger.debug' id='140247280618560'>
+args = ('Get release by tag on Github has failed: ',), kwargs = {}
+msg = "Expected 'debug' to be called once. Called 0 times."
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        """assert that the mock was called exactly once and that that call was
+        with the specified arguments."""
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to be called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'debug' to be called once. Called 0 times.
+
+/usr/local/lib/python3.10/unittest/mock.py:930: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_github_session = <MagicMock name='session' id='140247281136208'>
+
+    def test_get_release_handles_non_404_http_error(mock_github_session):
+        mock_response = Mock()
+        mock_response.json.return_value = {}
+        mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))
+        mock_github_session.return_value.get.return_value = mock_response
+    
+        with patch('semantic_release.hvcs.logger') as mock_logger:
+            result = Github.get_release('owner', 'repo', 'tag')
+            assert result is None
+>           mock_logger.debug.assert_called_once_with('Get release by tag on Github has failed: ')
+E           AssertionError: Expected 'debug' to be called once. Called 0 times.
+
+coverup-tests/tmp_test_zcaz73ca.py:20: AssertionError
+
+---- 2024-05-31T16:38:30 semantic_release/ci_checks.py:118-138 ----
+.                                                                        [100%]
+
+---- 2024-05-31T16:38:30 semantic_release/ci_checks.py:118-138 ----
+This test still lacks coverage: branch 137->exit does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T16:38:30 semantic_release/ci_checks.py:118-138 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:30 semantic_release/ci_checks.py:42-52 ----
+```python
+import os
+import pytest
+from semantic_release.ci_checks import semaphore
+from semantic_release.errors import CiVerificationError
+
+def test_semaphore(mocker):
+    # Set up the environment variables to trigger the missing lines
+    mocker.patch.dict(os.environ, {
+        "BRANCH_NAME": "main",
+        "PULL_REQUEST_NUMBER": "",
+        "SEMAPHORE_THREAD_RESULT": "passed"
+    })
+
+    # Call the semaphore function with the expected branch name
+    with pytest.raises(CiVerificationError):
+        semaphore("main")
+
+    # Correct the environment variable to pass the check
+    mocker.patch.dict(os.environ, {
+        "PULL_REQUEST_NUMBER": None
+    })
+
+    # Call the semaphore function again with the expected branch name
+    semaphore("main")
+
+    # Assertions to verify the environment variables are set correctly
+    assert os.environ.get("BRANCH_NAME") == "main"
+    assert os.environ.get("PULL_REQUEST_NUMBER") is None
+    assert os.environ.get("SEMAPHORE_THREAD_RESULT") == "passed"
+```
+---- 2024-05-31T16:38:30 semantic_release/ci_checks.py:42-52 ----
+total usage: {'prompt_tokens': 13886, 'completion_tokens': 5337}
+---- 2024-05-31T16:38:31 semantic_release/hvcs.py:348-355 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_config = <MagicMock name='get' id='140455483862384'>
+
+    def test_gitlab_domain_with_env_var(mock_config):
+        mock_config.return_value = None
+        with mock.patch.dict(os.environ, {'CI_SERVER_HOST': 'env.gitlab.com'}):
+>           assert Gitlab.domain() == 'env.gitlab.com'
+E           AssertionError: assert 'gitlab.com' == 'env.gitlab.com'
+E             - env.gitlab.com
+E             ? ----
+E             + gitlab.com
+
+coverup-tests/tmp_test___03dlnl.py:17: AssertionError
+
+---- 2024-05-31T16:38:31 semantic_release/hvcs.py:348-355 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:32 semantic_release/ci_checks.py:42-52 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f4a05709270>
+
+    def test_semaphore(mocker):
+        # Set up the environment variables to trigger the missing lines
+        mocker.patch.dict(os.environ, {
+            "BRANCH_NAME": "main",
+            "PULL_REQUEST_NUMBER": "",
+            "SEMAPHORE_THREAD_RESULT": "passed"
+        })
+    
+        # Call the semaphore function with the expected branch name
+        with pytest.raises(CiVerificationError):
+            semaphore("main")
+    
+        # Correct the environment variable to pass the check
+>       mocker.patch.dict(os.environ, {
+            "PULL_REQUEST_NUMBER": None
+        })
+
+coverup-tests/tmp_test_errqb536.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:364: in dict
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1891: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1837: in __enter__
+    self._patch_dict()
+/usr/local/lib/python3.10/unittest/mock.py:1862: in _patch_dict
+    in_dict.update(values)
+/usr/local/lib/python3.10/_collections_abc.py:991: in update
+    self[key] = other[key]
+/usr/local/lib/python3.10/os.py:684: in __setitem__
+    value = self.encodevalue(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = None
+
+    def encode(value):
+        if not isinstance(value, str):
+>           raise TypeError("str expected, not %s" % type(value).__name__)
+E           TypeError: str expected, not NoneType
+
+/usr/local/lib/python3.10/os.py:756: TypeError
+
+---- 2024-05-31T16:38:32 semantic_release/ci_checks.py:42-52 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:34 semantic_release/hvcs.py:399-426 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from semantic_release.hvcs import Gitlab
+import gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gitlab = mocker.patch('semantic_release.hvcs.gitlab')
+    mock_instance = mock_gitlab.Gitlab.return_value
+    mock_instance.auth.return_value = None
+    return mock_instance
+
+def test_post_release_changelog_success(mock_gitlab):
+    mock_project = MagicMock()
+    mock_tag = MagicMock()
+    mock_project.tags.get.return_value = mock_tag
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('changelog')
+    assert result is True
+
+def test_post_release_changelog_tag_not_found(mock_gitlab):
+    mock_project = MagicMock()
+    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    assert result is False
+
+def test_post_release_changelog_update_error(mock_gitlab):
+    mock_project = MagicMock()
+    mock_tag = MagicMock()
+    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError
+    mock_project.tags.get.return_value = mock_tag
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('changelog')
+    assert result is False
+```
+---- 2024-05-31T16:38:34 semantic_release/hvcs.py:399-426 ----
+total usage: {'prompt_tokens': 15382, 'completion_tokens': 5832}
+---- 2024-05-31T16:38:35 semantic_release/settings.py:64-74 ----
+```python
+import os
+import pytest
+import tomlkit
+from unittest import mock
+from semantic_release.settings import _config_from_pyproject, logger
+from tomlkit.exceptions import TOMLKitError
+
+def test_config_from_pyproject_with_valid_pyproject(mocker):
+    mocker.patch("os.path.isfile", return_value=True)
+    mock_open = mock.mock_open(read_data='[tool.semantic_release]\nversion="1.0.0"')
+    mocker.patch("builtins.open", mock_open)
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {"version": "1.0.0"}
+
+def test_config_from_pyproject_with_invalid_pyproject(mocker):
+    mocker.patch("os.path.isfile", return_value=True)
+    mock_open = mock.mock_open(read_data='invalid toml content')
+    mocker.patch("builtins.open", mock_open)
+    mocker.patch.object(logger, "debug")
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {}
+    logger.debug.assert_called_once()
+
+def test_config_from_pyproject_with_no_file(mocker):
+    mocker.patch("os.path.isfile", return_value=False)
+    
+    result = _config_from_pyproject("pyproject.toml")
+    
+    assert result == {}
+```
+---- 2024-05-31T16:38:35 semantic_release/settings.py:64-74 ----
+total usage: {'prompt_tokens': 16658, 'completion_tokens': 6106}
+---- 2024-05-31T16:38:35 semantic_release/helpers.py:16-39 ----
+```python
+import pytest
+from requests import Session
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+from semantic_release.helpers import build_requests_session
+
+def test_build_requests_session_without_retry():
+    session = build_requests_session(retry=False)
+    assert isinstance(session, Session)
+    # Ensure that the adapter is the default one without retries
+    default_adapter = HTTPAdapter()
+    assert type(session.get_adapter("http://")) == type(default_adapter)
+    assert type(session.get_adapter("https://")) == type(default_adapter)
+
+def test_build_requests_session_with_retry_bool():
+    session = build_requests_session(retry=True)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_int():
+    session = build_requests_session(retry=5)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_retry_instance():
+    retry_instance = Retry(total=3)
+    session = build_requests_session(retry=retry_instance)
+    assert isinstance(session, Session)
+    assert isinstance(session.get_adapter("http://"), HTTPAdapter)
+    assert isinstance(session.get_adapter("https://"), HTTPAdapter)
+
+def test_build_requests_session_with_invalid_retry():
+    with pytest.raises(ValueError, match="retry should be a bool, int or Retry instance."):
+        build_requests_session(retry="invalid")
+
+@pytest.fixture(autouse=True)
+def cleanup(mocker):
+    # Clean up any global state or side effects here
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T16:38:35 semantic_release/helpers.py:16-39 ----
+total usage: {'prompt_tokens': 18002, 'completion_tokens': 6464}
+---- 2024-05-31T16:38:35 semantic_release/hvcs.py:399-426 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_gitlab = <MagicMock name='gitlab.Gitlab()' id='140588980364112'>
+
+    def test_post_release_changelog_tag_not_found(mock_gitlab):
+        mock_project = MagicMock()
+>       mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError
+E       AttributeError: module 'gitlab' has no attribute 'exceptions'
+
+coverup-tests/tmp_test_l4k0peuw.py:29: AttributeError
+
+---- 2024-05-31T16:38:36 semantic_release/settings.py:64-74 ----
+...                                                                      [100%]
+
+---- 2024-05-31T16:38:36 semantic_release/settings.py:64-74 ----
+This test still lacks coverage: branch 69->74 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T16:38:36 semantic_release/settings.py:64-74 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:37 semantic_release/helpers.py:16-39 ----
+.....                                                                    [100%]
+
+---- 2024-05-31T16:38:37 semantic_release/helpers.py:16-39 ----
+Saved as /output/coverup-tests/test_coverup_47.py
+
+---- 2024-05-31T16:38:38 semantic_release/hvcs.py:198-219 ----
+```python
+import pytest
+from unittest.mock import patch, Mock
+from requests import HTTPError
+from semantic_release.hvcs import Github
+
+@pytest.fixture
+def mock_github_session(mocker):
+    mock_session = mocker.patch('semantic_release.hvcs.Github.session')
+    return mock_session
+
+def test_get_release_handles_non_404_http_error(mock_github_session):
+    mock_response = Mock()
+    mock_response.json.return_value = {}
+    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))
+    mock_github_session.return_value.get.return_value = mock_response
+
+    with patch('semantic_release.hvcs.logger') as mock_logger:
+        result = Github.get_release('owner', 'repo', 'tag')
+        assert result is None
+        mock_logger.debug.assert_called_once()
+        assert "Get release by tag on Github has failed:" in mock_logger.debug.call_args[0][0]
+
+def test_get_release_handles_404_http_error(mock_github_session):
+    mock_response = Mock()
+    mock_response.json.return_value = {}
+    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))
+    mock_github_session.return_value.get.return_value = mock_response
+
+    with patch('semantic_release.hvcs.logger') as mock_logger:
+        result = Github.get_release('owner', 'repo', 'tag')
+        assert result is None
+        mock_logger.debug.assert_not_called()
+```
+---- 2024-05-31T16:38:38 semantic_release/hvcs.py:198-219 ----
+total usage: {'prompt_tokens': 19776, 'completion_tokens': 6761}
+---- 2024-05-31T16:38:39 semantic_release/hvcs.py:198-219 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_once at 0x7f01ab88f640>
+args = (<MagicMock name='logger.debug' id='139645157287888'>,), kwargs = {}
+__tracebackhide__ = True
+msg = "Expected 'debug' to have been called once. Called 0 times."
+__mock_self = <MagicMock name='logger.debug' id='139645157287888'>
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='logger.debug' id='139645157287888'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'debug' to have been called once. Called 0 times.
+
+/usr/local/lib/python3.10/unittest/mock.py:898: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_github_session = <MagicMock name='session' id='139645149089696'>
+
+    def test_get_release_handles_non_404_http_error(mock_github_session):
+        mock_response = Mock()
+        mock_response.json.return_value = {}
+        mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))
+        mock_github_session.return_value.get.return_value = mock_response
+    
+        with patch('semantic_release.hvcs.logger') as mock_logger:
+            result = Github.get_release('owner', 'repo', 'tag')
+            assert result is None
+>           mock_logger.debug.assert_called_once()
+E           AssertionError: Expected 'debug' to have been called once. Called 0 times.
+
+coverup-tests/tmp_test_3b1bxy70.py:20: AssertionError
+
+---- 2024-05-31T16:38:39 semantic_release/hvcs.py:198-219 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:41 semantic_release/hvcs.py:373-397 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+    mock_gitlab_instance.return_value.auth.return_value = None
+    return mock_gitlab_instance
+
+def test_check_build_status_pending(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "pending", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is False
+
+def test_check_build_status_failed(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "failed", "name": "test_job", "allow_failure": False}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is False
+
+def test_check_build_status_success(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "success", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is True
+
+def test_check_build_status_skipped(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "skipped", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is True
+```
+---- 2024-05-31T16:38:41 semantic_release/hvcs.py:373-397 ----
+total usage: {'prompt_tokens': 21324, 'completion_tokens': 7297}
+---- 2024-05-31T16:38:43 semantic_release/hvcs.py:373-397 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f7a022eeec0>
+
+    @pytest.fixture
+    def mock_gitlab(mocker):
+>       mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')
+
+coverup-tests/tmp_test_jse967px.py:7: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f7a022efeb0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-05-31T16:38:50 semantic_release/hvcs.py:399-426 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from semantic_release.hvcs import Gitlab
+import gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gitlab = mocker.patch('semantic_release.hvcs.gitlab')
+    mock_instance = mock_gitlab.Gitlab.return_value
+    mock_instance.auth.return_value = None
+    return mock_instance
+
+@pytest.fixture
+def mock_gitlab_exceptions(mocker):
+    mock_exceptions = mocker.patch('semantic_release.hvcs.gitlab.exceptions')
+    return mock_exceptions
+
+def test_post_release_changelog_success(mock_gitlab):
+    mock_project = MagicMock()
+    mock_tag = MagicMock()
+    mock_project.tags.get.return_value = mock_tag
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('changelog')
+    assert result is True
+
+def test_post_release_changelog_tag_not_found(mock_gitlab, mock_gitlab_exceptions):
+    mock_project = MagicMock()
+    mock_project.tags.get.side_effect = mock_gitlab_exceptions.GitlabGetError
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    assert result is False
+
+def test_post_release_changelog_update_error(mock_gitlab, mock_gitlab_exceptions):
+    mock_project = MagicMock()
+    mock_tag = MagicMock()
+    mock_tag.set_release_description.side_effect = mock_gitlab_exceptions.GitlabUpdateError
+    mock_project.tags.get.return_value = mock_tag
+    mock_gitlab.projects.get.return_value = mock_project
+
+    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+
+    mock_gitlab.auth.assert_called_once()
+    mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+    mock_project.tags.get.assert_called_once_with('v1.0.0')
+    mock_tag.set_release_description.assert_called_once_with('changelog')
+    assert result is False
+```
+---- 2024-05-31T16:38:50 semantic_release/hvcs.py:399-426 ----
+total usage: {'prompt_tokens': 23449, 'completion_tokens': 7844}
+---- 2024-05-31T16:38:51 semantic_release/hvcs.py:399-426 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_gitlab = <MagicMock name='gitlab.Gitlab()' id='139798210322176'>
+mock_gitlab_exceptions = <MagicMock name='exceptions' id='139798216039472'>
+
+    def test_post_release_changelog_tag_not_found(mock_gitlab, mock_gitlab_exceptions):
+        mock_project = MagicMock()
+        mock_project.tags.get.side_effect = mock_gitlab_exceptions.GitlabGetError
+        mock_gitlab.projects.get.return_value = mock_project
+    
+        result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')
+    
+        mock_gitlab.auth.assert_called_once()
+        mock_gitlab.projects.get.assert_called_once_with('owner/repo')
+        mock_project.tags.get.assert_called_once_with('v1.0.0')
+>       assert result is False
+E       assert True is False
+
+coverup-tests/tmp_test_nvatvc8y.py:42: AssertionError
+
+---- 2024-05-31T16:38:51 semantic_release/hvcs.py:399-426 ----
+Too many attempts, giving up
+---- 2024-05-31T16:38:53 semantic_release/hvcs.py:373-397 ----
+```python
+import pytest
+from unittest.mock import patch, MagicMock
+from semantic_release.hvcs import Gitlab
+
+@pytest.fixture
+def mock_gitlab(mocker):
+    mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab')
+    mock_gitlab_instance.Gitlab.return_value.auth.return_value = None
+    return mock_gitlab_instance
+
+def test_check_build_status_pending(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "pending", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.Gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is False
+
+def test_check_build_status_failed(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "failed", "name": "test_job", "allow_failure": False}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.Gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is False
+
+def test_check_build_status_success(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "success", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.Gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is True
+
+def test_check_build_status_skipped(mocker, mock_gitlab):
+    mock_project = MagicMock()
+    mock_commit = MagicMock()
+    mock_status = MagicMock()
+    mock_status.list.return_value = [{"status": "skipped", "name": "test_job"}]
+    mock_commit.statuses = mock_status
+    mock_project.commits.get.return_value = mock_commit
+    mock_gitlab.Gitlab.return_value.projects.get.return_value = mock_project
+
+    result = Gitlab.check_build_status("owner", "repo", "ref")
+    assert result is True
+```
+---- 2024-05-31T16:38:53 semantic_release/hvcs.py:373-397 ----
+total usage: {'prompt_tokens': 26044, 'completion_tokens': 8392}
+---- 2024-05-31T16:38:55 semantic_release/hvcs.py:373-397 ----
+....                                                                     [100%]
+
+---- 2024-05-31T16:38:55 semantic_release/hvcs.py:373-397 ----
+Saved as /output/coverup-tests/test_coverup_48.py
+

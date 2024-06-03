@@ -1,0 +1,2469 @@
+---- 2024-05-31T16:41:32 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --isolate-tests --prompt-family gpt-v1 --source-dir ./string_utils --tests-dir coverup-tests --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json string_utils/generation.py string_utils/manipulation.py string_utils/validation.py
+---- 2024-05-31T16:41:41 string_utils/validation.py:451-494 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 471-494 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_palindrome(input_string: Any, ignore_spaces: bool = False, ignore_case: bool = False) -> bool:
+                """
+                Checks if the string is a palindrome (https://en.wikipedia.org/wiki/Palindrome).
+            
+                *Examples:*
+            
+                >>> is_palindrome('LOL') # returns true
+                >>> is_palindrome('Lol') # returns false
+                >>> is_palindrome('Lol', ignore_case=True) # returns true
+                >>> is_palindrome('ROTFL') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :param ignore_spaces: False if white spaces matter (default), true otherwise.
+                :type ignore_spaces: bool
+                :param ignore_case: False if char case matters (default), true otherwise.
+                :type ignore_case: bool
+                :return: True if the string is a palindrome (like "otto", or "i topi non avevano nipoti" if strict=False),\
+                False otherwise
+                """
+       471:     if not is_full_string(input_string):
+       472:         return False
+            
+       474:     if ignore_spaces:
+       475:         input_string = SPACES_RE.sub('', input_string)
+            
+       477:     string_len = len(input_string)
+            
+                # Traverse the string one char at step, and for each step compares the
+                # "head_char" (the one on the left of the string) to the "tail_char" (the one on the right).
+                # In this way we avoid to manipulate the whole string in advance if not necessary and provide a faster
+                # algorithm which can scale very well for long strings.
+       483:     for index in range(string_len):
+       484:         head_char = input_string[index]
+       485:         tail_char = input_string[string_len - index - 1]
+            
+       487:         if ignore_case:
+       488:             head_char = head_char.lower()
+       489:             tail_char = tail_char.lower()
+            
+       491:         if head_char != tail_char:
+       492:             return False
+            
+       494:     return True
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/validation.py:393-415 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 407-415 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_ip_v4(input_string: Any) -> bool:
+                """
+                Checks if a string is a valid ip v4.
+            
+                *Examples:*
+            
+                >>> is_ip_v4('255.200.100.75') # returns true
+                >>> is_ip_v4('nope') # returns false (not an ip)
+                >>> is_ip_v4('255.200.100.999') # returns false (999 is out of range)
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :return: True if an ip v4, false otherwise.
+                """
+       407:     if not is_full_string(input_string) or SHALLOW_IP_V4_RE.match(input_string) is None:
+       408:         return False
+            
+                # checks that each entry in the ip is in the valid range (0 to 255)
+       411:     for token in input_string.split('.'):
+       412:         if not (0 <= int(token) <= 255):
+       413:             return False
+            
+       415:     return True
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/validation.py:345-365 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 359-365 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_json(input_string: Any) -> bool:
+                """
+                Check if a string is a valid json.
+            
+                *Examples:*
+            
+                >>> is_json('{"name": "Peter"}') # returns true
+                >>> is_json('[1, 2, 3]') # returns true
+                >>> is_json('{nope}') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :return: True if json, false otherwise
+                """
+       359:     if is_full_string(input_string) and JSON_WRAPPER_RE.match(input_string) is not None:
+       360:         try:
+       361:             return isinstance(json.loads(input_string), (dict, list))
+       362:         except (TypeError, ValueError, OverflowError):
+       363:             pass
+            
+       365:     return False
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/validation.py:497-513 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, lines 510-513 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_pangram(input_string: Any) -> bool:
+                """
+                Checks if the string is a pangram (https://en.wikipedia.org/wiki/Pangram).
+            
+                *Examples:*
+            
+                >>> is_pangram('The quick brown fox jumps over the lazy dog') # returns true
+                >>> is_pangram('hello world') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :return: True if the string is a pangram, False otherwise.
+                """
+       510:     if not is_full_string(input_string):
+       511:         return False
+            
+       513:     return set(SPACES_RE.sub('', input_string)).issuperset(set(string.ascii_lowercase))
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/manipulation.py:161-170 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 164, 170 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringCompressor:
+                @staticmethod
+                def __require_valid_input_and_encoding(input_string: str, encoding: str):
+       163:         if not is_string(input_string):
+       164:             raise InvalidInputError(input_string)
+            
+                    if len(input_string) == 0:
+                        raise ValueError('Input string cannot be empty')
+            
+       169:         if not is_string(encoding):
+       170:             raise ValueError('Invalid encoding')
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/manipulation.py:250-277 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, lines 261, 275 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                def format(self) -> str:
+                    # map of temporary placeholders
+                    placeholders = {}
+                    out = self.input_string
+            
+                    # looks for url or email and updates placeholders map with found values
+                    placeholders.update({self.__placeholder_key(): m[0] for m in URLS_RE.findall(out)})
+                    placeholders.update({self.__placeholder_key(): m for m in EMAILS_RE.findall(out)})
+            
+                    # replace original value with the placeholder key
+       260:         for p in placeholders:
+       261:             out = out.replace(placeholders[p], p, 1)
+            
+                    out = PRETTIFY_RE['UPPERCASE_FIRST_LETTER'].sub(self.__uppercase_first_char, out)
+                    out = PRETTIFY_RE['DUPLICATES'].sub(self.__remove_duplicates, out)
+                    out = PRETTIFY_RE['RIGHT_SPACE'].sub(self.__ensure_right_space_only, out)
+                    out = PRETTIFY_RE['LEFT_SPACE'].sub(self.__ensure_left_space_only, out)
+                    out = PRETTIFY_RE['SPACES_AROUND'].sub(self.__ensure_spaces_around, out)
+                    out = PRETTIFY_RE['SPACES_INSIDE'].sub(self.__remove_internal_spaces, out)
+                    out = PRETTIFY_RE['UPPERCASE_AFTER_SIGN'].sub(self.__uppercase_first_letter_after_sign, out)
+                    out = PRETTIFY_RE['SAXON_GENITIVE'].sub(self.__fix_saxon_genitive, out)
+                    out = out.strip()
+            
+                    # restore placeholder keys with their associated original value
+       274:         for p in placeholders:
+       275:             out = out.replace(p, placeholders[p], 1)
+            
+                    return out
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/validation.py:204-244 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, line 242 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_email(input_string: Any) -> bool:
+                """
+                Check if a string is a valid email.
+            
+                Reference: https://tools.ietf.org/html/rfc3696#section-3
+            
+                *Examples:*
+            
+                >>> is_email('my.email@the-provider.com') # returns true
+                >>> is_email('@gmail.com') # returns false
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :return: True if email, false otherwise.
+                """
+                # first simple "pre check": it must be a non empty string with max len 320 and cannot start with a dot
+                if not is_full_string(input_string) or len(input_string) > 320 or input_string.startswith('.'):
+                    return False
+            
+                try:
+                    # we expect 2 tokens, one before "@" and one after, otherwise we have an exception and the email is not valid
+                    head, tail = input_string.split('@')
+            
+                    # head's size must be <= 64, tail <= 255, head must not start with a dot or contain multiple consecutive dots
+                    if len(head) > 64 or len(tail) > 255 or head.endswith('.') or ('..' in head):
+                        return False
+            
+                    # removes escaped spaces, so that later on the test regex will accept the string
+                    head = head.replace('\\ ', '')
+                    if head.startswith('"') and head.endswith('"'):
+                        head = head.replace(' ', '')[1:-1]
+            
+                    return EMAIL_RE.match(head + '@' + tail) is not None
+            
+                except ValueError:
+                    # borderline case in which we have multiple "@" signs but the head part is correctly escaped
+       240:         if ESCAPED_AT_SIGN.search(input_string) is not None:
+                        # replace "@" with "a" in the head
+       242:             return is_email(ESCAPED_AT_SIGN.sub('a', input_string))
+            
+                    return False
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/validation.py:247-283 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/validation.py, module string_utils.validation, does not achieve full coverage:
+when tested, line 281 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_credit_card(input_string: Any, card_type: str = None) -> bool:
+                """
+                Checks if a string is a valid credit card number.
+                If card type is provided then it checks against that specific type only,
+                otherwise any known credit card number will be accepted.
+            
+                Supported card types are the following:
+            
+                - VISA
+                - MASTERCARD
+                - AMERICAN_EXPRESS
+                - DINERS_CLUB
+                - DISCOVER
+                - JCB
+            
+                :param input_string: String to check.
+                :type input_string: str
+                :param card_type: Card type. Default to None (any card).
+                :type card_type: str
+            
+                :return: True if credit card, false otherwise.
+                """
+                if not is_full_string(input_string):
+                    return False
+            
+                if card_type:
+                    if card_type not in CREDIT_CARDS:
+                        raise KeyError(
+                            'Invalid card type "{}". Valid types are: {}'.format(card_type, ', '.join(CREDIT_CARDS.keys()))
+                        )
+                    return CREDIT_CARDS[card_type].match(input_string) is not None
+            
+                for c in CREDIT_CARDS:
+       280:         if CREDIT_CARDS[c].match(input_string) is not None:
+       281:             return True
+            
+                return False
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/manipulation.py:172-193 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 177 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringCompressor:
+                @classmethod
+                def compress(cls, input_string: str, encoding: str = 'utf-8', compression_level: int = 9) -> str:
+                    cls.__require_valid_input_and_encoding(input_string, encoding)
+            
+       176:         if not isinstance(compression_level, int) or compression_level < 0 or compression_level > 9:
+       177:             raise ValueError('Invalid compression_level: it must be an "int" between 0 and 9')
+            
+                    # turns input string into a sequence of bytes using provided encoding
+                    original_bytes = input_string.encode(encoding)
+            
+                    # compress bytes using zlib library
+                    compressed_bytes = zlib.compress(original_bytes, compression_level)
+            
+                    # encode compressed bytes using base64
+                    # (this ensure that all characters will be available and that the output string can be used safely in any
+                    # context such URLs)
+                    encoded_bytes = base64.urlsafe_b64encode(compressed_bytes)
+            
+                    # finally turns base64 bytes into a string
+                    output = encoded_bytes.decode(encoding)
+            
+                    return output
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/manipulation.py:246-248 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 248 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class __StringFormatter:
+                @staticmethod
+                def __placeholder_key():
+       248:         return '$' + uuid4().hex + '$'
+
+```
+
+---- 2024-05-31T16:41:41 string_utils/manipulation.py:637-649 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from string_utils/manipulation.py, module string_utils.manipulation, does not achieve full coverage:
+when tested, line 649 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def roman_decode(input_string: str) -> int:
+                """
+                Decode a roman number string into an integer if the provided string is valid.
+            
+                *Example:*
+            
+                >>> roman_decode('VII') # returns 7
+            
+                :param input_string: (Assumed) Roman number
+                :type input_string: str
+                :return: Integer value
+                """
+       649:     return __RomanNumbers.decode(input_string)
+
+```
+
+---- 2024-05-31T16:41:43 string_utils/manipulation.py:246-248 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+from unittest.mock import patch
+import uuid
+
+def test_placeholder_key():
+    with patch('uuid.uuid4') as mock_uuid:
+        mock_uuid.return_value.hex = '1234567890abcdef'
+        result = __StringFormatter.__placeholder_key()
+        assert result == '$1234567890abcdef$'
+```
+---- 2024-05-31T16:41:43 string_utils/manipulation.py:246-248 ----
+total usage: {'prompt_tokens': 228, 'completion_tokens': 80}
+---- 2024-05-31T16:41:43 string_utils/manipulation.py:161-170 ----
+```python
+import pytest
+from string_utils.manipulation import __StringCompressor, InvalidInputError
+
+def test_require_valid_input_and_encoding_invalid_input_string():
+    with pytest.raises(InvalidInputError):
+        __StringCompressor.__require_valid_input_and_encoding(123, 'utf-8')
+
+def test_require_valid_input_and_encoding_invalid_encoding():
+    with pytest.raises(ValueError, match='Invalid encoding'):
+        __StringCompressor.__require_valid_input_and_encoding('test', 123)
+```
+---- 2024-05-31T16:41:43 string_utils/manipulation.py:161-170 ----
+total usage: {'prompt_tokens': 526, 'completion_tokens': 181}
+---- 2024-05-31T16:41:45 string_utils/manipulation.py:637-649 ----
+```python
+import pytest
+from string_utils.manipulation import roman_decode
+
+class MockRomanNumbers:
+    @staticmethod
+    def decode(input_string):
+        if input_string == "VII":
+            return 7
+        raise ValueError("Invalid Roman numeral")
+
+@pytest.fixture
+def mock_roman_numbers(mocker):
+    original_roman_numbers = __RomanNumbers
+    mocker.patch('string_utils.manipulation.__RomanNumbers', MockRomanNumbers)
+    yield
+    __RomanNumbers = original_roman_numbers
+
+def test_roman_decode_valid(mock_roman_numbers):
+    assert roman_decode("VII") == 7
+
+def test_roman_decode_invalid(mock_roman_numbers):
+    with pytest.raises(ValueError, match="Invalid Roman numeral"):
+        roman_decode("INVALID")
+```
+---- 2024-05-31T16:41:45 string_utils/manipulation.py:637-649 ----
+total usage: {'prompt_tokens': 814, 'completion_tokens': 339}
+---- 2024-05-31T16:41:45 string_utils/manipulation.py:246-248 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_placeholder_key():
+        with patch('uuid.uuid4') as mock_uuid:
+            mock_uuid.return_value.hex = '1234567890abcdef'
+>           result = __StringFormatter.__placeholder_key()
+E           AttributeError: type object '__StringFormatter' has no attribute '__placeholder_key'
+
+coverup-tests/tmp_test_3026hxhq.py:9: AttributeError
+
+---- 2024-05-31T16:41:45 string_utils/validation.py:497-513 ----
+```python
+import pytest
+from string_utils.validation import is_pangram
+
+def test_is_pangram_with_non_string_input(mocker):
+    # Mocking is_full_string to return False for non-string input
+    mocker.patch('string_utils.validation.is_full_string', return_value=False)
+    
+    # Test with non-string input
+    assert not is_pangram(12345)
+    assert not is_pangram(None)
+    assert not is_pangram([])
+
+def test_is_pangram_with_valid_string(mocker):
+    # Mocking is_full_string to return True for valid string input
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    
+    # Test with a valid pangram
+    assert is_pangram('The quick brown fox jumps over the lazy dog')
+    
+    # Test with a non-pangram
+    assert not is_pangram('hello world')
+```
+
+---- 2024-05-31T16:41:45 string_utils/validation.py:497-513 ----
+total usage: {'prompt_tokens': 1170, 'completion_tokens': 531}
+---- 2024-05-31T16:41:45 string_utils/manipulation.py:161-170 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_require_valid_input_and_encoding_invalid_input_string():
+        with pytest.raises(InvalidInputError):
+>           __StringCompressor.__require_valid_input_and_encoding(123, 'utf-8')
+E           AttributeError: type object '__StringCompressor' has no attribute '__require_valid_input_and_encoding'
+
+coverup-tests/tmp_test_ip79xrr1.py:6: AttributeError
+
+---- 2024-05-31T16:41:46 string_utils/manipulation.py:172-193 ----
+```python
+import pytest
+from string_utils.manipulation import __StringCompressor
+
+def test_compress_invalid_compression_level():
+    with pytest.raises(ValueError, match='Invalid compression_level: it must be an "int" between 0 and 9'):
+        __StringCompressor.compress("test", compression_level=-1)
+    
+    with pytest.raises(ValueError, match='Invalid compression_level: it must be an "int" between 0 and 9'):
+        __StringCompressor.compress("test", compression_level=10)
+    
+    with pytest.raises(ValueError, match='Invalid compression_level: it must be an "int" between 0 and 9'):
+        __StringCompressor.compress("test", compression_level="invalid")
+
+def test_compress_valid_compression_level():
+    result = __StringCompressor.compress("test", compression_level=5)
+    assert isinstance(result, str)
+    assert result != ""
+
+    result = __StringCompressor.compress("test", compression_level=0)
+    assert isinstance(result, str)
+    assert result != ""
+
+    result = __StringCompressor.compress("test", compression_level=9)
+    assert isinstance(result, str)
+    assert result != ""
+```
+---- 2024-05-31T16:41:46 string_utils/manipulation.py:172-193 ----
+total usage: {'prompt_tokens': 1603, 'completion_tokens': 777}
+---- 2024-05-31T16:41:46 string_utils/validation.py:345-365 ----
+```python
+import pytest
+from string_utils.validation import is_json
+
+def test_is_json_valid_dict():
+    assert is_json('{"name": "Peter"}') == True
+
+def test_is_json_valid_list():
+    assert is_json('[1, 2, 3]') == True
+
+def test_is_json_invalid():
+    assert is_json('{nope}') == False
+
+def test_is_json_empty_string():
+    assert is_json('') == False
+
+def test_is_json_non_string():
+    assert is_json(12345) == False
+
+def test_is_json_invalid_json_structure(mocker):
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    mocker.patch('string_utils.validation.JSON_WRAPPER_RE.match', return_value=True)
+    assert is_json('{invalid: json}') == False
+```
+---- 2024-05-31T16:41:46 string_utils/validation.py:345-365 ----
+total usage: {'prompt_tokens': 1986, 'completion_tokens': 945}
+---- 2024-05-31T16:41:46 string_utils/validation.py:393-415 ----
+```python
+import pytest
+from string_utils.validation import is_ip_v4
+
+def test_is_ip_v4_invalid_string(mocker):
+    # Mocking is_full_string to return False to hit line 407
+    mocker.patch('string_utils.validation.is_full_string', return_value=False)
+    assert not is_ip_v4('invalid_string')
+
+def test_is_ip_v4_no_match(mocker):
+    # Mocking is_full_string to return True to proceed to regex match
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    # Mocking SHALLOW_IP_V4_RE to return None to hit line 407
+    mocker.patch('string_utils.validation.SHALLOW_IP_V4_RE.match', return_value=None)
+    assert not is_ip_v4('invalid_string')
+
+def test_is_ip_v4_out_of_range():
+    # This should hit the range check and return False
+    assert not is_ip_v4('255.200.100.999')
+
+def test_is_ip_v4_valid():
+    # This should be a valid IP and return True
+    assert is_ip_v4('255.200.100.75')
+```
+---- 2024-05-31T16:41:46 string_utils/validation.py:393-415 ----
+total usage: {'prompt_tokens': 2414, 'completion_tokens': 1183}
+---- 2024-05-31T16:41:46 string_utils/validation.py:204-244 ----
+```python
+import pytest
+from string_utils.validation import is_email
+
+def test_is_email_with_escaped_at_sign(mocker):
+    # Mock the ESCAPED_AT_SIGN regex to match the specific case we want to test
+    mocker.patch('string_utils.validation.ESCAPED_AT_SIGN', mocker.Mock())
+    string_utils.validation.ESCAPED_AT_SIGN.search.return_value = True
+    string_utils.validation.ESCAPED_AT_SIGN.sub.return_value = 'my.email@the-provider.com'
+
+    # Test the function with an input that triggers the ESCAPED_AT_SIGN branch
+    assert is_email('my\\.email@the-provider.com') == True
+
+    # Ensure the mock was called as expected
+    string_utils.validation.ESCAPED_AT_SIGN.search.assert_called_once_with('my\\.email@the-provider.com')
+    string_utils.validation.ESCAPED_AT_SIGN.sub.assert_called_once_with('a', 'my\\.email@the-provider.com')
+```
+---- 2024-05-31T16:41:46 string_utils/validation.py:204-244 ----
+total usage: {'prompt_tokens': 3022, 'completion_tokens': 1382}
+---- 2024-05-31T16:41:46 string_utils/manipulation.py:637-649 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f36b30f24d0>
+
+    @pytest.fixture
+    def mock_roman_numbers(mocker):
+>       original_roman_numbers = __RomanNumbers
+E       UnboundLocalError: local variable '__RomanNumbers' referenced before assignment
+
+coverup-tests/tmp_test_l_7803ub.py:13: UnboundLocalError
+
+---- 2024-05-31T16:41:47 string_utils/validation.py:451-494 ----
+```python
+import pytest
+from string_utils.validation import is_palindrome
+
+def test_is_palindrome_non_string_input():
+    assert not is_palindrome(12345)
+    assert not is_palindrome(None)
+    assert not is_palindrome(['a', 'b', 'a'])
+
+def test_is_palindrome_ignore_spaces():
+    assert is_palindrome('A man a plan a canal Panama', ignore_spaces=True, ignore_case=True)
+    assert not is_palindrome('A man a plan a canal Panama', ignore_spaces=True, ignore_case=False)
+
+def test_is_palindrome_ignore_case():
+    assert is_palindrome('Lol', ignore_case=True)
+    assert not is_palindrome('Lol', ignore_case=False)
+
+def test_is_palindrome_ignore_spaces_and_case():
+    assert is_palindrome('A man a plan a canal Panama', ignore_spaces=True, ignore_case=True)
+    assert not is_palindrome('A man a plan a canal Panama', ignore_spaces=False, ignore_case=True)
+
+def test_is_palindrome_regular_cases():
+    assert is_palindrome('otto')
+    assert not is_palindrome('ROTFL')
+    assert is_palindrome('A Santa at NASA', ignore_spaces=True, ignore_case=True)
+    assert not is_palindrome('A Santa at NASA', ignore_spaces=False, ignore_case=True)
+```
+---- 2024-05-31T16:41:47 string_utils/validation.py:451-494 ----
+total usage: {'prompt_tokens': 3675, 'completion_tokens': 1646}
+---- 2024-05-31T16:41:47 string_utils/validation.py:497-513 ----
+..                                                                       [100%]
+
+---- 2024-05-31T16:41:47 string_utils/validation.py:497-513 ----
+Saved as /output/coverup-tests/test_coverup_49.py
+
+---- 2024-05-31T16:41:47 string_utils/manipulation.py:246-248 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+from unittest.mock import patch
+import uuid
+
+def test_placeholder_key():
+    with patch('uuid.uuid4') as mock_uuid:
+        mock_uuid.return_value.hex = '1234567890abcdef'
+        result = __StringFormatter.___StringFormatter__placeholder_key()
+        assert result == '$1234567890abcdef$'
+```
+---- 2024-05-31T16:41:47 string_utils/manipulation.py:246-248 ----
+total usage: {'prompt_tokens': 4098, 'completion_tokens': 1730}
+---- 2024-05-31T16:41:48 string_utils/manipulation.py:161-170 ----
+```python
+import pytest
+from string_utils.manipulation import __StringCompressor, InvalidInputError
+
+def test_require_valid_input_and_encoding_invalid_input_string():
+    with pytest.raises(InvalidInputError):
+        __StringCompressor.___StringCompressor__require_valid_input_and_encoding(123, 'utf-8')
+
+def test_require_valid_input_and_encoding_invalid_encoding():
+    with pytest.raises(ValueError, match='Invalid encoding'):
+        __StringCompressor.___StringCompressor__require_valid_input_and_encoding('test', 123)
+```
+---- 2024-05-31T16:41:48 string_utils/manipulation.py:161-170 ----
+total usage: {'prompt_tokens': 4613, 'completion_tokens': 1841}
+---- 2024-05-31T16:41:48 string_utils/manipulation.py:172-193 ----
+..                                                                       [100%]
+
+---- 2024-05-31T16:41:48 string_utils/manipulation.py:172-193 ----
+Saved as /output/coverup-tests/test_coverup_50.py
+
+---- 2024-05-31T16:41:48 string_utils/validation.py:345-365 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7fbf1fb2a320>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fbf205cb1c0>
+
+    def test_is_json_invalid_json_structure(mocker):
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+>       mocker.patch('string_utils.validation.JSON_WRAPPER_RE.match', return_value=True)
+
+coverup-tests/tmp_test_sqqu39eh.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fbf1fb2a320>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'match' is read-only"), <traceback object at 0x7fbf1f88ec40>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-05-31T16:41:48 string_utils/validation.py:393-415 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f3f618f4c70>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f3f61c6bac0>
+
+    def test_is_ip_v4_no_match(mocker):
+        # Mocking is_full_string to return True to proceed to regex match
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+        # Mocking SHALLOW_IP_V4_RE to return None to hit line 407
+>       mocker.patch('string_utils.validation.SHALLOW_IP_V4_RE.match', return_value=None)
+
+coverup-tests/tmp_test_wvie3w4x.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f3f618f4c70>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'match' is read-only"), <traceback object at 0x7f3f6226cac0>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-05-31T16:41:48 string_utils/validation.py:204-244 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7efdb4d777c0>
+
+    def test_is_email_with_escaped_at_sign(mocker):
+        # Mock the ESCAPED_AT_SIGN regex to match the specific case we want to test
+        mocker.patch('string_utils.validation.ESCAPED_AT_SIGN', mocker.Mock())
+>       string_utils.validation.ESCAPED_AT_SIGN.search.return_value = True
+E       NameError: name 'string_utils' is not defined
+
+coverup-tests/tmp_test_meqyssv2.py:7: NameError
+
+---- 2024-05-31T16:41:49 string_utils/validation.py:451-494 ----
+.....                                                                    [100%]
+
+---- 2024-05-31T16:41:49 string_utils/validation.py:451-494 ----
+Saved as /output/coverup-tests/test_coverup_51.py
+
+---- 2024-05-31T16:41:49 string_utils/manipulation.py:246-248 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_placeholder_key():
+        with patch('uuid.uuid4') as mock_uuid:
+            mock_uuid.return_value.hex = '1234567890abcdef'
+>           result = __StringFormatter.___StringFormatter__placeholder_key()
+E           AttributeError: type object '__StringFormatter' has no attribute '___StringFormatter__placeholder_key'. Did you mean: '_StringFormatter__placeholder_key'?
+
+coverup-tests/tmp_test_2t9nxz11.py:9: AttributeError
+
+---- 2024-05-31T16:41:49 string_utils/manipulation.py:637-649 ----
+```python
+import pytest
+from string_utils.manipulation import roman_decode
+
+class MockRomanNumbers:
+    @staticmethod
+    def decode(input_string):
+        if input_string == "VII":
+            return 7
+        raise ValueError("Invalid Roman numeral")
+
+@pytest.fixture
+def mock_roman_numbers(mocker):
+    mocker.patch('string_utils.manipulation.__RomanNumbers', MockRomanNumbers)
+
+def test_roman_decode_valid(mock_roman_numbers):
+    assert roman_decode("VII") == 7
+
+def test_roman_decode_invalid(mock_roman_numbers):
+    with pytest.raises(ValueError, match="Invalid Roman numeral"):
+        roman_decode("INVALID")
+```
+---- 2024-05-31T16:41:49 string_utils/manipulation.py:637-649 ----
+total usage: {'prompt_tokens': 5181, 'completion_tokens': 1976}
+---- 2024-05-31T16:41:49 string_utils/manipulation.py:161-170 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_require_valid_input_and_encoding_invalid_input_string():
+        with pytest.raises(InvalidInputError):
+>           __StringCompressor.___StringCompressor__require_valid_input_and_encoding(123, 'utf-8')
+E           AttributeError: type object '__StringCompressor' has no attribute '___StringCompressor__require_valid_input_and_encoding'
+
+coverup-tests/tmp_test_j0er0grh.py:6: AttributeError
+
+---- 2024-05-31T16:41:50 string_utils/validation.py:247-283 ----
+```python
+import pytest
+from string_utils.validation import is_credit_card
+
+def test_is_credit_card_no_match():
+    # Test with a string that does not match any credit card pattern
+    input_string = "1234567890123456"
+    assert not is_credit_card(input_string)
+
+def test_is_credit_card_invalid_card_type():
+    # Test with an invalid card type to ensure KeyError is raised
+    input_string = "4111111111111111"
+    with pytest.raises(KeyError):
+        is_credit_card(input_string, card_type="INVALID_CARD_TYPE")
+
+def test_is_credit_card_valid_visa():
+    # Test with a valid VISA card number
+    input_string = "4111111111111111"
+    assert is_credit_card(input_string, card_type="VISA")
+
+def test_is_credit_card_valid_mastercard():
+    # Test with a valid MasterCard number
+    input_string = "5555555555554444"
+    assert is_credit_card(input_string, card_type="MASTERCARD")
+
+def test_is_credit_card_any_card_type():
+    # Test with a valid card number without specifying card type
+    input_string = "4111111111111111"
+    assert is_credit_card(input_string)
+
+@pytest.fixture(autouse=True)
+def cleanup(mocker):
+    # Mocking is_full_string and CREDIT_CARDS to ensure no side effects
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+```
+
+---- 2024-05-31T16:41:50 string_utils/validation.py:247-283 ----
+total usage: {'prompt_tokens': 5651, 'completion_tokens': 2391}
+---- 2024-05-31T16:41:50 string_utils/manipulation.py:250-277 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def mock_formatter(mocker):
+    mocker.patch('string_utils.manipulation.URLS_RE.findall', return_value=[('http://example.com',)])
+    mocker.patch('string_utils.manipulation.EMAILS_RE.findall', return_value=['test@example.com'])
+    mocker.patch('string_utils.manipulation.PRETTIFY_RE', {
+        'UPPERCASE_FIRST_LETTER': mocker.Mock(sub=lambda func, text: text),
+        'DUPLICATES': mocker.Mock(sub=lambda func, text: text),
+        'RIGHT_SPACE': mocker.Mock(sub=lambda func, text: text),
+        'LEFT_SPACE': mocker.Mock(sub=lambda func, text: text),
+        'SPACES_AROUND': mocker.Mock(sub=lambda func, text: text),
+        'SPACES_INSIDE': mocker.Mock(sub=lambda func, text: text),
+        'UPPERCASE_AFTER_SIGN': mocker.Mock(sub=lambda func, text: text),
+        'SAXON_GENITIVE': mocker.Mock(sub=lambda func, text: text),
+    })
+    return __StringFormatter()
+
+def test_format_with_placeholders(mock_formatter):
+    mock_formatter.input_string = "Visit http://example.com or contact test@example.com"
+    mock_formatter.__placeholder_key = lambda: "PLACEHOLDER"
+    mock_formatter.__uppercase_first_char = lambda match: match.group(0)
+    mock_formatter.__remove_duplicates = lambda match: match.group(0)
+    mock_formatter.__ensure_right_space_only = lambda match: match.group(0)
+    mock_formatter.__ensure_left_space_only = lambda match: match.group(0)
+    mock_formatter.__ensure_spaces_around = lambda match: match.group(0)
+    mock_formatter.__remove_internal_spaces = lambda match: match.group(0)
+    mock_formatter.__uppercase_first_letter_after_sign = lambda match: match.group(0)
+    mock_formatter.__fix_saxon_genitive = lambda match: match.group(0)
+
+    result = mock_formatter.format()
+    
+    assert "http://example.com" in result
+    assert "test@example.com" in result
+```
+---- 2024-05-31T16:41:50 string_utils/manipulation.py:250-277 ----
+total usage: {'prompt_tokens': 6211, 'completion_tokens': 2839}
+---- 2024-05-31T16:41:51 string_utils/manipulation.py:246-248 ----
+```python
+import pytest
+from string_utils.manipulation import __StringFormatter
+from unittest.mock import patch
+import uuid
+
+def test_placeholder_key():
+    with patch('uuid.uuid4') as mock_uuid:
+        mock_uuid.return_value.hex = '1234567890abcdef'
+        result = __StringFormatter._StringFormatter__placeholder_key()
+        assert result == '$1234567890abcdef$'
+```
+---- 2024-05-31T16:41:51 string_utils/manipulation.py:246-248 ----
+total usage: {'prompt_tokens': 6854, 'completion_tokens': 2922}
+---- 2024-05-31T16:41:51 string_utils/manipulation.py:637-649 ----
+..                                                                       [100%]
+
+---- 2024-05-31T16:41:51 string_utils/manipulation.py:637-649 ----
+Saved as /output/coverup-tests/test_coverup_52.py
+
+---- 2024-05-31T16:41:52 string_utils/validation.py:204-244 ----
+```python
+import pytest
+from string_utils.validation import is_email
+import re
+
+def test_is_email_with_escaped_at_sign(mocker):
+    # Mock the ESCAPED_AT_SIGN regex to match the specific case we want to test
+    mocked_escaped_at_sign = mocker.patch('string_utils.validation.ESCAPED_AT_SIGN', autospec=True)
+    mocked_escaped_at_sign.search.return_value = True
+    mocked_escaped_at_sign.sub.return_value = 'my.email@the-provider.com'
+
+    # Test the function with an input that triggers the ESCAPED_AT_SIGN branch
+    assert is_email('my\\.email@the-provider.com') == True
+
+    # Ensure the mock was called as expected
+    mocked_escaped_at_sign.search.assert_called_once_with('my\\.email@the-provider.com')
+    mocked_escaped_at_sign.sub.assert_called_once_with('a', 'my\\.email@the-provider.com')
+```
+---- 2024-05-31T16:41:52 string_utils/validation.py:204-244 ----
+total usage: {'prompt_tokens': 7821, 'completion_tokens': 3114}
+---- 2024-05-31T16:41:52 string_utils/validation.py:247-283 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_is_credit_card_no_match():
+        # Test with a string that does not match any credit card pattern
+        input_string = "1234567890123456"
+>       assert not is_credit_card(input_string)
+E       AssertionError: assert not True
+E        +  where True = is_credit_card('1234567890123456')
+
+coverup-tests/tmp_test_56qomq_x.py:7: AssertionError
+
+---- 2024-05-31T16:41:52 string_utils/manipulation.py:161-170 ----
+```python
+import pytest
+from string_utils.manipulation import __StringCompressor, InvalidInputError
+
+def test_require_valid_input_and_encoding_invalid_input_string():
+    with pytest.raises(InvalidInputError):
+        __StringCompressor.___StringCompressor__require_valid_input_and_encoding(123, 'utf-8')
+
+def test_require_valid_input_and_encoding_invalid_encoding():
+    with pytest.raises(ValueError, match='Invalid encoding'):
+        __StringCompressor.__StringCompressor__require_valid_input_and_encoding('test', 123)
+```
+---- 2024-05-31T16:41:52 string_utils/manipulation.py:161-170 ----
+total usage: {'prompt_tokens': 8574, 'completion_tokens': 3224}
+---- 2024-05-31T16:41:52 string_utils/manipulation.py:250-277 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f7a19f830d0>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'findall' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f7a19f824a0>
+
+    @pytest.fixture
+    def mock_formatter(mocker):
+>       mocker.patch('string_utils.manipulation.URLS_RE.findall', return_value=[('http://example.com',)])
+
+coverup-tests/tmp_test_4agu4207.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f7a19f830d0>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'findall' is read-only"), <traceback object at 0x7f7a188e2fc0>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'findall' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-05-31T16:41:52 string_utils/manipulation.py:246-248 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_placeholder_key():
+        with patch('uuid.uuid4') as mock_uuid:
+            mock_uuid.return_value.hex = '1234567890abcdef'
+            result = __StringFormatter._StringFormatter__placeholder_key()
+>           assert result == '$1234567890abcdef$'
+E           AssertionError: assert '$311c1003038...6212c9903c2b$' == '$1234567890abcdef$'
+E             - $1234567890abcdef$
+E             + $311c1003038346a7867c6212c9903c2b$
+
+coverup-tests/tmp_test__s8a4nkw.py:10: AssertionError
+
+---- 2024-05-31T16:41:52 string_utils/manipulation.py:246-248 ----
+Too many attempts, giving up
+---- 2024-05-31T16:41:53 string_utils/validation.py:204-244 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_once_with at 0x7f873be27760>
+args = (<MagicMock name='ESCAPED_AT_SIGN.search' spec='builtin_method' id='140218823815616'>, 'my\\.email@the-provider.com')
+kwargs = {}, __tracebackhide__ = True
+msg = "Expected 'search' to be called once. Called 0 times."
+__mock_self = <MagicMock name='ESCAPED_AT_SIGN.search' spec='builtin_method' id='140218823815616'>
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='ESCAPED_AT_SIGN.search' spec='builtin_method' id='140218823815616'>
+args = ('my\\.email@the-provider.com',), kwargs = {}
+msg = "Expected 'search' to be called once. Called 0 times."
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        """assert that the mock was called exactly once and that that call was
+        with the specified arguments."""
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to be called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'search' to be called once. Called 0 times.
+
+/usr/local/lib/python3.10/unittest/mock.py:930: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f873d2f1150>
+
+    def test_is_email_with_escaped_at_sign(mocker):
+        # Mock the ESCAPED_AT_SIGN regex to match the specific case we want to test
+        mocked_escaped_at_sign = mocker.patch('string_utils.validation.ESCAPED_AT_SIGN', autospec=True)
+        mocked_escaped_at_sign.search.return_value = True
+        mocked_escaped_at_sign.sub.return_value = 'my.email@the-provider.com'
+    
+        # Test the function with an input that triggers the ESCAPED_AT_SIGN branch
+        assert is_email('my\\.email@the-provider.com') == True
+    
+        # Ensure the mock was called as expected
+>       mocked_escaped_at_sign.search.assert_called_once_with('my\\.email@the-provider.com')
+E       AssertionError: Expected 'search' to be called once. Called 0 times.
+
+coverup-tests/tmp_test_4cghtpzu.py:15: AssertionError
+
+---- 2024-05-31T16:41:53 string_utils/validation.py:345-365 ----
+```python
+import pytest
+from string_utils.validation import is_json
+
+def test_is_json_valid_dict():
+    assert is_json('{"name": "Peter"}') == True
+
+def test_is_json_valid_list():
+    assert is_json('[1, 2, 3]') == True
+
+def test_is_json_invalid():
+    assert is_json('{nope}') == False
+
+def test_is_json_empty_string():
+    assert is_json('') == False
+
+def test_is_json_non_string():
+    assert is_json(12345) == False
+
+def test_is_json_invalid_json_structure(mocker):
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    mocker.patch('string_utils.validation.JSON_WRAPPER_RE.match', return_value=mocker.Mock(return_value=True))
+    assert is_json('{invalid: json}') == False
+```
+---- 2024-05-31T16:41:53 string_utils/validation.py:345-365 ----
+total usage: {'prompt_tokens': 10752, 'completion_tokens': 3397}
+---- 2024-05-31T16:41:54 string_utils/manipulation.py:161-170 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_require_valid_input_and_encoding_invalid_input_string():
+        with pytest.raises(InvalidInputError):
+>           __StringCompressor.___StringCompressor__require_valid_input_and_encoding(123, 'utf-8')
+E           AttributeError: type object '__StringCompressor' has no attribute '___StringCompressor__require_valid_input_and_encoding'
+
+coverup-tests/tmp_test_4dgpmt0_.py:6: AttributeError
+
+---- 2024-05-31T16:41:54 string_utils/manipulation.py:161-170 ----
+Too many attempts, giving up
+---- 2024-05-31T16:41:54 string_utils/validation.py:393-415 ----
+```python
+import pytest
+from string_utils.validation import is_ip_v4
+
+def test_is_ip_v4_invalid_string(mocker):
+    # Mocking is_full_string to return False to hit line 407
+    mocker.patch('string_utils.validation.is_full_string', return_value=False)
+    assert not is_ip_v4('invalid_string')
+
+def test_is_ip_v4_no_match(mocker):
+    # Mocking is_full_string to return True to proceed to regex match
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    # Mocking SHALLOW_IP_V4_RE.match to return None to hit line 407
+    mocker.patch('string_utils.validation.SHALLOW_IP_V4_RE', new_callable=mocker.Mock)
+    string_utils.validation.SHALLOW_IP_V4_RE.match.return_value = None
+    assert not is_ip_v4('invalid_string')
+
+def test_is_ip_v4_out_of_range():
+    # This should hit the range check and return False
+    assert not is_ip_v4('255.200.100.999')
+
+def test_is_ip_v4_valid():
+    # This should be a valid IP and return True
+    assert is_ip_v4('255.200.100.75')
+```
+---- 2024-05-31T16:41:54 string_utils/validation.py:393-415 ----
+total usage: {'prompt_tokens': 13089, 'completion_tokens': 3654}
+---- 2024-05-31T16:41:55 string_utils/validation.py:345-365 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f34e30bb9d0>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f34e3b5b1c0>
+
+    def test_is_json_invalid_json_structure(mocker):
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+>       mocker.patch('string_utils.validation.JSON_WRAPPER_RE.match', return_value=mocker.Mock(return_value=True))
+
+coverup-tests/tmp_test_wuaox1yc.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f34e30bb9d0>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'match' is read-only"), <traceback object at 0x7f34e24c3840>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-05-31T16:41:55 string_utils/validation.py:393-415 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f39e7d06830>
+
+    def test_is_ip_v4_no_match(mocker):
+        # Mocking is_full_string to return True to proceed to regex match
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+        # Mocking SHALLOW_IP_V4_RE.match to return None to hit line 407
+        mocker.patch('string_utils.validation.SHALLOW_IP_V4_RE', new_callable=mocker.Mock)
+>       string_utils.validation.SHALLOW_IP_V4_RE.match.return_value = None
+E       NameError: name 'string_utils' is not defined
+
+coverup-tests/tmp_test_ewjycvsh.py:14: NameError
+
+---- 2024-05-31T16:41:58 string_utils/validation.py:345-365 ----
+```python
+import pytest
+from string_utils.validation import is_json
+
+def test_is_json_valid_dict():
+    assert is_json('{"name": "Peter"}') == True
+
+def test_is_json_valid_list():
+    assert is_json('[1, 2, 3]') == True
+
+def test_is_json_invalid():
+    assert is_json('{nope}') == False
+
+def test_is_json_empty_string():
+    assert is_json('') == False
+
+def test_is_json_non_string():
+    assert is_json(12345) == False
+
+def test_is_json_invalid_json_structure(mocker):
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    mocker.patch('string_utils.validation.JSON_WRAPPER_RE.match', return_value=mocker.Mock())
+    assert is_json('{invalid: json}') == False
+```
+---- 2024-05-31T16:41:58 string_utils/validation.py:345-365 ----
+total usage: {'prompt_tokens': 17078, 'completion_tokens': 3824}
+---- 2024-05-31T16:42:00 string_utils/validation.py:393-415 ----
+```python
+import pytest
+from string_utils.validation import is_ip_v4
+import string_utils.validation
+
+def test_is_ip_v4_invalid_string(mocker):
+    # Mocking is_full_string to return False to hit line 407
+    mocker.patch('string_utils.validation.is_full_string', return_value=False)
+    assert not is_ip_v4('invalid_string')
+
+def test_is_ip_v4_no_match(mocker):
+    # Mocking is_full_string to return True to proceed to regex match
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+    # Mocking SHALLOW_IP_V4_RE.match to return None to hit line 407
+    mocker.patch('string_utils.validation.SHALLOW_IP_V4_RE', new_callable=mocker.Mock)
+    string_utils.validation.SHALLOW_IP_V4_RE.match.return_value = None
+    assert not is_ip_v4('invalid_string')
+
+def test_is_ip_v4_out_of_range():
+    # This should hit the range check and return False
+    assert not is_ip_v4('255.200.100.999')
+
+def test_is_ip_v4_valid():
+    # This should be a valid IP and return True
+    assert is_ip_v4('255.200.100.75')
+```
+---- 2024-05-31T16:42:00 string_utils/validation.py:393-415 ----
+total usage: {'prompt_tokens': 19867, 'completion_tokens': 4086}
+---- 2024-05-31T16:42:00 string_utils/validation.py:345-365 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7ff5947f39d0>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7ff5952971c0>
+
+    def test_is_json_invalid_json_structure(mocker):
+        mocker.patch('string_utils.validation.is_full_string', return_value=True)
+>       mocker.patch('string_utils.validation.JSON_WRAPPER_RE.match', return_value=mocker.Mock())
+
+coverup-tests/tmp_test_5us63ono.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7ff5947f39d0>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'match' is read-only"), <traceback object at 0x7ff593e30540>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-05-31T16:42:00 string_utils/validation.py:345-365 ----
+Too many attempts, giving up
+---- 2024-05-31T16:42:01 string_utils/validation.py:204-244 ----
+```python
+import pytest
+from string_utils.validation import is_email
+import re
+
+def test_is_email_with_escaped_at_sign(mocker):
+    # Mock the ESCAPED_AT_SIGN regex to match the specific case we want to test
+    mocked_escaped_at_sign = mocker.patch('string_utils.validation.ESCAPED_AT_SIGN', autospec=True)
+    mocked_escaped_at_sign.search.return_value = re.search(r'\\@', 'my\\.email@the-provider.com')
+    mocked_escaped_at_sign.sub.return_value = 'my.email@the-provider.com'
+
+    # Test the function with an input that triggers the ESCAPED_AT_SIGN branch
+    assert is_email('my\\.email@the-provider.com') == True
+
+    # Ensure the mock was called as expected
+    mocked_escaped_at_sign.search.assert_called_once_with('my\\.email@the-provider.com')
+    mocked_escaped_at_sign.sub.assert_called_once_with('a', 'my\\.email@the-provider.com')
+```
+---- 2024-05-31T16:42:01 string_utils/validation.py:204-244 ----
+total usage: {'prompt_tokens': 21715, 'completion_tokens': 4292}
+---- 2024-05-31T16:42:02 string_utils/validation.py:393-415 ----
+....                                                                     [100%]
+
+---- 2024-05-31T16:42:02 string_utils/validation.py:393-415 ----
+Saved as /output/coverup-tests/test_coverup_53.py
+
+---- 2024-05-31T16:42:02 string_utils/validation.py:204-244 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_once_with at 0x7f29c4fcb760>
+args = (<MagicMock name='ESCAPED_AT_SIGN.search' spec='builtin_method' id='139817397567392'>, 'my\\.email@the-provider.com')
+kwargs = {}, __tracebackhide__ = True
+msg = "Expected 'search' to be called once. Called 0 times."
+__mock_self = <MagicMock name='ESCAPED_AT_SIGN.search' spec='builtin_method' id='139817397567392'>
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='ESCAPED_AT_SIGN.search' spec='builtin_method' id='139817397567392'>
+args = ('my\\.email@the-provider.com',), kwargs = {}
+msg = "Expected 'search' to be called once. Called 0 times."
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        """assert that the mock was called exactly once and that that call was
+        with the specified arguments."""
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to be called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'search' to be called once. Called 0 times.
+
+/usr/local/lib/python3.10/unittest/mock.py:930: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f29c6509150>
+
+    def test_is_email_with_escaped_at_sign(mocker):
+        # Mock the ESCAPED_AT_SIGN regex to match the specific case we want to test
+        mocked_escaped_at_sign = mocker.patch('string_utils.validation.ESCAPED_AT_SIGN', autospec=True)
+        mocked_escaped_at_sign.search.return_value = re.search(r'\\@', 'my\\.email@the-provider.com')
+        mocked_escaped_at_sign.sub.return_value = 'my.email@the-provider.com'
+    
+        # Test the function with an input that triggers the ESCAPED_AT_SIGN branch
+        assert is_email('my\\.email@the-provider.com') == True
+    
+        # Ensure the mock was called as expected
+>       mocked_escaped_at_sign.search.assert_called_once_with('my\\.email@the-provider.com')
+E       AssertionError: Expected 'search' to be called once. Called 0 times.
+
+coverup-tests/tmp_test_a2i3wrhj.py:15: AssertionError
+
+---- 2024-05-31T16:42:02 string_utils/validation.py:204-244 ----
+Too many attempts, giving up
+---- 2024-05-31T16:42:02 string_utils/manipulation.py:250-277 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def mock_formatter(mocker):
+    mocker.patch('string_utils.manipulation.URLS_RE', re.compile(r'http://example\.com'))
+    mocker.patch('string_utils.manipulation.EMAILS_RE', re.compile(r'test@example\.com'))
+    mocker.patch('string_utils.manipulation.PRETTIFY_RE', {
+        'UPPERCASE_FIRST_LETTER': mocker.Mock(sub=lambda func, text: text),
+        'DUPLICATES': mocker.Mock(sub=lambda func, text: text),
+        'RIGHT_SPACE': mocker.Mock(sub=lambda func, text: text),
+        'LEFT_SPACE': mocker.Mock(sub=lambda func, text: text),
+        'SPACES_AROUND': mocker.Mock(sub=lambda func, text: text),
+        'SPACES_INSIDE': mocker.Mock(sub=lambda func, text: text),
+        'UPPERCASE_AFTER_SIGN': mocker.Mock(sub=lambda func, text: text),
+        'SAXON_GENITIVE': mocker.Mock(sub=lambda func, text: text),
+    })
+    return __StringFormatter()
+
+def test_format_with_placeholders(mock_formatter):
+    mock_formatter.input_string = "Visit http://example.com or contact test@example.com"
+    mock_formatter.__placeholder_key = lambda: "PLACEHOLDER"
+    mock_formatter.__uppercase_first_char = lambda match: match.group(0)
+    mock_formatter.__remove_duplicates = lambda match: match.group(0)
+    mock_formatter.__ensure_right_space_only = lambda match: match.group(0)
+    mock_formatter.__ensure_left_space_only = lambda match: match.group(0)
+    mock_formatter.__ensure_spaces_around = lambda match: match.group(0)
+    mock_formatter.__remove_internal_spaces = lambda match: match.group(0)
+    mock_formatter.__uppercase_first_letter_after_sign = lambda match: match.group(0)
+    mock_formatter.__fix_saxon_genitive = lambda match: match.group(0)
+
+    result = mock_formatter.format()
+    
+    assert "http://example.com" in result
+    assert "test@example.com" in result
+```
+---- 2024-05-31T16:42:02 string_utils/manipulation.py:250-277 ----
+total usage: {'prompt_tokens': 24350, 'completion_tokens': 4743}
+---- 2024-05-31T16:42:04 string_utils/manipulation.py:250-277 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fe5cceb8e50>
+
+    @pytest.fixture
+    def mock_formatter(mocker):
+        mocker.patch('string_utils.manipulation.URLS_RE', re.compile(r'http://example\.com'))
+        mocker.patch('string_utils.manipulation.EMAILS_RE', re.compile(r'test@example\.com'))
+        mocker.patch('string_utils.manipulation.PRETTIFY_RE', {
+            'UPPERCASE_FIRST_LETTER': mocker.Mock(sub=lambda func, text: text),
+            'DUPLICATES': mocker.Mock(sub=lambda func, text: text),
+            'RIGHT_SPACE': mocker.Mock(sub=lambda func, text: text),
+            'LEFT_SPACE': mocker.Mock(sub=lambda func, text: text),
+            'SPACES_AROUND': mocker.Mock(sub=lambda func, text: text),
+            'SPACES_INSIDE': mocker.Mock(sub=lambda func, text: text),
+            'UPPERCASE_AFTER_SIGN': mocker.Mock(sub=lambda func, text: text),
+            'SAXON_GENITIVE': mocker.Mock(sub=lambda func, text: text),
+        })
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_6b67o9sm.py:19: TypeError
+
+---- 2024-05-31T16:42:05 string_utils/validation.py:247-283 ----
+```python
+import pytest
+from string_utils.validation import is_credit_card
+
+def test_is_credit_card_no_match(mocker):
+    # Test with a string that does not match any credit card pattern
+    input_string = "1234567890123456"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert not is_credit_card(input_string)
+
+def test_is_credit_card_invalid_card_type(mocker):
+    # Test with an invalid card type to ensure KeyError is raised
+    input_string = "4111111111111111"
+    with pytest.raises(KeyError):
+        is_credit_card(input_string, card_type="INVALID_CARD_TYPE")
+
+def test_is_credit_card_valid_visa(mocker):
+    # Test with a valid VISA card number
+    input_string = "4111111111111111"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert is_credit_card(input_string, card_type="VISA")
+
+def test_is_credit_card_valid_mastercard(mocker):
+    # Test with a valid MasterCard number
+    input_string = "5555555555554444"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert is_credit_card(input_string, card_type="MASTERCARD")
+
+def test_is_credit_card_any_card_type(mocker):
+    # Test with a valid card number without specifying card type
+    input_string = "4111111111111111"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert is_credit_card(input_string)
+
+@pytest.fixture(autouse=True)
+def cleanup(mocker):
+    # Mocking is_full_string to ensure no side effects
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+```
+---- 2024-05-31T16:42:05 string_utils/validation.py:247-283 ----
+total usage: {'prompt_tokens': 25362, 'completion_tokens': 5517}
+---- 2024-05-31T16:42:06 string_utils/validation.py:247-283 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f2f93a271f0>
+
+    def test_is_credit_card_no_match(mocker):
+        # Test with a string that does not match any credit card pattern
+        input_string = "1234567890123456"
+        mocker.patch('string_utils.validation.CREDIT_CARDS', {
+            'VISA': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        })
+>       assert not is_credit_card(input_string)
+E       AssertionError: assert not True
+E        +  where True = is_credit_card('1234567890123456')
+
+coverup-tests/tmp_test_cc2w2uc0.py:15: AssertionError
+
+---- 2024-05-31T16:42:12 string_utils/manipulation.py:250-277 ----
+```python
+import pytest
+import re
+from string_utils.manipulation import __StringFormatter
+
+@pytest.fixture
+def mock_formatter(mocker):
+    mocker.patch('string_utils.manipulation.URLS_RE', re.compile(r'http://example\.com'))
+    mocker.patch('string_utils.manipulation.EMAILS_RE', re.compile(r'test@example\.com'))
+    mocker.patch('string_utils.manipulation.PRETTIFY_RE', {
+        'UPPERCASE_FIRST_LETTER': mocker.Mock(sub=lambda func, text: text),
+        'DUPLICATES': mocker.Mock(sub=lambda func, text: text),
+        'RIGHT_SPACE': mocker.Mock(sub=lambda func, text: text),
+        'LEFT_SPACE': mocker.Mock(sub=lambda func, text: text),
+        'SPACES_AROUND': mocker.Mock(sub=lambda func, text: text),
+        'SPACES_INSIDE': mocker.Mock(sub=lambda func, text: text),
+        'UPPERCASE_AFTER_SIGN': mocker.Mock(sub=lambda func, text: text),
+        'SAXON_GENITIVE': mocker.Mock(sub=lambda func, text: text),
+    })
+    return __StringFormatter("")
+
+def test_format_with_placeholders(mock_formatter):
+    mock_formatter.input_string = "Visit http://example.com or contact test@example.com"
+    mock_formatter.__placeholder_key = lambda: "PLACEHOLDER"
+    mock_formatter.__uppercase_first_char = lambda match: match.group(0)
+    mock_formatter.__remove_duplicates = lambda match: match.group(0)
+    mock_formatter.__ensure_right_space_only = lambda match: match.group(0)
+    mock_formatter.__ensure_left_space_only = lambda match: match.group(0)
+    mock_formatter.__ensure_spaces_around = lambda match: match.group(0)
+    mock_formatter.__remove_internal_spaces = lambda match: match.group(0)
+    mock_formatter.__uppercase_first_letter_after_sign = lambda match: match.group(0)
+    mock_formatter.__fix_saxon_genitive = lambda match: match.group(0)
+
+    result = mock_formatter.format()
+    
+    assert "http://example.com" in result
+    assert "test@example.com" in result
+```
+---- 2024-05-31T16:42:12 string_utils/manipulation.py:250-277 ----
+total usage: {'prompt_tokens': 28780, 'completion_tokens': 5969}
+---- 2024-05-31T16:42:14 string_utils/manipulation.py:250-277 ----
+.                                                                        [100%]
+
+---- 2024-05-31T16:42:14 string_utils/manipulation.py:250-277 ----
+Saved as /output/coverup-tests/test_coverup_54.py
+
+---- 2024-05-31T16:42:24 string_utils/validation.py:247-283 ----
+```python
+import pytest
+from string_utils.validation import is_credit_card
+
+def test_is_credit_card_no_match(mocker):
+    # Test with a string that does not match any credit card pattern
+    input_string = "1234567890123456"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert not is_credit_card(input_string)
+
+def test_is_credit_card_invalid_card_type(mocker):
+    # Test with an invalid card type to ensure KeyError is raised
+    input_string = "4111111111111111"
+    with pytest.raises(KeyError):
+        is_credit_card(input_string, card_type="INVALID_CARD_TYPE")
+
+def test_is_credit_card_valid_visa(mocker):
+    # Test with a valid VISA card number
+    input_string = "4111111111111111"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert is_credit_card(input_string, card_type="VISA")
+
+def test_is_credit_card_valid_mastercard(mocker):
+    # Test with a valid MasterCard number
+    input_string = "5555555555554444"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert is_credit_card(input_string, card_type="MASTERCARD")
+
+def test_is_credit_card_any_card_type(mocker):
+    # Test with a valid card number without specifying card type
+    input_string = "4111111111111111"
+    mocker.patch('string_utils.validation.CREDIT_CARDS', {
+        'VISA': mocker.Mock(match=mocker.Mock(return_value=True)),
+        'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+        'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+    })
+    assert is_credit_card(input_string)
+
+@pytest.fixture(autouse=True)
+def cleanup(mocker):
+    # Mocking is_full_string to ensure no side effects
+    mocker.patch('string_utils.validation.is_full_string', return_value=True)
+```
+---- 2024-05-31T16:42:24 string_utils/validation.py:247-283 ----
+total usage: {'prompt_tokens': 30838, 'completion_tokens': 6743}
+---- 2024-05-31T16:42:25 string_utils/validation.py:247-283 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fb8fbcab1f0>
+
+    def test_is_credit_card_no_match(mocker):
+        # Test with a string that does not match any credit card pattern
+        input_string = "1234567890123456"
+        mocker.patch('string_utils.validation.CREDIT_CARDS', {
+            'VISA': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'MASTERCARD': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'AMERICAN_EXPRESS': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'DINERS_CLUB': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'DISCOVER': mocker.Mock(match=mocker.Mock(return_value=False)),
+            'JCB': mocker.Mock(match=mocker.Mock(return_value=False)),
+        })
+>       assert not is_credit_card(input_string)
+E       AssertionError: assert not True
+E        +  where True = is_credit_card('1234567890123456')
+
+coverup-tests/tmp_test_bia18uyy.py:15: AssertionError
+
+---- 2024-05-31T16:42:25 string_utils/validation.py:247-283 ----
+Too many attempts, giving up

@@ -1,0 +1,1808 @@
+---- 2024-05-31T13:00:38 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --isolate-tests --prompt-family gpt-v1 --source-dir ./cookiecutter --tests-dir coverup-tests --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json cookiecutter/find.py cookiecutter/prompt.py cookiecutter/replay.py cookiecutter/repository.py cookiecutter/zipfile.py
+---- 2024-05-31T13:00:42 cookiecutter/zipfile.py:13-112 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/zipfile.py, module cookiecutter.zipfile, does not achieve full coverage:
+when tested, lines 27-112 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+                """Download and unpack a zipfile at a given URI.
+            
+                This will download the zipfile to the cookiecutter repository,
+                and unpack into a temporary directory.
+            
+                :param zip_uri: The URI for the zipfile.
+                :param is_url: Is the zip URI a URL or a file?
+                :param clone_to_dir: The cookiecutter repository directory
+                    to put the archive into.
+                :param no_input: Suppress any prompts
+                :param password: The password to use when unpacking the repository.
+                """
+                # Ensure that clone_to_dir exists
+        27:     clone_to_dir = os.path.expanduser(clone_to_dir)
+        28:     make_sure_path_exists(clone_to_dir)
+            
+        30:     if is_url:
+                    # Build the name of the cached zipfile,
+                    # and prompt to delete if it already exists.
+        33:         identifier = zip_uri.rsplit('/', 1)[1]
+        34:         zip_path = os.path.join(clone_to_dir, identifier)
+            
+        36:         if os.path.exists(zip_path):
+        37:             download = prompt_and_delete(zip_path, no_input=no_input)
+                    else:
+        39:             download = True
+            
+        41:         if download:
+                        # (Re) download the zipfile
+        43:             r = requests.get(zip_uri, stream=True)
+        44:             with open(zip_path, 'wb') as f:
+        45:                 for chunk in r.iter_content(chunk_size=1024):
+        46:                     if chunk:  # filter out keep-alive new chunks
+        47:                         f.write(chunk)
+                else:
+                    # Just use the local zipfile as-is.
+        50:         zip_path = os.path.abspath(zip_uri)
+            
+                # Now unpack the repository. The zipfile will be unpacked
+                # into a temporary directory
+        54:     try:
+        55:         zip_file = ZipFile(zip_path)
+            
+        57:         if len(zip_file.namelist()) == 0:
+        58:             raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+            
+                    # The first record in the zipfile should be the directory entry for
+                    # the archive. If it isn't a directory, there's a problem.
+        62:         first_filename = zip_file.namelist()[0]
+        63:         if not first_filename.endswith('/'):
+        64:             raise InvalidZipRepository(
+        65:                 'Zip repository {} does not include '
+        66:                 'a top-level directory'.format(zip_uri)
+                        )
+            
+                    # Construct the final target directory
+        70:         project_name = first_filename[:-1]
+        71:         unzip_base = tempfile.mkdtemp()
+        72:         unzip_path = os.path.join(unzip_base, project_name)
+            
+                    # Extract the zip file into the temporary directory
+        75:         try:
+        76:             zip_file.extractall(path=unzip_base)
+        77:         except RuntimeError:
+                        # File is password protected; try to get a password from the
+                        # environment; if that doesn't work, ask the user.
+        80:             if password is not None:
+        81:                 try:
+        82:                     zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+        83:                 except RuntimeError:
+        84:                     raise InvalidZipRepository(
+        85:                         'Invalid password provided for protected repository'
+                                )
+        87:             elif no_input:
+        88:                 raise InvalidZipRepository(
+        89:                     'Unable to unlock password protected repository'
+                            )
+                        else:
+        92:                 retry = 0
+        93:                 while retry is not None:
+        94:                     try:
+        95:                         password = read_repo_password('Repo password')
+        96:                         zip_file.extractall(
+        97:                             path=unzip_base, pwd=password.encode('utf-8')
+                                    )
+        99:                         retry = None
+       100:                     except RuntimeError:
+       101:                         retry += 1
+       102:                         if retry == 3:
+       103:                             raise InvalidZipRepository(
+       104:                                 'Invalid password provided for protected repository'
+                                        )
+            
+       107:     except BadZipFile:
+       108:         raise InvalidZipRepository(
+       109:             'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+                    )
+            
+       112:     return unzip_path
+
+```
+
+---- 2024-05-31T13:00:42 cookiecutter/prompt.py:171-229 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, lines 177-229 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def prompt_for_config(context, no_input=False):
+                """Prompt user to enter a new config.
+            
+                :param dict context: Source for field names and sample values.
+                :param no_input: Prompt the user at command line for manual configuration?
+                """
+       177:     cookiecutter_dict = OrderedDict([])
+       178:     env = StrictEnvironment(context=context)
+            
+                # First pass: Handle simple and raw variables, plus choices.
+                # These must be done first because the dictionaries keys and
+                # values might refer to them.
+       183:     for key, raw in context['cookiecutter'].items():
+       184:         if key.startswith('_') and not key.startswith('__'):
+       185:             cookiecutter_dict[key] = raw
+       186:             continue
+       187:         elif key.startswith('__'):
+       188:             cookiecutter_dict[key] = render_variable(env, raw, cookiecutter_dict)
+       189:             continue
+            
+       191:         try:
+       192:             if isinstance(raw, list):
+                            # We are dealing with a choice variable
+       194:                 val = prompt_choice_for_config(
+       195:                     cookiecutter_dict, env, key, raw, no_input
+                            )
+       197:                 cookiecutter_dict[key] = val
+       198:             elif not isinstance(raw, dict):
+                            # We are dealing with a regular variable
+       200:                 val = render_variable(env, raw, cookiecutter_dict)
+            
+       202:                 if not no_input:
+       203:                     val = read_user_variable(key, val)
+            
+       205:                 cookiecutter_dict[key] = val
+       206:         except UndefinedError as err:
+       207:             msg = "Unable to render variable '{}'".format(key)
+       208:             raise UndefinedVariableInTemplate(msg, err, context)
+            
+                # Second pass; handle the dictionaries.
+       211:     for key, raw in context['cookiecutter'].items():
+                    # Skip private type dicts not ot be rendered.
+       213:         if key.startswith('_') and not key.startswith('__'):
+       214:             continue
+            
+       216:         try:
+       217:             if isinstance(raw, dict):
+                            # We are dealing with a dict variable
+       219:                 val = render_variable(env, raw, cookiecutter_dict)
+            
+       221:                 if not no_input and not key.startswith('__'):
+       222:                     val = read_user_dict(key, val)
+            
+       224:                 cookiecutter_dict[key] = val
+       225:         except UndefinedError as err:
+       226:             msg = "Unable to render variable '{}'".format(key)
+       227:             raise UndefinedVariableInTemplate(msg, err, context)
+            
+       229:     return cookiecutter_dict
+
+```
+
+---- 2024-05-31T13:00:42 cookiecutter/repository.py:63-130 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, lines 96-104, 106-113, 125 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def determine_repo_dir(
+                template,
+                abbreviations,
+                clone_to_dir,
+                checkout,
+                no_input,
+                password=None,
+                directory=None,
+            ):
+                """
+                Locate the repository directory from a template reference.
+            
+                Applies repository abbreviations to the template reference.
+                If the template refers to a repository URL, clone it.
+                If the template is a path to a local repository, use it.
+            
+                :param template: A directory containing a project template directory,
+                    or a URL to a git repository.
+                :param abbreviations: A dictionary of repository abbreviation
+                    definitions.
+                :param clone_to_dir: The directory to clone the repository into.
+                :param checkout: The branch, tag or commit ID to checkout after clone.
+                :param no_input: Prompt the user at command line for manual configuration?
+                :param password: The password to use when extracting the repository.
+                :param directory: Directory within repo where cookiecutter.json lives.
+                :return: A tuple containing the cookiecutter template directory, and
+                    a boolean descriving whether that directory should be cleaned up
+                    after the template has been instantiated.
+                :raises: `RepositoryNotFound` if a repository directory could not be found.
+                """
+                template = expand_abbreviations(template, abbreviations)
+            
+        95:     if is_zip_file(template):
+        96:         unzipped_dir = unzip(
+        97:             zip_uri=template,
+        98:             is_url=is_repo_url(template),
+        99:             clone_to_dir=clone_to_dir,
+       100:             no_input=no_input,
+       101:             password=password,
+                    )
+       103:         repository_candidates = [unzipped_dir]
+       104:         cleanup = True
+       105:     elif is_repo_url(template):
+       106:         cloned_repo = clone(
+       107:             repo_url=template,
+       108:             checkout=checkout,
+       109:             clone_to_dir=clone_to_dir,
+       110:             no_input=no_input,
+                    )
+       112:         repository_candidates = [cloned_repo]
+       113:         cleanup = False
+                else:
+                    repository_candidates = [template, os.path.join(clone_to_dir, template)]
+                    cleanup = False
+            
+                if directory:
+                    repository_candidates = [
+                        os.path.join(s, directory) for s in repository_candidates
+                    ]
+            
+                for repo_candidate in repository_candidates:
+       124:         if repository_has_cookiecutter_json(repo_candidate):
+       125:             return repo_candidate, cleanup
+            
+                raise RepositoryNotFound(
+                    'A valid repository for "{}" could not be found in the following '
+                    'locations:\n{}'.format(template, '\n'.join(repository_candidates))
+                )
+
+```
+
+---- 2024-05-31T13:00:42 cookiecutter/repository.py:21-23 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/repository.py, module cookiecutter.repository, does not achieve full coverage:
+when tested, line 23 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def is_repo_url(value):
+                """Return True if value is a repository URL."""
+        23:     return bool(REPO_REGEX.match(value))
+
+```
+
+---- 2024-05-31T13:00:49 cookiecutter/repository.py:21-23 ----
+```python
+import pytest
+from unittest.mock import patch
+import re
+
+# Assuming REPO_REGEX is defined somewhere in the module
+REPO_REGEX = re.compile(r'^(https?|git|ssh|file|ftp|ftps)://')
+
+def is_repo_url(value):
+    """Return True if value is a repository URL."""
+    return bool(REPO_REGEX.match(value))
+
+def test_is_repo_url_with_valid_url():
+    assert is_repo_url('https://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('git://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('ssh://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('file:///path/to/repo') is True
+    assert is_repo_url('ftp://example.com/repo') is True
+    assert is_repo_url('ftps://example.com/repo') is True
+
+def test_is_repo_url_with_invalid_url():
+    assert is_repo_url('not_a_url') is False
+    assert is_repo_url('http:/invalid.com') is False
+    assert is_repo_url('') is False
+    assert is_repo_url('just_some_random_text') is False
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T13:00:49 cookiecutter/repository.py:21-23 ----
+total usage: {'prompt_tokens': 226, 'completion_tokens': 287}
+---- 2024-05-31T13:00:50 cookiecutter/repository.py:21-23 ----
+..                                                                       [100%]
+
+---- 2024-05-31T13:00:50 cookiecutter/repository.py:21-23 ----
+This test still lacks coverage: line 23 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:00:54 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.environment import StrictEnvironment
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import UndefinedError
+
+@pytest.fixture
+def mock_env(mocker):
+    return mocker.patch('cookiecutter.prompt.StrictEnvironment', autospec=True)
+
+@pytest.fixture
+def mock_render_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.render_variable', autospec=True)
+
+@pytest.fixture
+def mock_prompt_choice_for_config(mocker):
+    return mocker.patch('cookiecutter.prompt.prompt_choice_for_config', autospec=True)
+
+@pytest.fixture
+def mock_read_user_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_variable', autospec=True)
+
+@pytest.fixture
+def mock_read_user_dict(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_dict', autospec=True)
+
+def test_prompt_for_config_full_coverage(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+    context = {
+        'cookiecutter': {
+            '_private_var': 'private_value',
+            '__double_underscore_var': 'double_underscore_value',
+            'choice_var': ['option1', 'option2'],
+            'regular_var': 'regular_value',
+            'dict_var': {'key1': 'value1'}
+        }
+    }
+
+    mock_env.return_value = StrictEnvironment(context=context)
+    mock_render_variable.side_effect = lambda env, raw, cookiecutter_dict: raw
+    mock_prompt_choice_for_config.side_effect = lambda cookiecutter_dict, env, key, raw, no_input: raw[0]
+    mock_read_user_variable.side_effect = lambda key, val: val
+    mock_read_user_dict.side_effect = lambda key, val: val
+
+    result = prompt_for_config(context, no_input=False)
+
+    assert result['_private_var'] == 'private_value'
+    assert result['__double_underscore_var'] == 'double_underscore_value'
+    assert result['choice_var'] == 'option1'
+    assert result['regular_var'] == 'regular_value'
+    assert result['dict_var'] == {'key1': 'value1'}
+
+    mock_render_variable.assert_any_call(mock_env.return_value, 'double_underscore_value', result)
+    mock_render_variable.assert_any_call(mock_env.return_value, 'regular_value', result)
+    mock_render_variable.assert_any_call(mock_env.return_value, {'key1': 'value1'}, result)
+    mock_prompt_choice_for_config.assert_called_once_with(result, mock_env.return_value, 'choice_var', ['option1', 'option2'], False)
+    mock_read_user_variable.assert_called_once_with('regular_var', 'regular_value')
+    mock_read_user_dict.assert_called_once_with('dict_var', {'key1': 'value1'})
+```
+---- 2024-05-31T13:00:54 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 1042, 'completion_tokens': 881}
+---- 2024-05-31T13:00:55 cookiecutter/prompt.py:171-229 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7faea3761bd0>
+kwargs = {'undefined': <class 'jinja2.runtime.StrictUndefined'>}
+context = {'cookiecutter': {'__double_underscore_var': 'double_underscore_value', '_private_var': 'private_value', 'choice_var': ['option1', 'option2'], 'dict_var': {'key1': 'value1'}, ...}}
+default_extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def __init__(self, **kwargs):
+        """Initialize the Jinja2 Environment object while loading extensions.
+    
+        Does the following:
+    
+        1. Establishes default_extensions (currently just a Time feature)
+        2. Reads extensions set in the cookiecutter.json _extensions key.
+        3. Attempts to load the extensions. Provides useful error if fails.
+        """
+        context = kwargs.pop('context', {})
+    
+        default_extensions = [
+            'cookiecutter.extensions.JsonifyExtension',
+            'cookiecutter.extensions.RandomStringExtension',
+            'cookiecutter.extensions.SlugifyExtension',
+            'cookiecutter.extensions.UUIDExtension',
+            'jinja2_time.TimeExtension',
+        ]
+        extensions = default_extensions + self._read_extensions(context)
+    
+        try:
+>           super(ExtensionLoaderMixin, self).__init__(extensions=extensions, **kwargs)
+
+cookiecutter/environment.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7faea3761bd0>
+block_start_string = '{%', block_end_string = '%}', variable_start_string = '{{'
+variable_end_string = '}}', comment_start_string = '{#'
+comment_end_string = '#}', line_statement_prefix = None
+line_comment_prefix = None, trim_blocks = False, lstrip_blocks = False
+newline_sequence = '\n', keep_trailing_newline = False
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+optimized = True, undefined = <class 'jinja2.runtime.StrictUndefined'>
+finalize = None, autoescape = False, loader = None, cache_size = 400
+auto_reload = True, bytecode_cache = None, enable_async = False
+
+    def __init__(
+        self,
+        block_start_string: str = BLOCK_START_STRING,
+        block_end_string: str = BLOCK_END_STRING,
+        variable_start_string: str = VARIABLE_START_STRING,
+        variable_end_string: str = VARIABLE_END_STRING,
+        comment_start_string: str = COMMENT_START_STRING,
+        comment_end_string: str = COMMENT_END_STRING,
+        line_statement_prefix: t.Optional[str] = LINE_STATEMENT_PREFIX,
+        line_comment_prefix: t.Optional[str] = LINE_COMMENT_PREFIX,
+        trim_blocks: bool = TRIM_BLOCKS,
+        lstrip_blocks: bool = LSTRIP_BLOCKS,
+        newline_sequence: "te.Literal['\\n', '\\r\\n', '\\r']" = NEWLINE_SEQUENCE,
+        keep_trailing_newline: bool = KEEP_TRAILING_NEWLINE,
+        extensions: t.Sequence[t.Union[str, t.Type["Extension"]]] = (),
+        optimized: bool = True,
+        undefined: t.Type[Undefined] = Undefined,
+        finalize: t.Optional[t.Callable[..., t.Any]] = None,
+        autoescape: t.Union[bool, t.Callable[[t.Optional[str]], bool]] = False,
+        loader: t.Optional["BaseLoader"] = None,
+        cache_size: int = 400,
+        auto_reload: bool = True,
+        bytecode_cache: t.Optional["BytecodeCache"] = None,
+        enable_async: bool = False,
+    ):
+        # !!Important notice!!
+        #   The constructor accepts quite a few arguments that should be
+        #   passed by keyword rather than position.  However it's important to
+        #   not change the order of arguments because it's used at least
+        #   internally in those cases:
+        #       -   spontaneous environments (i18n extension and Template)
+        #       -   unittests
+        #   If parameter changes are required only add parameters at the end
+        #   and don't change the arguments (or the defaults!) of the arguments
+        #   existing already.
+    
+        # lexer / parser information
+        self.block_start_string = block_start_string
+        self.block_end_string = block_end_string
+        self.variable_start_string = variable_start_string
+        self.variable_end_string = variable_end_string
+        self.comment_start_string = comment_start_string
+        self.comment_end_string = comment_end_string
+        self.line_statement_prefix = line_statement_prefix
+        self.line_comment_prefix = line_comment_prefix
+        self.trim_blocks = trim_blocks
+        self.lstrip_blocks = lstrip_blocks
+        self.newline_sequence = newline_sequence
+        self.keep_trailing_newline = keep_trailing_newline
+    
+        # runtime information
+        self.undefined: t.Type[Undefined] = undefined
+        self.optimized = optimized
+        self.finalize = finalize
+        self.autoescape = autoescape
+    
+        # defaults
+        self.filters = DEFAULT_FILTERS.copy()
+        self.tests = DEFAULT_TESTS.copy()
+        self.globals = DEFAULT_NAMESPACE.copy()
+    
+        # set the loader provided
+        self.loader = loader
+        self.cache = create_cache(cache_size)
+        self.bytecode_cache = bytecode_cache
+        self.auto_reload = auto_reload
+    
+        # configurable policies
+        self.policies = DEFAULT_POLICIES.copy()
+    
+        # load extensions
+>       self.extensions = load_extensions(self, extensions)
+
+/usr/local/lib/python3.10/site-packages/jinja2/environment.py:363: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+environment = <cookiecutter.environment.StrictEnvironment object at 0x7faea3761bd0>
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def load_extensions(
+        environment: "Environment",
+        extensions: t.Sequence[t.Union[str, t.Type["Extension"]]],
+    ) -> t.Dict[str, "Extension"]:
+        """Load the extensions from the list and bind it to the environment.
+        Returns a dict of instantiated extensions.
+        """
+        result = {}
+    
+        for extension in extensions:
+            if isinstance(extension, str):
+>               extension = t.cast(t.Type["Extension"], import_string(extension))
+
+/usr/local/lib/python3.10/site-packages/jinja2/environment.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+import_name = 'jinja2_time.TimeExtension', silent = False
+
+    def import_string(import_name: str, silent: bool = False) -> t.Any:
+        """Imports an object based on a string.  This is useful if you want to
+        use import paths as endpoints or something similar.  An import path can
+        be specified either in dotted notation (``xml.sax.saxutils.escape``)
+        or with a colon as object delimiter (``xml.sax.saxutils:escape``).
+    
+        If the `silent` is True the return value will be `None` if the import
+        fails.
+    
+        :return: imported object
+        """
+        try:
+            if ":" in import_name:
+                module, obj = import_name.split(":", 1)
+            elif "." in import_name:
+                module, _, obj = import_name.rpartition(".")
+            else:
+                return __import__(import_name)
+>           return getattr(__import__(module, None, None, [obj]), obj)
+E           ModuleNotFoundError: No module named 'jinja2_time'
+
+/usr/local/lib/python3.10/site-packages/jinja2/utils.py:149: ModuleNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+mock_env = <MagicMock name='StrictEnvironment' spec='StrictEnvironment' id='140388053765280'>
+mock_render_variable = <function render_variable at 0x7faea3741630>
+mock_prompt_choice_for_config = <function prompt_choice_for_config at 0x7faea3741cf0>
+mock_read_user_variable = <function read_user_variable at 0x7faea37423b0>
+mock_read_user_dict = <function read_user_dict at 0x7faea3742a70>
+
+    def test_prompt_for_config_full_coverage(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+        context = {
+            'cookiecutter': {
+                '_private_var': 'private_value',
+                '__double_underscore_var': 'double_underscore_value',
+                'choice_var': ['option1', 'option2'],
+                'regular_var': 'regular_value',
+                'dict_var': {'key1': 'value1'}
+            }
+        }
+    
+>       mock_env.return_value = StrictEnvironment(context=context)
+
+coverup-tests/tmp_test_vmand5id.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+cookiecutter/environment.py:65: in __init__
+    super(StrictEnvironment, self).__init__(undefined=StrictUndefined, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7faea3761bd0>
+kwargs = {'undefined': <class 'jinja2.runtime.StrictUndefined'>}
+context = {'cookiecutter': {'__double_underscore_var': 'double_underscore_value', '_private_var': 'private_value', 'choice_var': ['option1', 'option2'], 'dict_var': {'key1': 'value1'}, ...}}
+default_extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def __init__(self, **kwargs):
+        """Initialize the Jinja2 Environment object while loading extensions.
+    
+        Does the following:
+    
+        1. Establishes default_extensions (currently just a Time feature)
+        2. Reads extensions set in the cookiecutter.json _extensions key.
+        3. Attempts to load the extensions. Provides useful error if fails.
+        """
+        context = kwargs.pop('context', {})
+    
+        default_extensions = [
+            'cookiecutter.extensions.JsonifyExtension',
+            'cookiecutter.extensions.RandomStringExtension',
+            'cookiecutter.extensions.SlugifyExtension',
+            'cookiecutter.extensions.UUIDExtension',
+            'jinja2_time.TimeExtension',
+        ]
+        extensions = default_extensions + self._read_extensions(context)
+    
+        try:
+            super(ExtensionLoaderMixin, self).__init__(extensions=extensions, **kwargs)
+        except ImportError as err:
+>           raise UnknownExtension('Unable to load extension: {}'.format(err))
+E           cookiecutter.exceptions.UnknownExtension: Unable to load extension: No module named 'jinja2_time'
+
+cookiecutter/environment.py:37: UnknownExtension
+
+---- 2024-05-31T13:00:59 cookiecutter/repository.py:63-130 ----
+```python
+import os
+import pytest
+from unittest import mock
+from cookiecutter.exceptions import RepositoryNotFound
+from cookiecutter.repository import determine_repo_dir
+
+@pytest.fixture
+def mock_expand_abbreviations(mocker):
+    return mocker.patch('cookiecutter.repository.expand_abbreviations', side_effect=lambda x, y: x)
+
+@pytest.fixture
+def mock_is_zip_file(mocker):
+    return mocker.patch('cookiecutter.repository.is_zip_file', return_value=False)
+
+@pytest.fixture
+def mock_is_repo_url(mocker):
+    return mocker.patch('cookiecutter.repository.is_repo_url', return_value=False)
+
+@pytest.fixture
+def mock_unzip(mocker):
+    return mocker.patch('cookiecutter.repository.unzip')
+
+@pytest.fixture
+def mock_clone(mocker):
+    return mocker.patch('cookiecutter.repository.clone')
+
+@pytest.fixture
+def mock_repository_has_cookiecutter_json(mocker):
+    return mocker.patch('cookiecutter.repository.repository_has_cookiecutter_json', return_value=False)
+
+def test_determine_repo_dir_zip_file(mock_expand_abbreviations, mock_is_zip_file, mock_unzip, mock_repository_has_cookiecutter_json):
+    mock_is_zip_file.return_value = True
+    mock_unzip.return_value = 'unzipped_dir'
+    mock_repository_has_cookiecutter_json.side_effect = lambda x: x == 'unzipped_dir'
+
+    result = determine_repo_dir(
+        template='template.zip',
+        abbreviations={},
+        clone_to_dir='clone_to_dir',
+        checkout=None,
+        no_input=True,
+        password=None,
+        directory=None,
+    )
+
+    assert result == ('unzipped_dir', True)
+    mock_unzip.assert_called_once_with(
+        zip_uri='template.zip',
+        is_url=False,
+        clone_to_dir='clone_to_dir',
+        no_input=True,
+        password=None,
+    )
+
+def test_determine_repo_dir_repo_url(mock_expand_abbreviations, mock_is_zip_file, mock_is_repo_url, mock_clone, mock_repository_has_cookiecutter_json):
+    mock_is_repo_url.return_value = True
+    mock_clone.return_value = 'cloned_repo'
+    mock_repository_has_cookiecutter_json.side_effect = lambda x: x == 'cloned_repo'
+
+    result = determine_repo_dir(
+        template='https://github.com/user/repo.git',
+        abbreviations={},
+        clone_to_dir='clone_to_dir',
+        checkout='main',
+        no_input=True,
+        password=None,
+        directory=None,
+    )
+
+    assert result == ('cloned_repo', False)
+    mock_clone.assert_called_once_with(
+        repo_url='https://github.com/user/repo.git',
+        checkout='main',
+        clone_to_dir='clone_to_dir',
+        no_input=True,
+    )
+
+def test_determine_repo_dir_local_path(mock_expand_abbreviations, mock_is_zip_file, mock_is_repo_url, mock_repository_has_cookiecutter_json):
+    mock_repository_has_cookiecutter_json.side_effect = lambda x: x == 'template'
+
+    result = determine_repo_dir(
+        template='template',
+        abbreviations={},
+        clone_to_dir='clone_to_dir',
+        checkout=None,
+        no_input=True,
+        password=None,
+        directory=None,
+    )
+
+    assert result == ('template', False)
+
+def test_determine_repo_dir_with_directory(mock_expand_abbreviations, mock_is_zip_file, mock_is_repo_url, mock_repository_has_cookiecutter_json):
+    mock_repository_has_cookiecutter_json.side_effect = lambda x: x == os.path.join('template', 'subdir')
+
+    result = determine_repo_dir(
+        template='template',
+        abbreviations={},
+        clone_to_dir='clone_to_dir',
+        checkout=None,
+        no_input=True,
+        password=None,
+        directory='subdir',
+    )
+
+    assert result == (os.path.join('template', 'subdir'), False)
+
+def test_determine_repo_dir_not_found(mock_expand_abbreviations, mock_is_zip_file, mock_is_repo_url, mock_repository_has_cookiecutter_json):
+    with pytest.raises(RepositoryNotFound):
+        determine_repo_dir(
+            template='template',
+            abbreviations={},
+            clone_to_dir='clone_to_dir',
+            checkout=None,
+            no_input=True,
+            password=None,
+            directory=None,
+        )
+```
+---- 2024-05-31T13:00:59 cookiecutter/repository.py:63-130 ----
+total usage: {'prompt_tokens': 1830, 'completion_tokens': 1755}
+---- 2024-05-31T13:01:00 cookiecutter/repository.py:21-23 ----
+```python
+import pytest
+from unittest.mock import patch
+import re
+
+# Assuming REPO_REGEX is defined somewhere in the module
+REPO_REGEX = re.compile(r'^(https?|git|ssh|file|ftp|ftps)://')
+
+def is_repo_url(value):
+    """Return True if value is a repository URL."""
+    return bool(REPO_REGEX.match(value))
+
+def test_is_repo_url_with_valid_url():
+    assert is_repo_url('https://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('git://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('ssh://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('file:///path/to/repo') is True
+    assert is_repo_url('ftp://example.com/repo') is True
+    assert is_repo_url('ftps://example.com/repo') is True
+
+def test_is_repo_url_with_invalid_url():
+    assert is_repo_url('not_a_url') is False
+    assert is_repo_url('http:/invalid.com') is False
+    assert is_repo_url('') is False
+    assert is_repo_url('just_some_random_text') is False
+
+def test_is_repo_url_regex_match(mocker):
+    mock_match = mocker.patch('cookiecutter.repository.REPO_REGEX.match', return_value=True)
+    assert is_repo_url('https://github.com/cookiecutter/cookiecutter.git') is True
+    mock_match.assert_called_once_with('https://github.com/cookiecutter/cookiecutter.git')
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T13:01:00 cookiecutter/repository.py:21-23 ----
+total usage: {'prompt_tokens': 2381, 'completion_tokens': 2118}
+---- 2024-05-31T13:01:01 cookiecutter/repository.py:63-130 ----
+.....                                                                    [100%]
+
+---- 2024-05-31T13:01:01 cookiecutter/repository.py:63-130 ----
+Saved as /output/coverup-tests/test_coverup_17.py
+
+---- 2024-05-31T13:01:02 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import tempfile
+import pytest
+import requests
+from zipfile import ZipFile, BadZipFile
+from unittest import mock
+from cookiecutter.zipfile import unzip, InvalidZipRepository
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.make_sure_path_exists')
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=True)
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_response = mock.Mock()
+    mock_response.iter_content = mock.Mock(return_value=[b'content'])
+    return mocker.patch('requests.get', return_value=mock_response)
+
+@pytest.fixture
+def mock_read_repo_password(mocker):
+    return mocker.patch('cookiecutter.zipfile.read_repo_password', return_value='password')
+
+@pytest.fixture
+def temp_zip_file():
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, 'test.zip')
+    with ZipFile(zip_path, 'w') as zip_file:
+        zip_file.writestr('test_dir/', '')
+        zip_file.writestr('test_dir/file.txt', 'content')
+    yield zip_path
+    os.remove(zip_path)
+    os.rmdir(temp_dir)
+
+def test_unzip_local_file(mock_make_sure_path_exists, temp_zip_file):
+    unzip_path = unzip(temp_zip_file, is_url=False)
+    assert os.path.exists(unzip_path)
+    assert os.path.isdir(unzip_path)
+    assert os.path.exists(os.path.join(unzip_path, 'file.txt'))
+    os.remove(os.path.join(unzip_path, 'file.txt'))
+    os.rmdir(unzip_path)
+
+def test_unzip_url_file(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, temp_zip_file):
+    with mock.patch('cookiecutter.zipfile.ZipFile', return_value=ZipFile(temp_zip_file)):
+        unzip_path = unzip('http://example.com/test.zip', is_url=True)
+        assert os.path.exists(unzip_path)
+        assert os.path.isdir(unzip_path)
+        assert os.path.exists(os.path.join(unzip_path, 'file.txt'))
+        os.remove(os.path.join(unzip_path, 'file.txt'))
+        os.rmdir(unzip_path)
+
+def test_unzip_password_protected(mock_make_sure_path_exists, mock_read_repo_password, temp_zip_file):
+    with ZipFile(temp_zip_file, 'w') as zip_file:
+        zip_file.setpassword(b'password')
+        zip_file.writestr('test_dir/', '')
+        zip_file.writestr('test_dir/file.txt', 'content')
+    
+    with mock.patch('cookiecutter.zipfile.ZipFile', return_value=ZipFile(temp_zip_file)):
+        unzip_path = unzip(temp_zip_file, is_url=False, password='password')
+        assert os.path.exists(unzip_path)
+        assert os.path.isdir(unzip_path)
+        assert os.path.exists(os.path.join(unzip_path, 'file.txt'))
+        os.remove(os.path.join(unzip_path, 'file.txt'))
+        os.rmdir(unzip_path)
+
+def test_unzip_invalid_zip(mock_make_sure_path_exists):
+    with pytest.raises(InvalidZipRepository):
+        unzip('invalid.zip', is_url=False)
+```
+---- 2024-05-31T13:01:02 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 3597, 'completion_tokens': 2798}
+---- 2024-05-31T13:01:02 cookiecutter/repository.py:21-23 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f0c923694b0>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: AttributeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f0c92369870>
+
+    def test_is_repo_url_regex_match(mocker):
+>       mock_match = mocker.patch('cookiecutter.repository.REPO_REGEX.match', return_value=True)
+
+coverup-tests/tmp_test_4dno9q1r.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f0c923694b0>
+exc_info = (<class 'AttributeError'>, AttributeError("'re.Pattern' object attribute 'match' is read-only"), <traceback object at 0x7f0c922bc8c0>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+            setattr(self.target, self.attribute, self.temp_original)
+        else:
+>           delattr(self.target, self.attribute)
+E           AttributeError: 're.Pattern' object attribute 'match' is read-only
+
+/usr/local/lib/python3.10/unittest/mock.py:1567: AttributeError
+
+---- 2024-05-31T13:01:03 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_make_sure_path_exists = <MagicMock name='make_sure_path_exists' id='140683233694800'>
+
+    def test_unzip_invalid_zip(mock_make_sure_path_exists):
+        with pytest.raises(InvalidZipRepository):
+>           unzip('invalid.zip', is_url=False)
+
+coverup-tests/tmp_test_f2nab8fa.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+cookiecutter/zipfile.py:55: in unzip
+    zip_file = ZipFile(zip_path)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>, file = '/output/invalid.zip', mode = 'r'
+compression = 0, allowZip64 = True, compresslevel = None
+
+    def __init__(self, file, mode="r", compression=ZIP_STORED, allowZip64=True,
+                 compresslevel=None, *, strict_timestamps=True):
+        """Open the ZIP file with mode read 'r', write 'w', exclusive create 'x',
+        or append 'a'."""
+        if mode not in ('r', 'w', 'x', 'a'):
+            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+    
+        _check_compression(compression)
+    
+        self._allowZip64 = allowZip64
+        self._didModify = False
+        self.debug = 0  # Level of printing: 0 through 3
+        self.NameToInfo = {}    # Find file info given name
+        self.filelist = []      # List of ZipInfo instances for archive
+        self.compression = compression  # Method of compression
+        self.compresslevel = compresslevel
+        self.mode = mode
+        self.pwd = None
+        self._comment = b''
+        self._strict_timestamps = strict_timestamps
+    
+        # Check if we were passed a file-like object
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
+        if isinstance(file, str):
+            # No, it's a filename
+            self._filePassed = 0
+            self.filename = file
+            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            filemode = modeDict[mode]
+            while True:
+                try:
+>                   self.fp = io.open(file, filemode)
+E                   FileNotFoundError: [Errno 2] No such file or directory: '/output/invalid.zip'
+
+/usr/local/lib/python3.10/zipfile.py:1240: FileNotFoundError
+
+---- 2024-05-31T13:01:07 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.environment import StrictEnvironment
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import UndefinedError
+
+@pytest.fixture
+def mock_env(mocker):
+    return mocker.patch('cookiecutter.prompt.StrictEnvironment', autospec=True)
+
+@pytest.fixture
+def mock_render_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.render_variable', autospec=True)
+
+@pytest.fixture
+def mock_prompt_choice_for_config(mocker):
+    return mocker.patch('cookiecutter.prompt.prompt_choice_for_config', autospec=True)
+
+@pytest.fixture
+def mock_read_user_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_variable', autospec=True)
+
+@pytest.fixture
+def mock_read_user_dict(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_dict', autospec=True)
+
+def test_prompt_for_config_full_coverage(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+    context = {
+        'cookiecutter': {
+            '_private_var': 'private_value',
+            '__double_underscore_var': 'double_underscore_value',
+            'choice_var': ['option1', 'option2'],
+            'regular_var': 'regular_value',
+            'dict_var': {'key1': 'value1'}
+        }
+    }
+
+    mock_env.return_value = StrictEnvironment(context=context, undefined=UndefinedError)
+    mock_render_variable.side_effect = lambda env, raw, cookiecutter_dict: raw
+    mock_prompt_choice_for_config.side_effect = lambda cookiecutter_dict, env, key, raw, no_input: raw[0]
+    mock_read_user_variable.side_effect = lambda key, val: val
+    mock_read_user_dict.side_effect = lambda key, val: val
+
+    result = prompt_for_config(context, no_input=False)
+
+    assert result['_private_var'] == 'private_value'
+    assert result['__double_underscore_var'] == 'double_underscore_value'
+    assert result['choice_var'] == 'option1'
+    assert result['regular_var'] == 'regular_value'
+    assert result['dict_var'] == {'key1': 'value1'}
+
+    mock_render_variable.assert_any_call(mock_env.return_value, 'double_underscore_value', result)
+    mock_render_variable.assert_any_call(mock_env.return_value, 'regular_value', result)
+    mock_render_variable.assert_any_call(mock_env.return_value, {'key1': 'value1'}, result)
+    mock_prompt_choice_for_config.assert_called_once_with(result, mock_env.return_value, 'choice_var', ['option1', 'option2'], False)
+    mock_read_user_variable.assert_called_once_with('regular_var', 'regular_value')
+    mock_read_user_dict.assert_called_once_with('dict_var', {'key1': 'value1'})
+```
+---- 2024-05-31T13:01:07 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 7662, 'completion_tokens': 3397}
+---- 2024-05-31T13:01:07 cookiecutter/repository.py:21-23 ----
+```python
+import pytest
+from unittest.mock import patch
+import re
+
+# Assuming REPO_REGEX is defined somewhere in the module
+REPO_REGEX = re.compile(r'^(https?|git|ssh|file|ftp|ftps)://')
+
+def is_repo_url(value):
+    """Return True if value is a repository URL."""
+    return bool(REPO_REGEX.match(value))
+
+def test_is_repo_url_with_valid_url():
+    assert is_repo_url('https://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('git://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('ssh://github.com/cookiecutter/cookiecutter.git') is True
+    assert is_repo_url('file:///path/to/repo') is True
+    assert is_repo_url('ftp://example.com/repo') is True
+    assert is_repo_url('ftps://example.com/repo') is True
+
+def test_is_repo_url_with_invalid_url():
+    assert is_repo_url('not_a_url') is False
+    assert is_repo_url('http:/invalid.com') is False
+    assert is_repo_url('') is False
+    assert is_repo_url('just_some_random_text') is False
+
+def test_is_repo_url_regex_match(mocker):
+    mock_match = mocker.patch('re.Pattern.match', return_value=True)
+    assert is_repo_url('https://github.com/cookiecutter/cookiecutter.git') is True
+    mock_match.assert_called_once_with('https://github.com/cookiecutter/cookiecutter.git')
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T13:01:07 cookiecutter/repository.py:21-23 ----
+total usage: {'prompt_tokens': 10194, 'completion_tokens': 3755}
+---- 2024-05-31T13:01:08 cookiecutter/prompt.py:171-229 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_env = <MagicMock name='StrictEnvironment' spec='StrictEnvironment' id='139725096251792'>
+mock_render_variable = <function render_variable at 0x7f14481a96c0>
+mock_prompt_choice_for_config = <function prompt_choice_for_config at 0x7f14481a9d80>
+mock_read_user_variable = <function read_user_variable at 0x7f14481aa440>
+mock_read_user_dict = <function read_user_dict at 0x7f14481aab00>
+
+    def test_prompt_for_config_full_coverage(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+        context = {
+            'cookiecutter': {
+                '_private_var': 'private_value',
+                '__double_underscore_var': 'double_underscore_value',
+                'choice_var': ['option1', 'option2'],
+                'regular_var': 'regular_value',
+                'dict_var': {'key1': 'value1'}
+            }
+        }
+    
+>       mock_env.return_value = StrictEnvironment(context=context, undefined=UndefinedError)
+
+coverup-tests/tmp_test_6_96u81s.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7f14481c9c30>
+kwargs = {'context': {'cookiecutter': {'__double_underscore_var': 'double_underscore_value', '_private_var': 'private_value', '...['option1', 'option2'], 'dict_var': {'key1': 'value1'}, ...}}, 'undefined': <class 'jinja2.exceptions.UndefinedError'>}
+
+    def __init__(self, **kwargs):
+        """Set the standard Cookiecutter StrictEnvironment.
+    
+        Also loading extensions defined in cookiecutter.json's _extensions key.
+        """
+>       super(StrictEnvironment, self).__init__(undefined=StrictUndefined, **kwargs)
+E       TypeError: cookiecutter.environment.ExtensionLoaderMixin.__init__() got multiple values for keyword argument 'undefined'
+
+cookiecutter/environment.py:65: TypeError
+
+---- 2024-05-31T13:01:09 cookiecutter/repository.py:21-23 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <unittest.mock._patch object at 0x7f37134b14b0>
+
+    def __enter__(self):
+        """Perform the patch."""
+        new, spec, spec_set = self.new, self.spec, self.spec_set
+        autospec, kwargs = self.autospec, self.kwargs
+        new_callable = self.new_callable
+        self.target = self.getter()
+    
+        # normalise False to None
+        if spec is False:
+            spec = None
+        if spec_set is False:
+            spec_set = None
+        if autospec is False:
+            autospec = None
+    
+        if spec is not None and autospec is not None:
+            raise TypeError("Can't specify spec and autospec")
+        if ((spec is not None or autospec is not None) and
+            spec_set not in (True, None)):
+            raise TypeError("Can't provide explicit spec_set *and* spec or autospec")
+    
+        original, local = self.get_original()
+    
+        if new is DEFAULT and autospec is None:
+            inherit = False
+            if spec is True:
+                # set spec to the object we are replacing
+                spec = original
+                if spec_set is True:
+                    spec_set = original
+                    spec = None
+            elif spec is not None:
+                if spec_set is True:
+                    spec_set = spec
+                    spec = None
+            elif spec_set is True:
+                spec_set = original
+    
+            if spec is not None or spec_set is not None:
+                if original is DEFAULT:
+                    raise TypeError("Can't use 'spec' with create=True")
+                if isinstance(original, type):
+                    # If we're patching out a class and there is a spec
+                    inherit = True
+            if spec is None and _is_async_obj(original):
+                Klass = AsyncMock
+            else:
+                Klass = MagicMock
+            _kwargs = {}
+            if new_callable is not None:
+                Klass = new_callable
+            elif spec is not None or spec_set is not None:
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if _is_list(this_spec):
+                    not_callable = '__call__' not in this_spec
+                else:
+                    not_callable = not callable(this_spec)
+                if _is_async_obj(this_spec):
+                    Klass = AsyncMock
+                elif not_callable:
+                    Klass = NonCallableMagicMock
+    
+            if spec is not None:
+                _kwargs['spec'] = spec
+            if spec_set is not None:
+                _kwargs['spec_set'] = spec_set
+    
+            # add a name to mocks
+            if (isinstance(Klass, type) and
+                issubclass(Klass, NonCallableMock) and self.attribute):
+                _kwargs['name'] = self.attribute
+    
+            _kwargs.update(kwargs)
+            new = Klass(**_kwargs)
+    
+            if inherit and _is_instance_mock(new):
+                # we can only tell if the instance should be callable if the
+                # spec is not a list
+                this_spec = spec
+                if spec_set is not None:
+                    this_spec = spec_set
+                if (not _is_list(this_spec) and not
+                    _instance_callable(this_spec)):
+                    Klass = NonCallableMagicMock
+    
+                _kwargs.pop('name')
+                new.return_value = Klass(_new_parent=new, _new_name='()',
+                                         **_kwargs)
+        elif autospec is not None:
+            # spec is ignored, new *must* be default, spec_set is treated
+            # as a boolean. Should we check spec is not None and that spec_set
+            # is a bool?
+            if new is not DEFAULT:
+                raise TypeError(
+                    "autospec creates the mock for you. Can't specify "
+                    "autospec and new."
+                )
+            if original is DEFAULT:
+                raise TypeError("Can't use 'autospec' with create=True")
+            spec_set = bool(spec_set)
+            if autospec is True:
+                autospec = original
+    
+            if _is_instance_mock(self.target):
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} as the patch '
+                    f'target has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+            if _is_instance_mock(autospec):
+                target_name = getattr(self.target, '__name__', self.target)
+                raise InvalidSpecError(
+                    f'Cannot autospec attr {self.attribute!r} from target '
+                    f'{target_name!r} as it has already been mocked out. '
+                    f'[target={self.target!r}, attr={autospec!r}]')
+    
+            new = create_autospec(autospec, spec_set=spec_set,
+                                  _name=self.attribute, **kwargs)
+        elif kwargs:
+            # can't set keyword args when we aren't creating the mock
+            # XXXX If new is a Mock we could call new.configure_mock(**kwargs)
+            raise TypeError("Can't pass kwargs to a mock we aren't creating")
+    
+        new_attr = new
+    
+        self.temp_original = original
+        self.is_local = local
+        self._exit_stack = contextlib.ExitStack()
+        try:
+>           setattr(self.target, self.attribute, new_attr)
+E           TypeError: cannot set 'match' attribute of immutable type 're.Pattern'
+
+/usr/local/lib/python3.10/unittest/mock.py:1546: TypeError
+
+During handling of the above exception, another exception occurred:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f37134b1870>
+
+    def test_is_repo_url_regex_match(mocker):
+>       mock_match = mocker.patch('re.Pattern.match', return_value=True)
+
+coverup-tests/tmp_test_j4a5q3wn.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1559: in __enter__
+    if not self.__exit__(*sys.exc_info()):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f37134b14b0>
+exc_info = (<class 'TypeError'>, TypeError("cannot set 'match' attribute of immutable type 're.Pattern'"), <traceback object at 0x7f3713d81e40>)
+
+    def __exit__(self, *exc_info):
+        """Undo the patch."""
+        if self.is_local and self.temp_original is not DEFAULT:
+>           setattr(self.target, self.attribute, self.temp_original)
+E           TypeError: cannot set 'match' attribute of immutable type 're.Pattern'
+
+/usr/local/lib/python3.10/unittest/mock.py:1565: TypeError
+
+---- 2024-05-31T13:01:09 cookiecutter/repository.py:21-23 ----
+Too many attempts, giving up
+---- 2024-05-31T13:01:18 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import tempfile
+import pytest
+import requests
+from zipfile import ZipFile, BadZipFile
+from unittest import mock
+from cookiecutter.zipfile import unzip, InvalidZipRepository
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.make_sure_path_exists')
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=True)
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_response = mock.Mock()
+    mock_response.iter_content = mock.Mock(return_value=[b'content'])
+    return mocker.patch('requests.get', return_value=mock_response)
+
+@pytest.fixture
+def mock_read_repo_password(mocker):
+    return mocker.patch('cookiecutter.zipfile.read_repo_password', return_value='password')
+
+@pytest.fixture
+def temp_zip_file():
+    temp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(temp_dir, 'test.zip')
+    with ZipFile(zip_path, 'w') as zip_file:
+        zip_file.writestr('test_dir/', '')
+        zip_file.writestr('test_dir/file.txt', 'content')
+    yield zip_path
+    os.remove(zip_path)
+    os.rmdir(temp_dir)
+
+def test_unzip_local_file(mock_make_sure_path_exists, temp_zip_file):
+    unzip_path = unzip(temp_zip_file, is_url=False)
+    assert os.path.exists(unzip_path)
+    assert os.path.isdir(unzip_path)
+    assert os.path.exists(os.path.join(unzip_path, 'file.txt'))
+    os.remove(os.path.join(unzip_path, 'file.txt'))
+    os.rmdir(unzip_path)
+
+def test_unzip_url_file(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, temp_zip_file):
+    with mock.patch('cookiecutter.zipfile.ZipFile', return_value=ZipFile(temp_zip_file)):
+        unzip_path = unzip('http://example.com/test.zip', is_url=True)
+        assert os.path.exists(unzip_path)
+        assert os.path.isdir(unzip_path)
+        assert os.path.exists(os.path.join(unzip_path, 'file.txt'))
+        os.remove(os.path.join(unzip_path, 'file.txt'))
+        os.rmdir(unzip_path)
+
+def test_unzip_password_protected(mock_make_sure_path_exists, mock_read_repo_password, temp_zip_file):
+    with ZipFile(temp_zip_file, 'w') as zip_file:
+        zip_file.setpassword(b'password')
+        zip_file.writestr('test_dir/', '')
+        zip_file.writestr('test_dir/file.txt', 'content')
+    
+    with mock.patch('cookiecutter.zipfile.ZipFile', return_value=ZipFile(temp_zip_file)):
+        unzip_path = unzip(temp_zip_file, is_url=False, password='password')
+        assert os.path.exists(unzip_path)
+        assert os.path.isdir(unzip_path)
+        assert os.path.exists(os.path.join(unzip_path, 'file.txt'))
+        os.remove(os.path.join(unzip_path, 'file.txt'))
+        os.rmdir(unzip_path)
+
+def test_unzip_invalid_zip(mock_make_sure_path_exists):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        invalid_zip_path = os.path.join(temp_dir, 'invalid.zip')
+        with open(invalid_zip_path, 'w') as f:
+            f.write('This is not a valid zip file')
+        
+        with pytest.raises(InvalidZipRepository):
+            unzip(invalid_zip_path, is_url=False)
+```
+---- 2024-05-31T13:01:18 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 12767, 'completion_tokens': 4489}
+---- 2024-05-31T13:01:20 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.environment import StrictEnvironment
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import UndefinedError
+
+@pytest.fixture
+def mock_env(mocker):
+    return mocker.patch('cookiecutter.prompt.StrictEnvironment', autospec=True)
+
+@pytest.fixture
+def mock_render_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.render_variable', autospec=True)
+
+@pytest.fixture
+def mock_prompt_choice_for_config(mocker):
+    return mocker.patch('cookiecutter.prompt.prompt_choice_for_config', autospec=True)
+
+@pytest.fixture
+def mock_read_user_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_variable', autospec=True)
+
+@pytest.fixture
+def mock_read_user_dict(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_dict', autospec=True)
+
+def test_prompt_for_config_full_coverage(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+    context = {
+        'cookiecutter': {
+            '_private_var': 'private_value',
+            '__double_underscore_var': 'double_underscore_value',
+            'choice_var': ['option1', 'option2'],
+            'regular_var': 'regular_value',
+            'dict_var': {'key1': 'value1'}
+        }
+    }
+
+    mock_env.return_value = StrictEnvironment(context=context)
+    mock_render_variable.side_effect = lambda env, raw, cookiecutter_dict: raw
+    mock_prompt_choice_for_config.side_effect = lambda cookiecutter_dict, env, key, raw, no_input: raw[0]
+    mock_read_user_variable.side_effect = lambda key, val: val
+    mock_read_user_dict.side_effect = lambda key, val: val
+
+    result = prompt_for_config(context, no_input=False)
+
+    assert result['_private_var'] == 'private_value'
+    assert result['__double_underscore_var'] == 'double_underscore_value'
+    assert result['choice_var'] == 'option1'
+    assert result['regular_var'] == 'regular_value'
+    assert result['dict_var'] == {'key1': 'value1'}
+
+    mock_render_variable.assert_any_call(mock_env.return_value, 'double_underscore_value', result)
+    mock_render_variable.assert_any_call(mock_env.return_value, 'regular_value', result)
+    mock_render_variable.assert_any_call(mock_env.return_value, {'key1': 'value1'}, result)
+    mock_prompt_choice_for_config.assert_called_once_with(result, mock_env.return_value, 'choice_var', ['option1', 'option2'], False)
+    mock_read_user_variable.assert_called_once_with('regular_var', 'regular_value')
+    mock_read_user_dict.assert_called_once_with('dict_var', {'key1': 'value1'})
+```
+---- 2024-05-31T13:01:20 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 17948, 'completion_tokens': 5083}
+---- 2024-05-31T13:01:20 cookiecutter/zipfile.py:13-112 ----
+....                                                                     [100%]
+
+---- 2024-05-31T13:01:20 cookiecutter/zipfile.py:13-112 ----
+Saved as /output/coverup-tests/test_coverup_18.py
+
+---- 2024-05-31T13:01:22 cookiecutter/prompt.py:171-229 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7fdbae5d1c60>
+kwargs = {'undefined': <class 'jinja2.runtime.StrictUndefined'>}
+context = {'cookiecutter': {'__double_underscore_var': 'double_underscore_value', '_private_var': 'private_value', 'choice_var': ['option1', 'option2'], 'dict_var': {'key1': 'value1'}, ...}}
+default_extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def __init__(self, **kwargs):
+        """Initialize the Jinja2 Environment object while loading extensions.
+    
+        Does the following:
+    
+        1. Establishes default_extensions (currently just a Time feature)
+        2. Reads extensions set in the cookiecutter.json _extensions key.
+        3. Attempts to load the extensions. Provides useful error if fails.
+        """
+        context = kwargs.pop('context', {})
+    
+        default_extensions = [
+            'cookiecutter.extensions.JsonifyExtension',
+            'cookiecutter.extensions.RandomStringExtension',
+            'cookiecutter.extensions.SlugifyExtension',
+            'cookiecutter.extensions.UUIDExtension',
+            'jinja2_time.TimeExtension',
+        ]
+        extensions = default_extensions + self._read_extensions(context)
+    
+        try:
+>           super(ExtensionLoaderMixin, self).__init__(extensions=extensions, **kwargs)
+
+cookiecutter/environment.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7fdbae5d1c60>
+block_start_string = '{%', block_end_string = '%}', variable_start_string = '{{'
+variable_end_string = '}}', comment_start_string = '{#'
+comment_end_string = '#}', line_statement_prefix = None
+line_comment_prefix = None, trim_blocks = False, lstrip_blocks = False
+newline_sequence = '\n', keep_trailing_newline = False
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+optimized = True, undefined = <class 'jinja2.runtime.StrictUndefined'>
+finalize = None, autoescape = False, loader = None, cache_size = 400
+auto_reload = True, bytecode_cache = None, enable_async = False
+
+    def __init__(
+        self,
+        block_start_string: str = BLOCK_START_STRING,
+        block_end_string: str = BLOCK_END_STRING,
+        variable_start_string: str = VARIABLE_START_STRING,
+        variable_end_string: str = VARIABLE_END_STRING,
+        comment_start_string: str = COMMENT_START_STRING,
+        comment_end_string: str = COMMENT_END_STRING,
+        line_statement_prefix: t.Optional[str] = LINE_STATEMENT_PREFIX,
+        line_comment_prefix: t.Optional[str] = LINE_COMMENT_PREFIX,
+        trim_blocks: bool = TRIM_BLOCKS,
+        lstrip_blocks: bool = LSTRIP_BLOCKS,
+        newline_sequence: "te.Literal['\\n', '\\r\\n', '\\r']" = NEWLINE_SEQUENCE,
+        keep_trailing_newline: bool = KEEP_TRAILING_NEWLINE,
+        extensions: t.Sequence[t.Union[str, t.Type["Extension"]]] = (),
+        optimized: bool = True,
+        undefined: t.Type[Undefined] = Undefined,
+        finalize: t.Optional[t.Callable[..., t.Any]] = None,
+        autoescape: t.Union[bool, t.Callable[[t.Optional[str]], bool]] = False,
+        loader: t.Optional["BaseLoader"] = None,
+        cache_size: int = 400,
+        auto_reload: bool = True,
+        bytecode_cache: t.Optional["BytecodeCache"] = None,
+        enable_async: bool = False,
+    ):
+        # !!Important notice!!
+        #   The constructor accepts quite a few arguments that should be
+        #   passed by keyword rather than position.  However it's important to
+        #   not change the order of arguments because it's used at least
+        #   internally in those cases:
+        #       -   spontaneous environments (i18n extension and Template)
+        #       -   unittests
+        #   If parameter changes are required only add parameters at the end
+        #   and don't change the arguments (or the defaults!) of the arguments
+        #   existing already.
+    
+        # lexer / parser information
+        self.block_start_string = block_start_string
+        self.block_end_string = block_end_string
+        self.variable_start_string = variable_start_string
+        self.variable_end_string = variable_end_string
+        self.comment_start_string = comment_start_string
+        self.comment_end_string = comment_end_string
+        self.line_statement_prefix = line_statement_prefix
+        self.line_comment_prefix = line_comment_prefix
+        self.trim_blocks = trim_blocks
+        self.lstrip_blocks = lstrip_blocks
+        self.newline_sequence = newline_sequence
+        self.keep_trailing_newline = keep_trailing_newline
+    
+        # runtime information
+        self.undefined: t.Type[Undefined] = undefined
+        self.optimized = optimized
+        self.finalize = finalize
+        self.autoescape = autoescape
+    
+        # defaults
+        self.filters = DEFAULT_FILTERS.copy()
+        self.tests = DEFAULT_TESTS.copy()
+        self.globals = DEFAULT_NAMESPACE.copy()
+    
+        # set the loader provided
+        self.loader = loader
+        self.cache = create_cache(cache_size)
+        self.bytecode_cache = bytecode_cache
+        self.auto_reload = auto_reload
+    
+        # configurable policies
+        self.policies = DEFAULT_POLICIES.copy()
+    
+        # load extensions
+>       self.extensions = load_extensions(self, extensions)
+
+/usr/local/lib/python3.10/site-packages/jinja2/environment.py:363: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+environment = <cookiecutter.environment.StrictEnvironment object at 0x7fdbae5d1c60>
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def load_extensions(
+        environment: "Environment",
+        extensions: t.Sequence[t.Union[str, t.Type["Extension"]]],
+    ) -> t.Dict[str, "Extension"]:
+        """Load the extensions from the list and bind it to the environment.
+        Returns a dict of instantiated extensions.
+        """
+        result = {}
+    
+        for extension in extensions:
+            if isinstance(extension, str):
+>               extension = t.cast(t.Type["Extension"], import_string(extension))
+
+/usr/local/lib/python3.10/site-packages/jinja2/environment.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+import_name = 'jinja2_time.TimeExtension', silent = False
+
+    def import_string(import_name: str, silent: bool = False) -> t.Any:
+        """Imports an object based on a string.  This is useful if you want to
+        use import paths as endpoints or something similar.  An import path can
+        be specified either in dotted notation (``xml.sax.saxutils.escape``)
+        or with a colon as object delimiter (``xml.sax.saxutils:escape``).
+    
+        If the `silent` is True the return value will be `None` if the import
+        fails.
+    
+        :return: imported object
+        """
+        try:
+            if ":" in import_name:
+                module, obj = import_name.split(":", 1)
+            elif "." in import_name:
+                module, _, obj = import_name.rpartition(".")
+            else:
+                return __import__(import_name)
+>           return getattr(__import__(module, None, None, [obj]), obj)
+E           ModuleNotFoundError: No module named 'jinja2_time'
+
+/usr/local/lib/python3.10/site-packages/jinja2/utils.py:149: ModuleNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+mock_env = <MagicMock name='StrictEnvironment' spec='StrictEnvironment' id='140581510187856'>
+mock_render_variable = <function render_variable at 0x7fdbae5b1630>
+mock_prompt_choice_for_config = <function prompt_choice_for_config at 0x7fdbae5b1cf0>
+mock_read_user_variable = <function read_user_variable at 0x7fdbae5b23b0>
+mock_read_user_dict = <function read_user_dict at 0x7fdbae5b2a70>
+
+    def test_prompt_for_config_full_coverage(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+        context = {
+            'cookiecutter': {
+                '_private_var': 'private_value',
+                '__double_underscore_var': 'double_underscore_value',
+                'choice_var': ['option1', 'option2'],
+                'regular_var': 'regular_value',
+                'dict_var': {'key1': 'value1'}
+            }
+        }
+    
+>       mock_env.return_value = StrictEnvironment(context=context)
+
+coverup-tests/tmp_test_3cgbjqr1.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+cookiecutter/environment.py:65: in __init__
+    super(StrictEnvironment, self).__init__(undefined=StrictUndefined, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <cookiecutter.environment.StrictEnvironment object at 0x7fdbae5d1c60>
+kwargs = {'undefined': <class 'jinja2.runtime.StrictUndefined'>}
+context = {'cookiecutter': {'__double_underscore_var': 'double_underscore_value', '_private_var': 'private_value', 'choice_var': ['option1', 'option2'], 'dict_var': {'key1': 'value1'}, ...}}
+default_extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+extensions = ['cookiecutter.extensions.JsonifyExtension', 'cookiecutter.extensions.RandomStringExtension', 'cookiecutter.extensions.SlugifyExtension', 'cookiecutter.extensions.UUIDExtension', 'jinja2_time.TimeExtension']
+
+    def __init__(self, **kwargs):
+        """Initialize the Jinja2 Environment object while loading extensions.
+    
+        Does the following:
+    
+        1. Establishes default_extensions (currently just a Time feature)
+        2. Reads extensions set in the cookiecutter.json _extensions key.
+        3. Attempts to load the extensions. Provides useful error if fails.
+        """
+        context = kwargs.pop('context', {})
+    
+        default_extensions = [
+            'cookiecutter.extensions.JsonifyExtension',
+            'cookiecutter.extensions.RandomStringExtension',
+            'cookiecutter.extensions.SlugifyExtension',
+            'cookiecutter.extensions.UUIDExtension',
+            'jinja2_time.TimeExtension',
+        ]
+        extensions = default_extensions + self._read_extensions(context)
+    
+        try:
+            super(ExtensionLoaderMixin, self).__init__(extensions=extensions, **kwargs)
+        except ImportError as err:
+>           raise UnknownExtension('Unable to load extension: {}'.format(err))
+E           cookiecutter.exceptions.UnknownExtension: Unable to load extension: No module named 'jinja2_time'
+
+cookiecutter/environment.py:37: UnknownExtension
+
+---- 2024-05-31T13:01:22 cookiecutter/prompt.py:171-229 ----
+Too many attempts, giving up

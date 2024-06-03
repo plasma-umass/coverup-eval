@@ -1,0 +1,1421 @@
+---- 2024-05-31T13:01:28 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --isolate-tests --prompt-family gpt-v1 --source-dir ./cookiecutter --tests-dir coverup-tests --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-3 --checkpoint coverup-ckpt.json cookiecutter/find.py cookiecutter/prompt.py cookiecutter/replay.py cookiecutter/repository.py cookiecutter/zipfile.py
+---- 2024-05-31T13:01:33 cookiecutter/prompt.py:171-229 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/prompt.py, module cookiecutter.prompt, does not achieve full coverage:
+when tested, lines 177-229 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def prompt_for_config(context, no_input=False):
+                """Prompt user to enter a new config.
+            
+                :param dict context: Source for field names and sample values.
+                :param no_input: Prompt the user at command line for manual configuration?
+                """
+       177:     cookiecutter_dict = OrderedDict([])
+       178:     env = StrictEnvironment(context=context)
+            
+                # First pass: Handle simple and raw variables, plus choices.
+                # These must be done first because the dictionaries keys and
+                # values might refer to them.
+       183:     for key, raw in context['cookiecutter'].items():
+       184:         if key.startswith('_') and not key.startswith('__'):
+       185:             cookiecutter_dict[key] = raw
+       186:             continue
+       187:         elif key.startswith('__'):
+       188:             cookiecutter_dict[key] = render_variable(env, raw, cookiecutter_dict)
+       189:             continue
+            
+       191:         try:
+       192:             if isinstance(raw, list):
+                            # We are dealing with a choice variable
+       194:                 val = prompt_choice_for_config(
+       195:                     cookiecutter_dict, env, key, raw, no_input
+                            )
+       197:                 cookiecutter_dict[key] = val
+       198:             elif not isinstance(raw, dict):
+                            # We are dealing with a regular variable
+       200:                 val = render_variable(env, raw, cookiecutter_dict)
+            
+       202:                 if not no_input:
+       203:                     val = read_user_variable(key, val)
+            
+       205:                 cookiecutter_dict[key] = val
+       206:         except UndefinedError as err:
+       207:             msg = "Unable to render variable '{}'".format(key)
+       208:             raise UndefinedVariableInTemplate(msg, err, context)
+            
+                # Second pass; handle the dictionaries.
+       211:     for key, raw in context['cookiecutter'].items():
+                    # Skip private type dicts not ot be rendered.
+       213:         if key.startswith('_') and not key.startswith('__'):
+       214:             continue
+            
+       216:         try:
+       217:             if isinstance(raw, dict):
+                            # We are dealing with a dict variable
+       219:                 val = render_variable(env, raw, cookiecutter_dict)
+            
+       221:                 if not no_input and not key.startswith('__'):
+       222:                     val = read_user_dict(key, val)
+            
+       224:                 cookiecutter_dict[key] = val
+       225:         except UndefinedError as err:
+       226:             msg = "Unable to render variable '{}'".format(key)
+       227:             raise UndefinedVariableInTemplate(msg, err, context)
+            
+       229:     return cookiecutter_dict
+
+```
+
+---- 2024-05-31T13:01:33 cookiecutter/zipfile.py:13-112 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from cookiecutter/zipfile.py, module cookiecutter.zipfile, does not achieve full coverage:
+when tested, lines 39, 58, 64-66, 77-104 and branches 41->54, 46->45 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+                """Download and unpack a zipfile at a given URI.
+            
+                This will download the zipfile to the cookiecutter repository,
+                and unpack into a temporary directory.
+            
+                :param zip_uri: The URI for the zipfile.
+                :param is_url: Is the zip URI a URL or a file?
+                :param clone_to_dir: The cookiecutter repository directory
+                    to put the archive into.
+                :param no_input: Suppress any prompts
+                :param password: The password to use when unpacking the repository.
+                """
+                # Ensure that clone_to_dir exists
+                clone_to_dir = os.path.expanduser(clone_to_dir)
+                make_sure_path_exists(clone_to_dir)
+            
+                if is_url:
+                    # Build the name of the cached zipfile,
+                    # and prompt to delete if it already exists.
+                    identifier = zip_uri.rsplit('/', 1)[1]
+                    zip_path = os.path.join(clone_to_dir, identifier)
+            
+        36:         if os.path.exists(zip_path):
+                        download = prompt_and_delete(zip_path, no_input=no_input)
+                    else:
+        39:             download = True
+            
+        41:         if download:
+                        # (Re) download the zipfile
+                        r = requests.get(zip_uri, stream=True)
+                        with open(zip_path, 'wb') as f:
+        45:                 for chunk in r.iter_content(chunk_size=1024):
+        46:                     if chunk:  # filter out keep-alive new chunks
+                                    f.write(chunk)
+                else:
+                    # Just use the local zipfile as-is.
+                    zip_path = os.path.abspath(zip_uri)
+            
+                # Now unpack the repository. The zipfile will be unpacked
+                # into a temporary directory
+        54:     try:
+                    zip_file = ZipFile(zip_path)
+            
+        57:         if len(zip_file.namelist()) == 0:
+        58:             raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+            
+                    # The first record in the zipfile should be the directory entry for
+                    # the archive. If it isn't a directory, there's a problem.
+                    first_filename = zip_file.namelist()[0]
+        63:         if not first_filename.endswith('/'):
+        64:             raise InvalidZipRepository(
+        65:                 'Zip repository {} does not include '
+        66:                 'a top-level directory'.format(zip_uri)
+                        )
+            
+                    # Construct the final target directory
+                    project_name = first_filename[:-1]
+                    unzip_base = tempfile.mkdtemp()
+                    unzip_path = os.path.join(unzip_base, project_name)
+            
+                    # Extract the zip file into the temporary directory
+                    try:
+                        zip_file.extractall(path=unzip_base)
+        77:         except RuntimeError:
+                        # File is password protected; try to get a password from the
+                        # environment; if that doesn't work, ask the user.
+        80:             if password is not None:
+        81:                 try:
+        82:                     zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+        83:                 except RuntimeError:
+        84:                     raise InvalidZipRepository(
+        85:                         'Invalid password provided for protected repository'
+                                )
+        87:             elif no_input:
+        88:                 raise InvalidZipRepository(
+        89:                     'Unable to unlock password protected repository'
+                            )
+                        else:
+        92:                 retry = 0
+        93:                 while retry is not None:
+        94:                     try:
+        95:                         password = read_repo_password('Repo password')
+        96:                         zip_file.extractall(
+        97:                             path=unzip_base, pwd=password.encode('utf-8')
+                                    )
+        99:                         retry = None
+       100:                     except RuntimeError:
+       101:                         retry += 1
+       102:                         if retry == 3:
+       103:                             raise InvalidZipRepository(
+       104:                                 'Invalid password provided for protected repository'
+                                        )
+            
+                except BadZipFile:
+                    raise InvalidZipRepository(
+                        'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+                    )
+            
+       112:     return unzip_path
+
+```
+
+---- 2024-05-31T13:01:49 cookiecutter/prompt.py:171-229 ----
+```python
+import pytest
+from collections import OrderedDict
+from cookiecutter.prompt import prompt_for_config
+from cookiecutter.environment import StrictEnvironment
+from cookiecutter.exceptions import UndefinedVariableInTemplate
+from jinja2 import UndefinedError
+
+@pytest.fixture
+def mock_env(mocker):
+    return mocker.patch('cookiecutter.prompt.StrictEnvironment', autospec=True)
+
+@pytest.fixture
+def mock_render_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.render_variable', autospec=True)
+
+@pytest.fixture
+def mock_prompt_choice_for_config(mocker):
+    return mocker.patch('cookiecutter.prompt.prompt_choice_for_config', autospec=True)
+
+@pytest.fixture
+def mock_read_user_variable(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_variable', autospec=True)
+
+@pytest.fixture
+def mock_read_user_dict(mocker):
+    return mocker.patch('cookiecutter.prompt.read_user_dict', autospec=True)
+
+def test_prompt_for_config(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+    context = {
+        'cookiecutter': {
+            '_private_var': 'private_value',
+            '__special_var': 'special_value',
+            'choice_var': ['option1', 'option2'],
+            'regular_var': 'default_value',
+            'dict_var': {'key1': 'value1'}
+        }
+    }
+    
+    mock_render_variable.side_effect = lambda env, raw, cookiecutter_dict: raw
+    mock_prompt_choice_for_config.side_effect = lambda cookiecutter_dict, env, key, raw, no_input: raw[0]
+    mock_read_user_variable.side_effect = lambda key, val: val
+    mock_read_user_dict.side_effect = lambda key, val: val
+
+    result = prompt_for_config(context, no_input=False)
+
+    assert result['_private_var'] == 'private_value'
+    assert result['__special_var'] == 'special_value'
+    assert result['choice_var'] == 'option1'
+    assert result['regular_var'] == 'default_value'
+    assert result['dict_var'] == {'key1': 'value1'}
+
+def test_prompt_for_config_no_input(mock_env, mock_render_variable, mock_prompt_choice_for_config, mock_read_user_variable, mock_read_user_dict):
+    context = {
+        'cookiecutter': {
+            '_private_var': 'private_value',
+            '__special_var': 'special_value',
+            'choice_var': ['option1', 'option2'],
+            'regular_var': 'default_value',
+            'dict_var': {'key1': 'value1'}
+        }
+    }
+    
+    mock_render_variable.side_effect = lambda env, raw, cookiecutter_dict: raw
+    mock_prompt_choice_for_config.side_effect = lambda cookiecutter_dict, env, key, raw, no_input: raw[0]
+
+    result = prompt_for_config(context, no_input=True)
+
+    assert result['_private_var'] == 'private_value'
+    assert result['__special_var'] == 'special_value'
+    assert result['choice_var'] == 'option1'
+    assert result['regular_var'] == 'default_value'
+    assert result['dict_var'] == {'key1': 'value1'}
+
+def test_prompt_for_config_undefined_error(mock_env, mock_render_variable):
+    context = {
+        'cookiecutter': {
+            'regular_var': 'default_value',
+        }
+    }
+    
+    mock_render_variable.side_effect = UndefinedError
+
+    with pytest.raises(UndefinedVariableInTemplate):
+        prompt_for_config(context, no_input=True)
+```
+---- 2024-05-31T13:01:49 cookiecutter/prompt.py:171-229 ----
+total usage: {'prompt_tokens': 816, 'completion_tokens': 737}
+---- 2024-05-31T13:01:51 cookiecutter/prompt.py:171-229 ----
+...                                                                      [100%]
+
+---- 2024-05-31T13:01:51 cookiecutter/prompt.py:171-229 ----
+Saved as /output/coverup-tests/test_coverup_19.py
+
+---- 2024-05-31T13:01:53 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import pytest
+import tempfile
+import requests
+from unittest import mock
+from zipfile import ZipFile, BadZipFile
+from cookiecutter.zipfile import unzip, InvalidZipRepository, make_sure_path_exists, prompt_and_delete, read_repo_password
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.make_sure_path_exists')
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=True)
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_response = mock.Mock()
+    mock_response.iter_content = mock.Mock(return_value=[b'content'])
+    return mocker.patch('requests.get', return_value=mock_response)
+
+@pytest.fixture
+def mock_zipfile(mocker):
+    mock_zip = mock.Mock(spec=ZipFile)
+    mock_zip.namelist.return_value = ['project/']
+    return mocker.patch('zipfile.ZipFile', return_value=mock_zip)
+
+@pytest.fixture
+def mock_tempfile_mkdtemp(mocker):
+    return mocker.patch('tempfile.mkdtemp', return_value='/mocked/temp/dir')
+
+@pytest.fixture
+def mock_read_repo_password(mocker):
+    return mocker.patch('cookiecutter.zipfile.read_repo_password', return_value='password')
+
+def test_unzip_url_with_password_protected_zip(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = 'password'
+
+    # Mocking the zipfile to raise RuntimeError on first extractall call
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, None]
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir')
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir', pwd=password.encode('utf-8'))
+
+def test_unzip_url_with_invalid_password(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = 'password'
+
+    # Mocking the zipfile to raise RuntimeError on both extractall calls
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, RuntimeError]
+
+    with pytest.raises(InvalidZipRepository, match='Invalid password provided for protected repository'):
+        unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir')
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir', pwd=password.encode('utf-8'))
+
+def test_unzip_url_with_no_input_password_protected(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = True
+    password = None
+
+    # Mocking the zipfile to raise RuntimeError on extractall call
+    mock_zipfile.return_value.extractall.side_effect = RuntimeError
+
+    with pytest.raises(InvalidZipRepository, match='Unable to unlock password protected repository'):
+        unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_called_once_with(path='/mocked/temp/dir')
+
+def test_unzip_url_with_retry_password(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = None
+
+    # Mocking the zipfile to raise RuntimeError on first two extractall calls and succeed on the third
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, RuntimeError, None]
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    assert mock_zipfile.return_value.extractall.call_count == 3
+    mock_read_repo_password.assert_called_with('Repo password')
+```
+---- 2024-05-31T13:01:53 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 1974, 'completion_tokens': 1802}
+---- 2024-05-31T13:01:55 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+zip_uri = 'http://example.com/fake.zip', is_url = True, clone_to_dir = '.'
+no_input = False, password = 'password'
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+>           zip_file = ZipFile(zip_path)
+
+cookiecutter/zipfile.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>, file = './fake.zip', mode = 'r'
+compression = 0, allowZip64 = True, compresslevel = None
+
+    def __init__(self, file, mode="r", compression=ZIP_STORED, allowZip64=True,
+                 compresslevel=None, *, strict_timestamps=True):
+        """Open the ZIP file with mode read 'r', write 'w', exclusive create 'x',
+        or append 'a'."""
+        if mode not in ('r', 'w', 'x', 'a'):
+            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+    
+        _check_compression(compression)
+    
+        self._allowZip64 = allowZip64
+        self._didModify = False
+        self.debug = 0  # Level of printing: 0 through 3
+        self.NameToInfo = {}    # Find file info given name
+        self.filelist = []      # List of ZipInfo instances for archive
+        self.compression = compression  # Method of compression
+        self.compresslevel = compresslevel
+        self.mode = mode
+        self.pwd = None
+        self._comment = b''
+        self._strict_timestamps = strict_timestamps
+    
+        # Check if we were passed a file-like object
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
+        if isinstance(file, str):
+            # No, it's a filename
+            self._filePassed = 0
+            self.filename = file
+            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            filemode = modeDict[mode]
+            while True:
+                try:
+                    self.fp = io.open(file, filemode)
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
+        else:
+            self._filePassed = 1
+            self.fp = file
+            self.filename = getattr(file, 'name', None)
+        self._fileRefCnt = 1
+        self._lock = threading.RLock()
+        self._seekable = True
+        self._writing = False
+    
+        try:
+            if mode == 'r':
+>               self._RealGetContents()
+
+/usr/local/lib/python3.10/zipfile.py:1258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>
+
+    def _RealGetContents(self):
+        """Read in the table of contents for the ZIP file."""
+        fp = self.fp
+        try:
+            endrec = _EndRecData(fp)
+        except OSError:
+            raise BadZipFile("File is not a zip file")
+        if not endrec:
+>           raise BadZipFile("File is not a zip file")
+E           zipfile.BadZipFile: File is not a zip file
+
+/usr/local/lib/python3.10/zipfile.py:1325: BadZipFile
+
+During handling of the above exception, another exception occurred:
+
+mock_make_sure_path_exists = <MagicMock name='make_sure_path_exists' id='140416197859056'>
+mock_prompt_and_delete = <MagicMock name='prompt_and_delete' id='140416210049376'>
+mock_requests_get = <MagicMock name='get' id='140416197326592'>
+mock_zipfile = <MagicMock name='ZipFile' id='140416194159344'>
+mock_tempfile_mkdtemp = <MagicMock name='mkdtemp' id='140416194175392'>
+mock_read_repo_password = <MagicMock name='read_repo_password' id='140416194191248'>
+
+    def test_unzip_url_with_password_protected_zip(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password):
+        zip_uri = 'http://example.com/fake.zip'
+        is_url = True
+        clone_to_dir = '.'
+        no_input = False
+        password = 'password'
+    
+        # Mocking the zipfile to raise RuntimeError on first extractall call
+        mock_zipfile.return_value.extractall.side_effect = [RuntimeError, None]
+    
+>       unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+coverup-tests/tmp_test_qemgzvqd.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'http://example.com/fake.zip', is_url = True, clone_to_dir = '.'
+no_input = False, password = 'password'
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+                raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+    
+            # The first record in the zipfile should be the directory entry for
+            # the archive. If it isn't a directory, there's a problem.
+            first_filename = zip_file.namelist()[0]
+            if not first_filename.endswith('/'):
+                raise InvalidZipRepository(
+                    'Zip repository {} does not include '
+                    'a top-level directory'.format(zip_uri)
+                )
+    
+            # Construct the final target directory
+            project_name = first_filename[:-1]
+            unzip_base = tempfile.mkdtemp()
+            unzip_path = os.path.join(unzip_base, project_name)
+    
+            # Extract the zip file into the temporary directory
+            try:
+                zip_file.extractall(path=unzip_base)
+            except RuntimeError:
+                # File is password protected; try to get a password from the
+                # environment; if that doesn't work, ask the user.
+                if password is not None:
+                    try:
+                        zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+                    except RuntimeError:
+                        raise InvalidZipRepository(
+                            'Invalid password provided for protected repository'
+                        )
+                elif no_input:
+                    raise InvalidZipRepository(
+                        'Unable to unlock password protected repository'
+                    )
+                else:
+                    retry = 0
+                    while retry is not None:
+                        try:
+                            password = read_repo_password('Repo password')
+                            zip_file.extractall(
+                                path=unzip_base, pwd=password.encode('utf-8')
+                            )
+                            retry = None
+                        except RuntimeError:
+                            retry += 1
+                            if retry == 3:
+                                raise InvalidZipRepository(
+                                    'Invalid password provided for protected repository'
+                                )
+    
+        except BadZipFile:
+>           raise InvalidZipRepository(
+                'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+            )
+E           cookiecutter.exceptions.InvalidZipRepository: Zip repository http://example.com/fake.zip is not a valid zip archive:
+
+cookiecutter/zipfile.py:108: InvalidZipRepository
+
+---- 2024-05-31T13:02:14 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import pytest
+import tempfile
+import requests
+from unittest import mock
+from zipfile import ZipFile, BadZipFile
+from cookiecutter.zipfile import unzip, InvalidZipRepository, make_sure_path_exists, prompt_and_delete, read_repo_password
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.make_sure_path_exists')
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=True)
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_response = mock.Mock()
+    mock_response.iter_content = mock.Mock(return_value=[b'content'])
+    return mocker.patch('requests.get', return_value=mock_response)
+
+@pytest.fixture
+def mock_zipfile(mocker):
+    mock_zip = mock.Mock(spec=ZipFile)
+    mock_zip.namelist.return_value = ['project/']
+    return mocker.patch('zipfile.ZipFile', return_value=mock_zip)
+
+@pytest.fixture
+def mock_tempfile_mkdtemp(mocker):
+    return mocker.patch('tempfile.mkdtemp', return_value='/mocked/temp/dir')
+
+@pytest.fixture
+def mock_read_repo_password(mocker):
+    return mocker.patch('cookiecutter.zipfile.read_repo_password', return_value='password')
+
+@pytest.fixture
+def mock_os_path_exists(mocker):
+    return mocker.patch('os.path.exists', return_value=True)
+
+@pytest.fixture
+def mock_open(mocker):
+    return mocker.patch('builtins.open', mock.mock_open())
+
+def test_unzip_url_with_password_protected_zip(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = 'password'
+
+    # Mocking the zipfile to raise RuntimeError on first extractall call
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, None]
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir')
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir', pwd=password.encode('utf-8'))
+
+def test_unzip_url_with_invalid_password(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = 'password'
+
+    # Mocking the zipfile to raise RuntimeError on both extractall calls
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, RuntimeError]
+
+    with pytest.raises(InvalidZipRepository, match='Invalid password provided for protected repository'):
+        unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir')
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir', pwd=password.encode('utf-8'))
+
+def test_unzip_url_with_no_input_password_protected(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = True
+    password = None
+
+    # Mocking the zipfile to raise RuntimeError on extractall call
+    mock_zipfile.return_value.extractall.side_effect = RuntimeError
+
+    with pytest.raises(InvalidZipRepository, match='Unable to unlock password protected repository'):
+        unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_called_once_with(path='/mocked/temp/dir')
+
+def test_unzip_url_with_retry_password(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = None
+
+    # Mocking the zipfile to raise RuntimeError on first two extractall calls and succeed on the third
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, RuntimeError, None]
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    assert mock_zipfile.return_value.extractall.call_count == 3
+    mock_read_repo_password.assert_called_with('Repo password')
+```
+---- 2024-05-31T13:02:14 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 6613, 'completion_tokens': 2947}
+---- 2024-05-31T13:02:16 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+zip_uri = 'http://example.com/fake.zip', is_url = True, clone_to_dir = '.'
+no_input = False, password = 'password'
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+>           zip_file = ZipFile(zip_path)
+
+cookiecutter/zipfile.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>, file = './fake.zip', mode = 'r'
+compression = 0, allowZip64 = True, compresslevel = None
+
+    def __init__(self, file, mode="r", compression=ZIP_STORED, allowZip64=True,
+                 compresslevel=None, *, strict_timestamps=True):
+        """Open the ZIP file with mode read 'r', write 'w', exclusive create 'x',
+        or append 'a'."""
+        if mode not in ('r', 'w', 'x', 'a'):
+            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+    
+        _check_compression(compression)
+    
+        self._allowZip64 = allowZip64
+        self._didModify = False
+        self.debug = 0  # Level of printing: 0 through 3
+        self.NameToInfo = {}    # Find file info given name
+        self.filelist = []      # List of ZipInfo instances for archive
+        self.compression = compression  # Method of compression
+        self.compresslevel = compresslevel
+        self.mode = mode
+        self.pwd = None
+        self._comment = b''
+        self._strict_timestamps = strict_timestamps
+    
+        # Check if we were passed a file-like object
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
+        if isinstance(file, str):
+            # No, it's a filename
+            self._filePassed = 0
+            self.filename = file
+            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            filemode = modeDict[mode]
+            while True:
+                try:
+                    self.fp = io.open(file, filemode)
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
+        else:
+            self._filePassed = 1
+            self.fp = file
+            self.filename = getattr(file, 'name', None)
+        self._fileRefCnt = 1
+        self._lock = threading.RLock()
+        self._seekable = True
+        self._writing = False
+    
+        try:
+            if mode == 'r':
+>               self._RealGetContents()
+
+/usr/local/lib/python3.10/zipfile.py:1258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>
+
+    def _RealGetContents(self):
+        """Read in the table of contents for the ZIP file."""
+        fp = self.fp
+        try:
+            endrec = _EndRecData(fp)
+        except OSError:
+            raise BadZipFile("File is not a zip file")
+        if not endrec:
+>           raise BadZipFile("File is not a zip file")
+E           zipfile.BadZipFile: File is not a zip file
+
+/usr/local/lib/python3.10/zipfile.py:1325: BadZipFile
+
+During handling of the above exception, another exception occurred:
+
+mock_make_sure_path_exists = <MagicMock name='make_sure_path_exists' id='140549096651312'>
+mock_prompt_and_delete = <MagicMock name='prompt_and_delete' id='140549096083792'>
+mock_requests_get = <MagicMock name='get' id='140549095520960'>
+mock_zipfile = <MagicMock name='ZipFile' id='140549094582416'>
+mock_tempfile_mkdtemp = <MagicMock name='mkdtemp' id='140549094598464'>
+mock_read_repo_password = <MagicMock name='read_repo_password' id='140549094614320'>
+mock_os_path_exists = <MagicMock name='exists' id='140549094630176'>
+mock_open = <MagicMock name='open' spec='builtin_function_or_method' id='140549094646128'>
+
+    def test_unzip_url_with_password_protected_zip(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+        zip_uri = 'http://example.com/fake.zip'
+        is_url = True
+        clone_to_dir = '.'
+        no_input = False
+        password = 'password'
+    
+        # Mocking the zipfile to raise RuntimeError on first extractall call
+        mock_zipfile.return_value.extractall.side_effect = [RuntimeError, None]
+    
+>       unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+coverup-tests/tmp_test_7bie0f60.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'http://example.com/fake.zip', is_url = True, clone_to_dir = '.'
+no_input = False, password = 'password'
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+                raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+    
+            # The first record in the zipfile should be the directory entry for
+            # the archive. If it isn't a directory, there's a problem.
+            first_filename = zip_file.namelist()[0]
+            if not first_filename.endswith('/'):
+                raise InvalidZipRepository(
+                    'Zip repository {} does not include '
+                    'a top-level directory'.format(zip_uri)
+                )
+    
+            # Construct the final target directory
+            project_name = first_filename[:-1]
+            unzip_base = tempfile.mkdtemp()
+            unzip_path = os.path.join(unzip_base, project_name)
+    
+            # Extract the zip file into the temporary directory
+            try:
+                zip_file.extractall(path=unzip_base)
+            except RuntimeError:
+                # File is password protected; try to get a password from the
+                # environment; if that doesn't work, ask the user.
+                if password is not None:
+                    try:
+                        zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+                    except RuntimeError:
+                        raise InvalidZipRepository(
+                            'Invalid password provided for protected repository'
+                        )
+                elif no_input:
+                    raise InvalidZipRepository(
+                        'Unable to unlock password protected repository'
+                    )
+                else:
+                    retry = 0
+                    while retry is not None:
+                        try:
+                            password = read_repo_password('Repo password')
+                            zip_file.extractall(
+                                path=unzip_base, pwd=password.encode('utf-8')
+                            )
+                            retry = None
+                        except RuntimeError:
+                            retry += 1
+                            if retry == 3:
+                                raise InvalidZipRepository(
+                                    'Invalid password provided for protected repository'
+                                )
+    
+        except BadZipFile:
+>           raise InvalidZipRepository(
+                'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+            )
+E           cookiecutter.exceptions.InvalidZipRepository: Zip repository http://example.com/fake.zip is not a valid zip archive:
+
+cookiecutter/zipfile.py:108: InvalidZipRepository
+
+---- 2024-05-31T13:02:39 cookiecutter/zipfile.py:13-112 ----
+```python
+import os
+import pytest
+import tempfile
+import requests
+from unittest import mock
+from zipfile import ZipFile, BadZipFile
+from cookiecutter.zipfile import unzip, InvalidZipRepository, make_sure_path_exists, prompt_and_delete, read_repo_password
+
+@pytest.fixture
+def mock_make_sure_path_exists(mocker):
+    return mocker.patch('cookiecutter.zipfile.make_sure_path_exists')
+
+@pytest.fixture
+def mock_prompt_and_delete(mocker):
+    return mocker.patch('cookiecutter.zipfile.prompt_and_delete', return_value=True)
+
+@pytest.fixture
+def mock_requests_get(mocker):
+    mock_response = mock.Mock()
+    mock_response.iter_content = mock.Mock(return_value=[b'content'])
+    return mocker.patch('requests.get', return_value=mock_response)
+
+@pytest.fixture
+def mock_zipfile(mocker):
+    mock_zip = mock.Mock(spec=ZipFile)
+    mock_zip.namelist.return_value = ['project/']
+    return mocker.patch('zipfile.ZipFile', return_value=mock_zip)
+
+@pytest.fixture
+def mock_tempfile_mkdtemp(mocker):
+    return mocker.patch('tempfile.mkdtemp', return_value='/mocked/temp/dir')
+
+@pytest.fixture
+def mock_read_repo_password(mocker):
+    return mocker.patch('cookiecutter.zipfile.read_repo_password', return_value='password')
+
+@pytest.fixture
+def mock_os_path_exists(mocker):
+    return mocker.patch('os.path.exists', return_value=True)
+
+@pytest.fixture
+def mock_open(mocker):
+    return mocker.patch('builtins.open', mock.mock_open())
+
+def test_unzip_url_with_password_protected_zip(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = 'password'
+
+    # Mocking the zipfile to raise RuntimeError on first extractall call
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, None]
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir')
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir', pwd=password.encode('utf-8'))
+
+def test_unzip_url_with_invalid_password(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = 'password'
+
+    # Mocking the zipfile to raise RuntimeError on both extractall calls
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, RuntimeError]
+
+    with pytest.raises(InvalidZipRepository, match='Invalid password provided for protected repository'):
+        unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir')
+    mock_zipfile.return_value.extractall.assert_any_call(path='/mocked/temp/dir', pwd=password.encode('utf-8'))
+
+def test_unzip_url_with_no_input_password_protected(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = True
+    password = None
+
+    # Mocking the zipfile to raise RuntimeError on extractall call
+    mock_zipfile.return_value.extractall.side_effect = RuntimeError
+
+    with pytest.raises(InvalidZipRepository, match='Unable to unlock password protected repository'):
+        unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    mock_zipfile.return_value.extractall.assert_called_once_with(path='/mocked/temp/dir')
+
+def test_unzip_url_with_retry_password(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = 'http://example.com/fake.zip'
+    is_url = True
+    clone_to_dir = '.'
+    no_input = False
+    password = None
+
+    # Mocking the zipfile to raise RuntimeError on first two extractall calls and succeed on the third
+    mock_zipfile.return_value.extractall.side_effect = [RuntimeError, RuntimeError, None]
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_called_once_with(zip_uri, stream=True)
+    assert mock_zipfile.return_value.extractall.call_count == 3
+    mock_read_repo_password.assert_called_with('Repo password')
+
+def test_unzip_local_file(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+    zip_uri = '/path/to/fake.zip'
+    is_url = False
+    clone_to_dir = '.'
+    no_input = False
+    password = None
+
+    unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+    assert unzip_path == '/mocked/temp/dir/project'
+    mock_requests_get.assert_not_called()
+    mock_zipfile.return_value.extractall.assert_called_once_with(path='/mocked/temp/dir')
+```
+---- 2024-05-31T13:02:39 cookiecutter/zipfile.py:13-112 ----
+total usage: {'prompt_tokens': 14867, 'completion_tokens': 4234}
+---- 2024-05-31T13:02:40 cookiecutter/zipfile.py:13-112 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+zip_uri = 'http://example.com/fake.zip', is_url = True, clone_to_dir = '.'
+no_input = False, password = 'password'
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+>           zip_file = ZipFile(zip_path)
+
+cookiecutter/zipfile.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>, file = './fake.zip', mode = 'r'
+compression = 0, allowZip64 = True, compresslevel = None
+
+    def __init__(self, file, mode="r", compression=ZIP_STORED, allowZip64=True,
+                 compresslevel=None, *, strict_timestamps=True):
+        """Open the ZIP file with mode read 'r', write 'w', exclusive create 'x',
+        or append 'a'."""
+        if mode not in ('r', 'w', 'x', 'a'):
+            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+    
+        _check_compression(compression)
+    
+        self._allowZip64 = allowZip64
+        self._didModify = False
+        self.debug = 0  # Level of printing: 0 through 3
+        self.NameToInfo = {}    # Find file info given name
+        self.filelist = []      # List of ZipInfo instances for archive
+        self.compression = compression  # Method of compression
+        self.compresslevel = compresslevel
+        self.mode = mode
+        self.pwd = None
+        self._comment = b''
+        self._strict_timestamps = strict_timestamps
+    
+        # Check if we were passed a file-like object
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
+        if isinstance(file, str):
+            # No, it's a filename
+            self._filePassed = 0
+            self.filename = file
+            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            filemode = modeDict[mode]
+            while True:
+                try:
+                    self.fp = io.open(file, filemode)
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
+        else:
+            self._filePassed = 1
+            self.fp = file
+            self.filename = getattr(file, 'name', None)
+        self._fileRefCnt = 1
+        self._lock = threading.RLock()
+        self._seekable = True
+        self._writing = False
+    
+        try:
+            if mode == 'r':
+>               self._RealGetContents()
+
+/usr/local/lib/python3.10/zipfile.py:1258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>
+
+    def _RealGetContents(self):
+        """Read in the table of contents for the ZIP file."""
+        fp = self.fp
+        try:
+            endrec = _EndRecData(fp)
+        except OSError:
+            raise BadZipFile("File is not a zip file")
+        if not endrec:
+>           raise BadZipFile("File is not a zip file")
+E           zipfile.BadZipFile: File is not a zip file
+
+/usr/local/lib/python3.10/zipfile.py:1325: BadZipFile
+
+During handling of the above exception, another exception occurred:
+
+mock_make_sure_path_exists = <MagicMock name='make_sure_path_exists' id='139625751609296'>
+mock_prompt_and_delete = <MagicMock name='prompt_and_delete' id='139625761574576'>
+mock_requests_get = <MagicMock name='get' id='139625747660416'>
+mock_zipfile = <MagicMock name='ZipFile' id='139625744493744'>
+mock_tempfile_mkdtemp = <MagicMock name='mkdtemp' id='139625744509792'>
+mock_read_repo_password = <MagicMock name='read_repo_password' id='139625744525648'>
+mock_os_path_exists = <MagicMock name='exists' id='139625744541504'>
+mock_open = <MagicMock name='open' spec='builtin_function_or_method' id='139625744557456'>
+
+    def test_unzip_url_with_password_protected_zip(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get, mock_zipfile, mock_tempfile_mkdtemp, mock_read_repo_password, mock_os_path_exists, mock_open):
+        zip_uri = 'http://example.com/fake.zip'
+        is_url = True
+        clone_to_dir = '.'
+        no_input = False
+        password = 'password'
+    
+        # Mocking the zipfile to raise RuntimeError on first extractall call
+        mock_zipfile.return_value.extractall.side_effect = [RuntimeError, None]
+    
+>       unzip_path = unzip(zip_uri, is_url, clone_to_dir, no_input, password)
+
+coverup-tests/tmp_test_6yzmyaiv.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'http://example.com/fake.zip', is_url = True, clone_to_dir = '.'
+no_input = False, password = 'password'
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+                raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+    
+            # The first record in the zipfile should be the directory entry for
+            # the archive. If it isn't a directory, there's a problem.
+            first_filename = zip_file.namelist()[0]
+            if not first_filename.endswith('/'):
+                raise InvalidZipRepository(
+                    'Zip repository {} does not include '
+                    'a top-level directory'.format(zip_uri)
+                )
+    
+            # Construct the final target directory
+            project_name = first_filename[:-1]
+            unzip_base = tempfile.mkdtemp()
+            unzip_path = os.path.join(unzip_base, project_name)
+    
+            # Extract the zip file into the temporary directory
+            try:
+                zip_file.extractall(path=unzip_base)
+            except RuntimeError:
+                # File is password protected; try to get a password from the
+                # environment; if that doesn't work, ask the user.
+                if password is not None:
+                    try:
+                        zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+                    except RuntimeError:
+                        raise InvalidZipRepository(
+                            'Invalid password provided for protected repository'
+                        )
+                elif no_input:
+                    raise InvalidZipRepository(
+                        'Unable to unlock password protected repository'
+                    )
+                else:
+                    retry = 0
+                    while retry is not None:
+                        try:
+                            password = read_repo_password('Repo password')
+                            zip_file.extractall(
+                                path=unzip_base, pwd=password.encode('utf-8')
+                            )
+                            retry = None
+                        except RuntimeError:
+                            retry += 1
+                            if retry == 3:
+                                raise InvalidZipRepository(
+                                    'Invalid password provided for protected repository'
+                                )
+    
+        except BadZipFile:
+>           raise InvalidZipRepository(
+                'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+            )
+E           cookiecutter.exceptions.InvalidZipRepository: Zip repository http://example.com/fake.zip is not a valid zip archive:
+
+cookiecutter/zipfile.py:108: InvalidZipRepository
+
+---- 2024-05-31T13:02:40 cookiecutter/zipfile.py:13-112 ----
+Too many attempts, giving up

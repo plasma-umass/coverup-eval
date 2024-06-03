@@ -1,0 +1,3560 @@
+---- 2024-05-31T13:20:06 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --isolate-tests --prompt-family gpt-v1 --source-dir ./flutils --tests-dir coverup-tests --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-3 --checkpoint coverup-ckpt.json flutils/codecs/b64.py flutils/codecs/raw_utf8_escape.py flutils/decorators.py flutils/namedtupleutils.py flutils/objutils.py flutils/packages.py flutils/pathutils.py flutils/setuputils/cfg.py flutils/txtutils.py
+---- 2024-05-31T13:20:18 flutils/txtutils.py:273-396 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/txtutils.py, module flutils.txtutils, does not achieve full coverage:
+when tested, lines 277, 279-287, 314, 332-333, 344-348, 356-394 and branch 342->293 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class AnsiTextWrapper(TextWrapper):
+                def _wrap_chunks(self, chunks: List[str]) -> List[str]:
+            
+                    lines = []
+       276:         if self.width <= 0:
+       277:             raise ValueError("invalid width %r (must be > 0)" % self.width)
+       278:         if self.max_lines is not None:
+       279:             if self.max_lines > 1:
+       280:                 indent = self.subsequent_indent
+                        else:
+       282:                 indent = self.initial_indent
+       283:             indent_len = len_without_ansi(indent)
+       284:             _placeholder_len = len_without_ansi(self.placeholder.lstrip())
+       285:             if indent_len + _placeholder_len > self.width:
+       286:                 raise ValueError('placeholder too large for max width')
+       287:             del _placeholder_len
+            
+                    # Arrange in reverse order so items can be efficiently popped
+                    # from a stack of chucks.
+                    chunks.reverse()
+            
+       293:         while chunks:
+            
+                        # Start the list of chunks that will make up the current line.
+                        # cur_len is just the length of all the chunks in cur_line.
+                        cur_line = []
+                        cur_len = 0
+            
+                        # Figure out which static string will prefix this line.
+                        if lines:
+                            indent = self.subsequent_indent
+                        else:
+                            indent = self.initial_indent
+            
+                        indent_len = len_without_ansi(indent)
+            
+                        # Maximum width for this line.
+                        width = self.width - indent_len
+            
+                        # First chunk on line is whitespace -- drop it, unless this
+                        # is the very beginning of the text (ie. no lines started yet).
+       313:             if self.drop_whitespace and chunks[-1].strip() == '' and lines:
+       314:                 del chunks[-1]
+            
+                        while chunks:
+                            l = len_without_ansi(chunks[-1])
+            
+                            # Can at least squeeze this chunk onto the current line.
+                            if cur_len + l <= width:
+                                cur_line.append(chunks.pop())
+                                cur_len += l
+                                continue
+            
+                            # Nope, this line is full.
+                            else:
+                                break
+            
+                        # The current line is full, and the next chunk is too big to
+                        # fit on *any* line (not just this one).
+       331:             if chunks and len_without_ansi(chunks[-1]) > width:
+       332:                 self._handle_long_word(chunks, cur_line, cur_len, width)
+       333:                 cur_len = sum(map(len_without_ansi, cur_line))
+            
+                        # If the last chunk on this line is all whitespace, drop it.
+                        if (self.drop_whitespace and
+                                cur_line and
+                                cur_line[-1].strip() == ''):
+                            cur_len -= len_without_ansi(cur_line[-1])
+                            del cur_line[-1]
+            
+       342:             if cur_line:
+       343:                 if (self.max_lines is None or
+       344:                         len(lines) + 1 < self.max_lines or
+       345:                         (not chunks or
+       346:                          self.drop_whitespace and
+       347:                          len(chunks) == 1 and
+       348:                          not chunks[0].strip()) and cur_len <= width):
+                                # Convert current line back to a string and store it in
+                                # list of all lines (return value).
+                                lines.append(indent + ''.join(cur_line))
+                            else:
+            
+                                # Add the placeholder to the current line if it fits.
+                                # If it does NOT fit, remove each chunk until it does.
+       356:                     while cur_line:
+                                    # If the current line's last chunk has a length
+                                    # greater than zero; and, the length of the current
+                                    # line plus the length of the placeholder is less
+                                    # than or equal to the maximum length for this line...
+       361:                         if (cur_line[-1].strip() and
+       362:                                 cur_len + self.placeholder_len <= width):
+                                        # Add the placeholder to the current line's chunks
+       364:                             cur_line.append(self.placeholder)
+                                        # Concatenate the indent and the combined
+                                        # current line's chunks into a single line.
+                                        # Then add this line to the list of lines.
+       368:                             lines.append(indent + ''.join(cur_line))
+       369:                             break
+            
+       371:                         cur_len -= len_without_ansi(cur_line[-1])
+                                    # delete the current line's last chunk
+       373:                         del cur_line[-1]
+            
+                                # Because the placeholder could NOT fit on the current
+                                # line, try to add the place holder on the previous line.
+                                else:
+       378:                         if lines:
+                                        # Get the previous line
+       380:                             prev_line = lines[-1].rstrip()
+                                        # Get the previous line length
+       382:                             prev_line_len = len_without_ansi(prev_line)
+            
+                                        # If the previous line's length plus the
+                                        # placeholder's length is less than the
+                                        # allowed line width...
+       387:                             if (prev_line_len + self.placeholder_len <=
+       388:                                     self.width):
+                                            # Add the placeholder at the end of the
+                                            # previous line
+       391:                                 lines[-1] = prev_line + self.placeholder
+       392:                                 break
+       393:                         lines.append(indent + self.placeholder.lstrip())
+       394:                     break
+            
+                    return lines
+
+```
+
+---- 2024-05-31T13:20:18 flutils/setuputils/cfg.py:44-79 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/setuputils/cfg.py, module flutils.setuputils.cfg, does not achieve full coverage:
+when tested, lines 48-78 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def _each_setup_cfg_command(
+                    parser: ConfigParser,
+                    format_kwargs: Dict[str, str]
+            ) -> Generator[SetupCfgCommandConfig, None, None]:
+        48:     for section, command_name in _each_setup_cfg_command_section(parser):
+        49:         commands: List[str] = []
+        50:         options: List[str] = parser.options(section)
+        51:         for option in ('command', 'commands'):
+        52:             if option in options:
+        53:                 val: str = parser.get(section, option)
+        54:                 val = val.format(**format_kwargs)
+        55:                 commands += list(
+        56:                     filter(len, map(lambda x: x.strip(), val.splitlines()))
+                            )
+        58:         if commands:
+        59:             cmd_name = ''
+        60:             if 'name' in options:
+        61:                 cmd_name = parser.get(section, 'name')
+        62:             cmd_name = cmd_name or command_name
+        63:             cmd_name = cmd_name.format(name=format_kwargs['name'])
+            
+        65:             description = ''
+        66:             if 'description' in options:
+        67:                 description = parser.get(section, 'description')
+        68:             description = description.format(**format_kwargs)
+            
+        70:             title = cmd_name.replace('.', '_')
+        71:             title = title.replace('-', '_')
+            
+        73:             if title.isidentifier() is True:
+        74:                 yield SetupCfgCommandConfig(
+        75:                     cmd_name,
+        76:                     underscore_to_camel(title, lower_first=False),
+        77:                     description,
+        78:                     tuple(commands)
+                            )
+
+```
+
+---- 2024-05-31T13:20:18 flutils/pathutils.py:138-216 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/pathutils.py, module flutils.pathutils, does not achieve full coverage:
+when tested, lines 188-216 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def chown(
+                    path: _PATH,
+                    user: Optional[str] = None,
+                    group: Optional[str] = None,
+                    include_parent: bool = False
+            ) -> None:
+                """Change ownership of a path.
+            
+                This function processes the given ``path`` with
+                :obj:`~flutils.normalize_path`.
+            
+                If the given ``path`` does NOT exist, nothing will be done.
+            
+                Args:
+                    path (:obj:`str`, :obj:`bytes` or :obj:`Path <pathlib.Path>`):
+                        The path of the file or directory that will have it's ownership
+                        changed.  This value can be a :term:`glob pattern`.
+                    user (:obj:`str` or :obj:`int`, optional): The "login name" used to set
+                        the owner of ``path``.  A value of ``'-1'`` will leave the
+                        owner unchanged.  Defaults to the "login name" of the current user.
+                    group (:obj:`str` or :obj:`int`, optional): The group name used to set
+                        the group of ``path``.  A value of ``'-1'`` will leave the
+                        group unchanged.  Defaults to the current user's group.
+                    include_parent (:obj:`bool`, optional): A value of :obj:`True` will
+                        chown the parent directory of the given ``path`` that contains
+                        a :term:`glob pattern`.  Defaults to :obj:`False`.
+            
+                Raises:
+                    OSError: If the given :obj:`user` does not exist as a "login
+                        name" for this operating system.
+                    OSError: If the given :obj:`group` does not exist as a "group
+                        name" for this operating system.
+            
+                :rtype: :obj:`None`
+            
+                Examples:
+                    >>> from flutils.pathutils import chown
+                    >>> chown('~/tmp/flutils.tests.osutils.txt')
+            
+                    Supports a :term:`glob pattern`.  So to recursively change the
+                    ownership of a directory just do:
+            
+                    >>> chown('~/tmp/**')
+            
+            
+                    To change ownership of all the directory's immediate contents:
+            
+                    >>> chown('~/tmp/*', user='foo', group='bar')
+            
+                """
+       188:     path = normalize_path(path)
+       189:     if isinstance(user, str) and user == '-1':
+       190:         uid = -1
+                else:
+       192:         uid = get_os_user(user).pw_uid
+            
+       194:     if isinstance(user, str) and group == '-1':
+       195:         gid = -1
+                else:
+       197:         gid = get_os_group(group).gr_gid
+            
+       199:     if '*' in path.as_posix():
+       200:         try:
+       201:             for sub_path in Path().glob(path.as_posix()):
+       202:                 if sub_path.is_dir() or sub_path.is_file():
+       203:                     os.chown(sub_path.as_posix(), uid, gid)
+       204:         except NotImplementedError:
+                        # Path().glob() returns an iterator that will
+                        # raise NotImplementedError if there
+                        # are no results from the glob pattern.
+       208:             pass
+                    else:
+       210:             if include_parent is True:
+       211:                 path = path.parent
+       212:                 if path.is_dir() is True:
+       213:                     os.chown(path.as_posix(), uid, gid)
+                else:
+       215:         if path.exists() is True:
+       216:             os.chown(path.as_posix(), uid, gid)
+
+```
+
+---- 2024-05-31T13:20:18 flutils/packages.py:169-292 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/packages.py, module flutils.packages, does not achieve full coverage:
+when tested, lines 233, 239-241, 246-254, 283-289 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def bump_version(
+                    version: str,
+                    position: int = 2,
+                    pre_release: Optional[str] = None
+            ) -> str:
+                """Increase the version number from a version number string.
+            
+                *New in version 0.3*
+            
+                Args:
+                    version (str): The version number to be bumped.
+                    position (int, optional): The position (starting with zero) of the
+                        version number component to be increased.  Defaults to: ``2``
+                    pre_release (str, Optional): A value of ``a`` or ``alpha`` will
+                        create or increase an alpha version number.  A value of ``b`` or
+                        ``beta`` will create or increase a beta version number.
+            
+                Raises:
+                    ValueError: if the given ``version`` is an invalid version number.
+                    ValueError: if the given ``position`` does not exist.
+                    ValueError: if the given ``prerelease`` is not in:
+                        ``a, alpha, b, beta``
+                    ValueError: if trying to 'major' part, of a version number, to
+                        a pre-release version.
+            
+                :rtype:
+                    :obj:`str`
+            
+                    * The increased version number.
+            
+                Examples:
+                    >>> from flutils.packages import bump_version
+                    >>> bump_version('1.2.2')
+                    '1.2.3'
+                    >>> bump_version('1.2.3', position=1)
+                    '1.3'
+                    >>> bump_version('1.3.4', position=0)
+                    '2.0'
+                    >>> bump_version('1.2.3', prerelease='a')
+                    '1.2.4a0'
+                    >>> bump_version('1.2.4a0', pre_release='a')
+                    '1.2.4a1'
+                    >>> bump_version('1.2.4a1', pre_release='b')
+                    '1.2.4b0'
+                    >>> bump_version('1.2.4a1')
+                    '1.2.4'
+                    >>> bump_version('1.2.4b0')
+                    '1.2.4'
+                    >>> bump_version('2.1.3', position=1, pre_release='a')
+                    '2.2a0'
+                    >>> bump_version('1.2b0', position=2)
+                    '1.2.1'
+            
+                """
+                ver_info = _build_version_info(version)
+                position = _build_version_bump_position(position)
+                bump_type = _build_version_bump_type(position, pre_release)
+                # noinspection PyUnusedLocal
+                hold: List[Union[int, str]] = []
+                if bump_type == _BUMP_VERSION_MAJOR:
+                    hold = [ver_info.major.num + 1, 0]
+                elif bump_type in _BUMP_VERSION_MINORS:
+                    if bump_type == _BUMP_VERSION_MINOR:
+       232:             if ver_info.minor.pre_txt:
+       233:                 hold = [ver_info.major.num, ver_info.minor.num]
+                        else:
+                            hold = [ver_info.major.num, ver_info.minor.num + 1]
+                    else:
+       237:             if bump_type == _BUMP_VERSION_MINOR_ALPHA:
+       238:                 if ver_info.minor.pre_txt == 'a':
+       239:                     part = '%sa%s' % (
+       240:                         ver_info.minor.num,
+       241:                         ver_info.minor.pre_num + 1
+                                )
+                            else:
+                                part = '{}a0'.format(ver_info.minor.num + 1)
+                        else:
+       246:                 if ver_info.minor.pre_txt == 'a':
+       247:                     part = '{}b0'.format(ver_info.minor.num)
+       248:                 elif ver_info.minor.pre_txt == 'b':
+       249:                     part = '%sb%s' % (
+       250:                         ver_info.minor.num,
+       251:                         ver_info.minor.pre_num + 1
+                                )
+                            else:
+       254:                     part = '{}b0'.format(ver_info.minor.num + 1)
+                        hold = [ver_info.major.num, part]
+                else:
+                    if bump_type == _BUMP_VERSION_PATCH:
+                        if ver_info.patch.pre_txt:
+                            hold = [
+                                ver_info.major.num,
+                                ver_info.minor.num,
+                                ver_info.patch.num
+                            ]
+                        else:
+                            hold = [
+                                ver_info.major.num,
+                                ver_info.minor.num,
+                                ver_info.patch.num + 1
+                            ]
+                    else:
+                        if bump_type == _BUMP_VERSION_PATCH_ALPHA:
+                            if ver_info.patch.pre_txt == 'a':
+                                part = '%sa%s' % (
+                                    ver_info.patch.num,
+                                    ver_info.patch.pre_num + 1
+                                )
+                            else:
+                                part = '{}a0'.format(ver_info.patch.num + 1)
+                        else:
+       280:                 if ver_info.patch.pre_txt == 'a':
+                                part = '{}b0'.format(ver_info.patch.num)
+            
+       283:                 elif ver_info.patch.pre_txt == 'b':
+       284:                     part = '%sb%s' % (
+       285:                         ver_info.patch.num,
+       286:                         ver_info.patch.pre_num + 1
+                                )
+                            else:
+       289:                     part = '{}b0'.format(ver_info.patch.num + 1)
+                        hold = [ver_info.major.num, ver_info.minor.num, part]
+                out = '.'.join(map(str, hold))
+                return out
+
+```
+
+---- 2024-05-31T13:20:18 flutils/pathutils.py:51-135 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/pathutils.py, module flutils.pathutils, does not achieve full coverage:
+when tested, lines 114-117, 126-129 and branch 134->exit do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def chmod(
+                    path: _PATH,
+                    mode_file: Optional[int] = None,
+                    mode_dir: Optional[int] = None,
+                    include_parent: bool = False
+            ) -> None:
+                """Change the mode of a path.
+            
+                This function processes the given ``path`` with
+                :obj:`~flutils.normalize_path`.
+            
+                If the given ``path`` does NOT exist, nothing will be done.
+            
+                This function will **NOT** change the mode of:
+            
+                - symlinks (symlink targets that are files or directories will be changed)
+                - sockets
+                - fifo
+                - block devices
+                - char devices
+            
+                Args:
+                    path (:obj:`str`, :obj:`bytes` or :obj:`Path <pathlib.Path>`):
+                        The path of the file or directory to have it's mode changed.  This
+                        value can be a :term:`glob pattern`.
+                    mode_file (:obj:`int`, optional): The mode applied to the given
+                        ``path`` that is a file or a symlink target that is a file.
+                        Defaults to ``0o600``.
+                    mode_dir (:obj:`int`, optional): The mode applied to the given
+                        ``path`` that is a directory or a symlink target that is a
+                        directory. Defaults to ``0o700``.
+                    include_parent (:obj:`bool`, optional): A value of :obj:`True`` will
+                        chmod the parent directory of the given ``path`` that contains a
+                        a :term:`glob pattern`.  Defaults to :obj:`False`.
+            
+                :rtype: :obj:`None`
+            
+                Examples:
+                    >>> from flutils.pathutils import chmod
+                    >>> chmod('~/tmp/flutils.tests.osutils.txt', 0o660)
+            
+                    Supports a :term:`glob pattern`.  So to recursively change the mode
+                    of a directory just do:
+            
+                    >>> chmod('~/tmp/**', mode_file=0o644, mode_dir=0o770)
+            
+                    To change the mode of a directory's immediate contents:
+            
+                    >>> chmod('~/tmp/*')
+            
+                """
+            
+                path = normalize_path(path)
+            
+                if mode_file is None:
+                    mode_file = 0o600
+            
+                if mode_dir is None:
+                    mode_dir = 0o700
+            
+                if '*' in path.as_posix():
+                    try:
+       113:             for sub_path in Path().glob(path.as_posix()):
+       114:                 if sub_path.is_dir() is True:
+       115:                     sub_path.chmod(mode_dir)
+       116:                 elif sub_path.is_file():
+       117:                     sub_path.chmod(mode_file)
+            
+                    # Path().glob() returns an iterator that will
+                    # raise NotImplementedError if there
+                    # are no results from the glob pattern.
+                    except NotImplementedError:
+                        pass
+            
+                    else:
+       126:             if include_parent is True:
+       127:                 parent = path.parent
+       128:                 if parent.is_dir():
+       129:                     parent.chmod(mode_dir)
+                else:
+                    if path.exists() is True:
+                        if path.is_dir():
+                            path.chmod(mode_dir)
+       134:             elif path.is_file():
+                            path.chmod(mode_file)
+
+```
+
+---- 2024-05-31T13:20:18 flutils/codecs/raw_utf8_escape.py:27-88 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/codecs/raw_utf8_escape.py, module flutils.codecs.raw_utf8_escape, does not achieve full coverage:
+when tested, lines 52-88 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def encode(
+                    text: _Str,
+                    errors: _Str = 'strict'
+            ) -> Tuple[bytes, int]:
+                """Convert a :obj:`str`, that may contain escaped utf8 hexadecimal, to
+                bytes of escaped utf8 hexadecimal.
+            
+                Args:
+                    text (str or :obj:`~UserString`): The string input.
+                    errors (str or :obj:`~UserString`): The error checking level.
+            
+                Returns:
+                    bytes: The given ``text`` converted into escaped utf8 bytes.
+                    int: The number of given ``text`` characters consumed
+            
+                Raises:
+                     UnicodeEncodeError: if the given ``text`` contains escaped
+                        utf8 hexadecimal that references invalid utf8 bytes.
+                """
+            
+                # Convert the given 'text', that are of type UserString into a str.
+                # if isinstance(text, UserString):
+                #     text_input = str(text)
+                # else:
+            
+        52:     text_input = str(text)
+            
+                # Convert the given 'errors', that are of type UserString into a str.
+        55:     errors_input = str(errors)
+            
+                # Convert the string into utf-8 bytes
+        58:     text_bytes_utf8 = text_input.encode('utf-8')
+        59:     text_bytes_utf8 = cast(bytes, text_bytes_utf8)
+            
+                # Convert the utf8 bytes into a string of latin-1 characters.
+                # This basically maps the exact utf8 bytes to the string. Also,
+                # this converts any escaped hexadecimal sequences \\xHH into
+                # \xHH bytes.
+        65:     text_str_latin1 = text_bytes_utf8.decode('unicode_escape')
+            
+                # Convert the string of latin-1 characters (which are actually
+                # utf8 characters) into bytes.
+        69:     text_bytes_utf8 = text_str_latin1.encode('latin1')
+            
+                # Convert the utf8 bytes into a string.
+        72:     try:
+        73:         text_str = text_bytes_utf8.decode('utf-8', errors=errors_input)
+        74:     except UnicodeDecodeError as e:
+        75:         raise UnicodeEncodeError(
+        76:             'eutf8h',
+        77:             str(text_input),
+        78:             e.start,
+        79:             e.end,
+        80:             e.reason,
+                    )
+            
+                # Convert each character into a string of escaped utf8 hexadecimal.
+        84:     out_str: str = reduce(lambda a, b: f'{a}{b}', _each_utf8_hex(text_str))
+            
+        86:     out_bytes = out_str.encode('utf-8')
+            
+        88:     return out_bytes, len(text)
+
+```
+
+---- 2024-05-31T13:20:18 flutils/decorators.py:71-79 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/decorators.py, module flutils.decorators, does not achieve full coverage:
+when tested, lines 73-79 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class cached_property:
+                def _wrap_in_coroutine(self, obj):
+            
+        73:         @asyncio.coroutine
+        74:         def wrapper():
+        75:             future = asyncio.ensure_future(self.func(obj))
+        76:             obj.__dict__[self.func.__name__] = future
+        77:             return future
+            
+        79:         return wrapper()
+
+```
+
+---- 2024-05-31T13:20:18 flutils/pathutils.py:574-621 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/pathutils.py, module flutils.pathutils, does not achieve full coverage:
+when tested, line 615 and branches 610->608, 618->exit do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def path_absent(
+                    path: _PATH,
+            ) -> None:
+                """Ensure the given ``path`` does **NOT** exist.
+            
+                *New in version 0.4.*
+            
+                If the given ``path`` does exist, it will be deleted.
+            
+                If the given ``path`` is a directory, this function will
+                recursively delete all of the directory's contents.
+            
+                This function processes the given ``path`` with
+                :obj:`~flutils.normalize_path`.
+            
+                Args:
+                    path (:obj:`str`, :obj:`bytes` or :obj:`Path <pathlib.Path>`):
+                        The path to remove.
+            
+                :rtype: :obj:`None`
+            
+                Example:
+                    >>> from flutils.pathutils import path_absent
+                    >>> path_absent('~/tmp/test_path')
+            
+                """
+                path = normalize_path(path)
+                path = path.as_posix()
+                path = cast(str, path)
+                if os.path.exists(path):
+                    if os.path.islink(path):
+                        os.unlink(path)
+                    elif os.path.isdir(path):
+                        for root, dirs, files in os.walk(path, topdown=False):
+       608:                 for name in files:
+                                p = os.path.join(root, name)
+       610:                     if os.path.isfile(p) or os.path.islink(p):
+                                    os.unlink(p)
+                            for name in dirs:
+                                p = os.path.join(root, name)
+       614:                     if os.path.islink(p):
+       615:                         os.unlink(p)
+                                else:
+                                    os.rmdir(p)
+       618:             if os.path.isdir(path):
+                            os.rmdir(path)
+                    else:
+                        os.unlink(path)
+
+```
+
+---- 2024-05-31T13:20:18 flutils/decorators.py:61-69 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/decorators.py, module flutils.decorators, does not achieve full coverage:
+when tested, line 66 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            class cached_property:
+                def __get__(self, obj: Any, cls):
+                    if obj is None:
+                        return self
+            
+        65:         if asyncio.iscoroutinefunction(self.func):
+        66:             return self._wrap_in_coroutine(obj)
+            
+                    value = obj.__dict__[self.func.__name__] = self.func(obj)
+                    return value
+
+```
+
+---- 2024-05-31T13:20:18 flutils/pathutils.py:219-333 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/pathutils.py, module flutils.pathutils, does not achieve full coverage:
+when tested, branches 306->321, 321->324 do not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def directory_present(
+                    path: _PATH,
+                    mode: Optional[int] = None,
+                    user: Optional[str] = None,
+                    group: Optional[str] = None,
+            ) -> Path:
+                """Ensure the state of the given :obj:`path` is present and a directory.
+            
+                This function processes the given ``path`` with
+                :obj:`~flutils.normalize_path`.
+            
+                If the given ``path`` does **NOT** exist, it will be created as a
+                directory.
+            
+                If the parent paths of the given ``path`` do not exist, they will also be
+                created with the ``mode``, ``user`` and ``group``.
+            
+                If the given ``path`` does exist as a directory, the ``mode``, ``user``,
+                and :``group`` will be applied.
+            
+                Args:
+                    path (:obj:`str`, :obj:`bytes` or :obj:`Path <pathlib.Path>`):
+                        The path of the directory.
+                    mode (:obj:`int`, optional): The mode applied to the ``path``.
+                        Defaults to ``0o700``.
+                    user (:obj:`str` or :obj:`int`, optional): The "login name" used to
+                        set the owner of the given ``path``.  A value of ``'-1'`` will
+                        leave the owner unchanged.  Defaults to the "login name" of the
+                        current user.
+                    group (:obj:`str` or :obj:`int`, optional): The group name used to set
+                        the group of the given ``path``.  A value of ``'-1'`` will leave
+                        the group unchanged.  Defaults to the current user's group.
+            
+                Raises:
+                    ValueError: if the given ``path`` contains a glob pattern.
+                    ValueError: if the given ``path`` is not an absolute path.
+                    FileExistsError: if the given ``path`` exists and is not a directory.
+                    FileExistsError: if a parent of the given ``path`` exists and is
+                        not a directory.
+            
+                :rtype: :obj:`Path <pathlib.Path>`
+            
+                    * :obj:`PosixPath <pathlib.PosixPath>` or
+                      :obj:`WindowsPath <pathlib.WindowsPath>` depending on the system.
+            
+                    .. Note:: :obj:`Path <pathlib.Path>` objects are immutable. Therefore,
+                       any given ``path`` of type :obj:`Path <pathlib.Path>` will not be
+                       the same object returned.
+            
+                Example:
+                    >>> from flutils.pathutils import directory_present
+                    >>> directory_present('~/tmp/test_path')
+                    PosixPath('/Users/len/tmp/test_path')
+            
+                """
+                path = normalize_path(path)
+            
+                if '*' in path.as_posix():
+                    raise ValueError(
+                        'The path: %r must NOT contain any glob patterns.'
+                        % path.as_posix()
+                    )
+                if path.is_absolute() is False:
+                    raise ValueError(
+                        'The path: %r must be an absolute path.  A path is considered '
+                        'absolute if it has both a root and (if the flavour allows) a '
+                        'drive.'
+                        % path.as_posix()
+                    )
+            
+                # Create a queue of paths to be created as directories.
+                paths: Deque = deque()
+            
+                path_exists_as = exists_as(path)
+                if path_exists_as == '':
+                    paths.append(path)
+                elif path_exists_as != 'directory':
+                    raise FileExistsError(
+                        'The path: %r can NOT be created as a directory because it '
+                        'already exists as a %s.' % (path.as_posix(), path_exists_as)
+                    )
+            
+                parent = path.parent
+                child = path
+            
+                # Traverse the path backwards and add any directories that
+                # do no exist to the path queue.
+       306:     while child.as_posix() != parent.as_posix():
+                    parent_exists_as = exists_as(parent)
+                    if parent_exists_as == '':
+                        paths.appendleft(parent)
+                        child = parent
+                        parent = parent.parent
+                    elif parent_exists_as == 'directory':
+                        break
+                    else:
+                        raise FileExistsError(
+                            'Unable to create the directory: %r because the'
+                            'parent path: %r exists as a %s.'
+                            % (path.as_posix, parent.as_posix(), parent_exists_as)
+                        )
+            
+       321:     if mode is None:
+                    mode = 0o700
+            
+       324:     if paths:
+                    for build_path in paths:
+                        build_path.mkdir(mode=mode)
+                        chown(build_path, user=user, group=group)
+                else:
+                    # The given path already existed only need to do a chown.
+                    chmod(path, mode_dir=mode)
+                    chown(path, user=user, group=group)
+            
+                return path
+
+```
+
+---- 2024-05-31T13:20:18 flutils/txtutils.py:25-56 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/txtutils.py, module flutils.txtutils, does not achieve full coverage:
+when tested, branch 51->50 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            def len_without_ansi(seq: Sequence) -> int:
+                """Return the character length of the given
+                :obj:`Sequence <typing.Sequence>` without counting any ANSI codes.
+            
+                *New in version 0.6*
+            
+                Args:
+                     seq (:obj:`Sequence <typing.Sequence>`): A string or a list/tuple
+                         of strings.
+            
+                :rtype:
+                    :obj:`int`
+            
+                Example:
+                    >>> from flutils.txtutils import len_without_ansi
+                    >>> text = '\\x1b[38;5;209mfoobar\\x1b[0m'
+                    >>> len_without_ansi(text)
+                    6
+                """
+                if hasattr(seq, 'capitalize'):
+                    _text: str = cast(str, seq)
+                    seq = [c for c in _ANSI_RE.split(_text) if c]
+                seq = [c for c in chain(*map(_ANSI_RE.split, seq)) if c]
+                seq = cast(Sequence[str], seq)
+                out = 0
+        50:     for text in seq:
+        51:         if hasattr(text, 'capitalize'):
+                        if text.startswith('\x1b[') and text.endswith('m'):
+                            continue
+                        else:
+                            out += len(text)
+                return out
+
+```
+
+---- 2024-05-31T13:20:18 flutils/namedtupleutils.py:107-137 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/namedtupleutils.py, module flutils.namedtupleutils, does not achieve full coverage:
+when tested, branch 120->113 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @_to_namedtuple.register(Mapping)
+            def _(
+                    obj: Mapping,
+                    _started: bool = False
+            ) -> Union[NamedTuple, Tuple]:
+                keys = []
+       113:     for key in obj.keys():
+                    if hasattr(key, 'capitalize'):
+                        key = cast(str, key)
+                        try:
+                            validate_identifier(key, allow_underscore=False)
+                        except SyntaxError:
+                            continue
+       120:             if key.isidentifier():
+                            keys.append(key)
+                if not isinstance(obj, OrderedDict):
+                    keys = tuple(sorted(keys))
+                args = []
+                for key in keys:
+                    val: Any = obj[key]
+                    val = _to_namedtuple(val, _started=True)
+                    args.append(val)
+                if args:
+                    # noinspection Mypy
+                    make = namedtuple('NamedTuple', keys)  # type: ignore[misc]
+                    # noinspection PyTypeChecker,PyArgumentList
+                    out: NamedTuple = make(*args)
+                    return out
+                make_empty = namedtuple('NamedTuple', '')
+                out = make_empty()
+                return out
+
+```
+
+---- 2024-05-31T13:20:18 flutils/namedtupleutils.py:141-177 ----
+
+You are an expert Python test-driven developer.
+The code below, extracted from flutils/namedtupleutils.py, module flutils.namedtupleutils, does not achieve full coverage:
+when tested, branch 163->169 does not execute.
+Create a new pytest test function that executes these missing lines/branches, always making
+sure that the new test is correct and indeed improves coverage.
+Always send entire Python test scripts when proposing a new test or correcting one you
+previously proposed.
+Be sure to include assertions in the test that verify any applicable postconditions.
+Please also make VERY SURE to clean up after the test, so as not to affect other tests;
+use 'pytest-mock' if appropriate.
+Write as little top-level code as possible, and in particular do not include any top-level code
+calling into pytest.main or the test itself.
+Respond ONLY with the Python code enclosed in backticks, without any explanation.
+```python
+            @_to_namedtuple.register(Sequence)  # type: ignore[no-redef]
+            def _(
+                    obj: Sequence,
+                    _started: bool = False
+            ) -> Union[List[Any], Tuple[Any, ...], NamedTuple, str]:
+                if hasattr(obj, 'capitalize'):
+                    obj = cast(str, obj)
+                    if _started is False:
+                        raise TypeError(
+                            "Can convert only 'list', 'tuple', 'dict' to a NamedTuple; "
+                            "got: (%r) %s" % (type(obj).__name__, obj)
+                        )
+                    return obj
+                if hasattr(obj, '_fields'):
+                    fields: List[str] = list(obj._fields)
+                    if fields:
+                        obj = cast(NamedTuple, obj)
+                        args = []
+                        for attr in obj._fields:
+                            val: Any = getattr(obj, attr)
+                            val = _to_namedtuple(val, _started=True)
+                            args.append(val)
+       163:             if args:
+                            # noinspection Mypy
+                            make = namedtuple('NamedTuple', fields)  # type: ignore[misc]
+                            # noinspection PyTypeChecker,PyArgumentList
+                            out: NamedTuple = make(*args)
+                            return out
+       169:         return obj
+                # noinspection PyTypeChecker
+                out = []
+                for item in obj:
+                    val = _to_namedtuple(item, _started=True)
+                    out.append(val)
+                if not hasattr(obj, 'append'):
+                    return tuple(out)
+                return out
+
+```
+
+---- 2024-05-31T13:20:22 flutils/decorators.py:61-69 ----
+```python
+import pytest
+import asyncio
+from flutils.decorators import cached_property
+
+class TestCachedProperty:
+    @pytest.fixture
+    def mock_obj(self, mocker):
+        class MockClass:
+            @cached_property
+            async def async_prop(self):
+                return 'async_value'
+        return MockClass()
+
+    @pytest.mark.asyncio
+    async def test_async_cached_property(self, mock_obj):
+        # Ensure the property is not already in the object's __dict__
+        assert 'async_prop' not in mock_obj.__dict__
+
+        # Access the async property to trigger the __get__ method
+        value = await mock_obj.async_prop
+
+        # Verify the value and that it is now cached in the object's __dict__
+        assert value == 'async_value'
+        assert mock_obj.__dict__['async_prop'] == 'async_value'
+```
+---- 2024-05-31T13:20:22 flutils/decorators.py:61-69 ----
+total usage: {'prompt_tokens': 273, 'completion_tokens': 175}
+---- 2024-05-31T13:20:23 flutils/namedtupleutils.py:107-137 ----
+```python
+import pytest
+from collections import OrderedDict
+from collections.abc import Mapping
+from typing import NamedTuple, Union, Tuple, Any, cast
+from flutils.namedtupleutils import _to_namedtuple
+
+def validate_identifier(identifier: str, allow_underscore: bool = True) -> None:
+    if not identifier.isidentifier() or (not allow_underscore and identifier.startswith('_')):
+        raise SyntaxError(f"Invalid identifier: {identifier}")
+
+@pytest.fixture
+def mock_validate_identifier(mocker):
+    return mocker.patch('flutils.namedtupleutils.validate_identifier', side_effect=validate_identifier)
+
+def test_to_namedtuple_with_non_identifier_keys(mock_validate_identifier):
+    data = {
+        'validKey': 'value1',
+        'invalid key': 'value2',  # This key will cause validate_identifier to raise SyntaxError
+        'anotherValidKey': 'value3'
+    }
+    
+    result = _to_namedtuple(data)
+    
+    assert isinstance(result, NamedTuple)
+    assert hasattr(result, 'validKey')
+    assert hasattr(result, 'anotherValidKey')
+    assert not hasattr(result, 'invalid key')
+    assert result.validKey == 'value1'
+    assert result.anotherValidKey == 'value3'
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:23 flutils/namedtupleutils.py:107-137 ----
+total usage: {'prompt_tokens': 704, 'completion_tokens': 451}
+---- 2024-05-31T13:20:24 flutils/decorators.py:71-79 ----
+```python
+import pytest
+import asyncio
+from flutils.decorators import cached_property
+
+class TestCachedProperty:
+    @pytest.mark.asyncio
+    async def test_wrap_in_coroutine(self, mocker):
+        class TestClass:
+            @cached_property
+            async def async_method(self):
+                await asyncio.sleep(0.1)
+                return 'result'
+
+        obj = TestClass()
+        cached_prop = obj.__class__.async_method
+
+        # Mock the function to ensure it gets called
+        mock_func = mocker.patch.object(cached_prop, 'func', wraps=cached_prop.func)
+
+        # Call the _wrap_in_coroutine method
+        coroutine = cached_prop._wrap_in_coroutine(obj)
+        result = await coroutine()
+
+        # Assertions to verify the behavior
+        assert isinstance(result, asyncio.Future)
+        assert result.result() == 'result'
+        assert obj.__dict__['async_method'] == result
+        mock_func.assert_called_once_with(obj)
+```
+---- 2024-05-31T13:20:24 flutils/decorators.py:71-79 ----
+total usage: {'prompt_tokens': 984, 'completion_tokens': 650}
+---- 2024-05-31T13:20:24 flutils/decorators.py:61-69 ----
+s                                                                        [100%]
+
+---- 2024-05-31T13:20:24 flutils/decorators.py:61-69 ----
+This test still lacks coverage: line 66 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:24 flutils/setuputils/cfg.py:44-79 ----
+```python
+import pytest
+from configparser import ConfigParser
+from flutils.setuputils.cfg import _each_setup_cfg_command, SetupCfgCommandConfig
+from unittest.mock import patch
+
+@pytest.fixture
+def mock_config_parser():
+    parser = ConfigParser()
+    parser.add_section('section1')
+    parser.set('section1', 'command', 'echo Hello')
+    parser.set('section1', 'name', 'test_command')
+    parser.set('section1', 'description', 'This is a test command')
+    return parser
+
+def test_each_setup_cfg_command(mock_config_parser):
+    format_kwargs = {'name': 'test'}
+    commands = list(_each_setup_cfg_command(mock_config_parser, format_kwargs))
+    
+    assert len(commands) == 1
+    command = commands[0]
+    assert isinstance(command, SetupCfgCommandConfig)
+    assert command.cmd_name == 'test_command'
+    assert command.class_name == 'TestCommand'
+    assert command.description == 'This is a test command'
+    assert command.commands == ('echo Hello',)
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:24 flutils/setuputils/cfg.py:44-79 ----
+total usage: {'prompt_tokens': 1566, 'completion_tokens': 888}
+---- 2024-05-31T13:20:25 flutils/packages.py:169-292 ----
+```python
+import pytest
+from flutils.packages import bump_version
+
+def test_bump_version():
+    # Test line 233: ver_info.minor.pre_txt is True
+    assert bump_version('1.2a0', position=1) == '1.2a1'
+    
+    # Test lines 239-241: ver_info.minor.pre_txt == 'a'
+    assert bump_version('1.2a0', position=1, pre_release='a') == '1.2a1'
+    
+    # Test lines 246-254: ver_info.minor.pre_txt == 'a' and 'b'
+    assert bump_version('1.2a0', position=1, pre_release='b') == '1.2b0'
+    assert bump_version('1.2b0', position=1, pre_release='b') == '1.2b1'
+    
+    # Test lines 283-289: ver_info.patch.pre_txt == 'b'
+    assert bump_version('1.2.3b0', position=2, pre_release='b') == '1.2.3b1'
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:25 flutils/packages.py:169-292 ----
+total usage: {'prompt_tokens': 2963, 'completion_tokens': 1150}
+---- 2024-05-31T13:20:25 flutils/namedtupleutils.py:107-137 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_validate_identifier = <MagicMock name='validate_identifier' id='140263074756352'>
+
+    def test_to_namedtuple_with_non_identifier_keys(mock_validate_identifier):
+        data = {
+            'validKey': 'value1',
+            'invalid key': 'value2',  # This key will cause validate_identifier to raise SyntaxError
+            'anotherValidKey': 'value3'
+        }
+    
+        result = _to_namedtuple(data)
+    
+>       assert isinstance(result, NamedTuple)
+E       TypeError: isinstance() arg 2 must be a type, a tuple of types, or a union
+
+coverup-tests/tmp_test_bnqn8n6a.py:24: TypeError
+
+---- 2024-05-31T13:20:25 flutils/decorators.py:71-79 ----
+s                                                                        [100%]
+
+---- 2024-05-31T13:20:25 flutils/decorators.py:71-79 ----
+This test still lacks coverage: lines 73-79 do not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:26 flutils/packages.py:169-292 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_bump_version():
+        # Test line 233: ver_info.minor.pre_txt is True
+>       assert bump_version('1.2a0', position=1) == '1.2a1'
+E       AssertionError: assert '1.2' == '1.2a1'
+E         - 1.2a1
+E         ?    --
+E         + 1.2
+
+coverup-tests/tmp_test_kqwt4noy.py:6: AssertionError
+
+---- 2024-05-31T13:20:26 flutils/setuputils/cfg.py:44-79 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_config_parser = <configparser.ConfigParser object at 0x7f91469fb0a0>
+
+    def test_each_setup_cfg_command(mock_config_parser):
+        format_kwargs = {'name': 'test'}
+        commands = list(_each_setup_cfg_command(mock_config_parser, format_kwargs))
+    
+>       assert len(commands) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+coverup-tests/tmp_test_y4iaevl1.py:19: AssertionError
+
+---- 2024-05-31T13:20:28 flutils/pathutils.py:219-333 ----
+```python
+import pytest
+from flutils.pathutils import directory_present
+from pathlib import Path
+import os
+import shutil
+
+def test_directory_present_creates_directories_with_mode(mocker):
+    # Setup
+    base_path = Path('/tmp/test_directory_present')
+    test_path = base_path / 'subdir1' / 'subdir2'
+    
+    # Ensure the base path is clean before the test
+    if base_path.exists():
+        shutil.rmtree(base_path)
+    
+    # Mocking chown to avoid changing actual file ownership
+    mocker.patch('flutils.pathutils.chown')
+    
+    # Test
+    result_path = directory_present(test_path, mode=0o755)
+    
+    # Assertions
+    assert result_path == test_path
+    assert test_path.exists()
+    assert test_path.is_dir()
+    assert oct(test_path.stat().st_mode & 0o777) == '0o755'
+    
+    # Cleanup
+    shutil.rmtree(base_path)
+
+def test_directory_present_existing_directory_with_mode(mocker):
+    # Setup
+    base_path = Path('/tmp/test_directory_present')
+    test_path = base_path / 'subdir1' / 'subdir2'
+    
+    # Ensure the base path is clean before the test
+    if base_path.exists():
+        shutil.rmtree(base_path)
+    
+    # Create the directory structure beforehand
+    test_path.mkdir(parents=True, exist_ok=True)
+    
+    # Mocking chown to avoid changing actual file ownership
+    mocker.patch('flutils.pathutils.chown')
+    
+    # Test
+    result_path = directory_present(test_path, mode=0o755)
+    
+    # Assertions
+    assert result_path == test_path
+    assert test_path.exists()
+    assert test_path.is_dir()
+    assert oct(test_path.stat().st_mode & 0o777) == '0o755'
+    
+    # Cleanup
+    shutil.rmtree(base_path)
+```
+---- 2024-05-31T13:20:28 flutils/pathutils.py:219-333 ----
+total usage: {'prompt_tokens': 4194, 'completion_tokens': 1550}
+---- 2024-05-31T13:20:30 flutils/namedtupleutils.py:141-177 ----
+```python
+import pytest
+from collections import namedtuple
+from typing import NamedTuple, Sequence, Union, List, Tuple, Any, cast
+from flutils.namedtupleutils import _to_namedtuple
+
+def test_to_namedtuple_with_empty_namedtuple():
+    # Define an empty namedtuple
+    EmptyNamedTuple = namedtuple('EmptyNamedTuple', [])
+    empty_nt = EmptyNamedTuple()
+
+    # Call the function with the empty namedtuple
+    result = _to_namedtuple(empty_nt)
+
+    # Assert that the result is the same empty namedtuple
+    assert result == empty_nt
+
+def test_to_namedtuple_with_non_empty_namedtuple():
+    # Define a non-empty namedtuple
+    NonEmptyNamedTuple = namedtuple('NonEmptyNamedTuple', ['a', 'b'])
+    non_empty_nt = NonEmptyNamedTuple(a=1, b=2)
+
+    # Call the function with the non-empty namedtuple
+    result = _to_namedtuple(non_empty_nt)
+
+    # Assert that the result is the same non-empty namedtuple
+    assert result == non_empty_nt
+
+def test_to_namedtuple_with_list():
+    # Define a list
+    lst = [1, 2, 3]
+
+    # Call the function with the list
+    result = _to_namedtuple(lst)
+
+    # Assert that the result is the same list
+    assert result == lst
+
+def test_to_namedtuple_with_tuple():
+    # Define a tuple
+    tpl = (1, 2, 3)
+
+    # Call the function with the tuple
+    result = _to_namedtuple(tpl)
+
+    # Assert that the result is the same tuple
+    assert result == tpl
+
+def test_to_namedtuple_with_string():
+    # Define a string
+    s = "test"
+
+    # Call the function with the string and expect a TypeError
+    with pytest.raises(TypeError):
+        _to_namedtuple(s)
+```
+---- 2024-05-31T13:20:30 flutils/namedtupleutils.py:141-177 ----
+total usage: {'prompt_tokens': 4715, 'completion_tokens': 1946}
+---- 2024-05-31T13:20:30 flutils/pathutils.py:219-333 ----
+..                                                                       [100%]
+
+---- 2024-05-31T13:20:30 flutils/pathutils.py:219-333 ----
+Saved as /output/coverup-tests/test_coverup_66.py
+
+---- 2024-05-31T13:20:30 flutils/pathutils.py:51-135 ----
+```python
+import os
+import pytest
+import tempfile
+from pathlib import Path
+from flutils.pathutils import chmod
+
+def test_chmod_full_coverage(mocker):
+    # Create a temporary directory and files for testing
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        file_path = temp_path / "test_file.txt"
+        dir_path = temp_path / "test_dir"
+        nested_file_path = dir_path / "nested_file.txt"
+        
+        # Create the test file and directory
+        file_path.touch()
+        dir_path.mkdir()
+        nested_file_path.touch()
+        
+        # Mock normalize_path to return the path as is
+        mocker.patch('flutils.pathutils.normalize_path', side_effect=lambda x: Path(x))
+        
+        # Test case to cover lines 114-117
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+        assert file_path.stat().st_mode & 0o777 == 0o644
+        assert dir_path.stat().st_mode & 0o777 == 0o755
+        
+        # Test case to cover lines 126-129
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755, include_parent=True)
+        assert temp_path.stat().st_mode & 0o777 == 0o755
+        
+        # Test case to cover branch 134->exit
+        chmod(str(file_path), mode_file=0o600)
+        assert file_path.stat().st_mode & 0o777 == 0o600
+
+        # Test case to cover NotImplementedError in glob
+        mocker.patch('pathlib.Path.glob', side_effect=NotImplementedError)
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+```
+
+---- 2024-05-31T13:20:30 flutils/pathutils.py:51-135 ----
+total usage: {'prompt_tokens': 5618, 'completion_tokens': 2333}
+---- 2024-05-31T13:20:30 flutils/decorators.py:71-79 ----
+```python
+import pytest
+import asyncio
+from flutils.decorators import cached_property
+
+class TestCachedProperty:
+    @pytest.mark.asyncio
+    async def test_wrap_in_coroutine(self, mocker):
+        class TestClass:
+            @cached_property
+            async def async_method(self):
+                await asyncio.sleep(0.1)
+                return 'result'
+
+        obj = TestClass()
+        cached_prop = obj.__class__.async_method
+
+        # Mock the function to ensure it gets called
+        mock_func = mocker.patch.object(cached_prop, 'func', wraps=cached_prop.func)
+
+        # Directly call the _wrap_in_coroutine method to ensure lines 73-79 are executed
+        coroutine = cached_prop._wrap_in_coroutine(obj)
+        result = await coroutine()
+
+        # Assertions to verify the behavior
+        assert isinstance(result, asyncio.Future)
+        assert result.result() == 'result'
+        assert obj.__dict__['async_method'] == result
+        mock_func.assert_called_once_with(obj)
+```
+---- 2024-05-31T13:20:30 flutils/decorators.py:71-79 ----
+total usage: {'prompt_tokens': 6137, 'completion_tokens': 2543}
+---- 2024-05-31T13:20:31 flutils/namedtupleutils.py:107-137 ----
+```python
+import pytest
+from collections import OrderedDict
+from collections.abc import Mapping
+from typing import NamedTuple, Union, Tuple, Any, cast
+from flutils.namedtupleutils import _to_namedtuple
+
+def validate_identifier(identifier: str, allow_underscore: bool = True) -> None:
+    if not identifier.isidentifier() or (not allow_underscore and identifier.startswith('_')):
+        raise SyntaxError(f"Invalid identifier: {identifier}")
+
+@pytest.fixture
+def mock_validate_identifier(mocker):
+    return mocker.patch('flutils.namedtupleutils.validate_identifier', side_effect=validate_identifier)
+
+def test_to_namedtuple_with_non_identifier_keys(mock_validate_identifier):
+    data = {
+        'validKey': 'value1',
+        'invalid key': 'value2',  # This key will cause validate_identifier to raise SyntaxError
+        'anotherValidKey': 'value3'
+    }
+    
+    result = _to_namedtuple(data)
+    
+    assert isinstance(result, tuple)
+    assert hasattr(result, 'validKey')
+    assert hasattr(result, 'anotherValidKey')
+    assert not hasattr(result, 'invalid key')
+    assert result.validKey == 'value1'
+    assert result.anotherValidKey == 'value3'
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:31 flutils/namedtupleutils.py:107-137 ----
+total usage: {'prompt_tokens': 7024, 'completion_tokens': 2818}
+---- 2024-05-31T13:20:31 flutils/namedtupleutils.py:141-177 ----
+.....                                                                    [100%]
+
+---- 2024-05-31T13:20:31 flutils/namedtupleutils.py:141-177 ----
+This test still lacks coverage: branch 163->169 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:32 flutils/txtutils.py:25-56 ----
+```python
+import pytest
+from flutils.txtutils import len_without_ansi
+
+def test_len_without_ansi_with_ansi_codes():
+    # Test input with ANSI codes
+    text_with_ansi = '\x1b[38;5;209mfoobar\x1b[0m'
+    assert len_without_ansi(text_with_ansi) == 6
+
+def test_len_without_ansi_without_ansi_codes():
+    # Test input without ANSI codes
+    text_without_ansi = 'foobar'
+    assert len_without_ansi(text_without_ansi) == 6
+
+def test_len_without_ansi_mixed_ansi_codes():
+    # Test input with mixed ANSI codes
+    text_mixed_ansi = 'foo\x1b[38;5;209mbar\x1b[0m'
+    assert len_without_ansi(text_mixed_ansi) == 6
+
+def test_len_without_ansi_empty_string():
+    # Test empty string input
+    empty_string = ''
+    assert len_without_ansi(empty_string) == 0
+
+def test_len_without_ansi_list_of_strings():
+    # Test list of strings input
+    list_of_strings = ['foo', '\x1b[38;5;209mbar\x1b[0m', 'baz']
+    assert len_without_ansi(list_of_strings) == 9
+
+def test_len_without_ansi_tuple_of_strings():
+    # Test tuple of strings input
+    tuple_of_strings = ('foo', '\x1b[38;5;209mbar\x1b[0m', 'baz')
+    assert len_without_ansi(tuple_of_strings) == 9
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    # Cleanup code if necessary
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:32 flutils/txtutils.py:25-56 ----
+total usage: {'prompt_tokens': 7491, 'completion_tokens': 3189}
+---- 2024-05-31T13:20:32 flutils/decorators.py:61-69 ----
+```python
+import pytest
+import asyncio
+from flutils.decorators import cached_property
+
+class TestCachedProperty:
+    @pytest.fixture
+    def mock_obj(self, mocker):
+        class MockClass:
+            @cached_property
+            async def async_prop(self):
+                return 'async_value'
+        return MockClass()
+
+    @pytest.mark.asyncio
+    async def test_async_cached_property(self, mock_obj, mocker):
+        # Mock the _wrap_in_coroutine method to ensure it gets called
+        mocker.patch.object(cached_property, '_wrap_in_coroutine', return_value='wrapped_value')
+
+        # Ensure the property is not already in the object's __dict__
+        assert 'async_prop' not in mock_obj.__dict__
+
+        # Access the async property to trigger the __get__ method
+        value = await mock_obj.async_prop
+
+        # Verify the value and that _wrap_in_coroutine was called
+        assert value == 'wrapped_value'
+        cached_property._wrap_in_coroutine.assert_called_once_with(mock_obj)
+```
+---- 2024-05-31T13:20:32 flutils/decorators.py:61-69 ----
+total usage: {'prompt_tokens': 7977, 'completion_tokens': 3401}
+---- 2024-05-31T13:20:32 flutils/pathutils.py:51-135 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f5aaea3edd0>
+
+    def test_chmod_full_coverage(mocker):
+        # Create a temporary directory and files for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_file.txt"
+            dir_path = temp_path / "test_dir"
+            nested_file_path = dir_path / "nested_file.txt"
+    
+            # Create the test file and directory
+            file_path.touch()
+            dir_path.mkdir()
+            nested_file_path.touch()
+    
+            # Mock normalize_path to return the path as is
+            mocker.patch('flutils.pathutils.normalize_path', side_effect=lambda x: Path(x))
+    
+            # Test case to cover lines 114-117
+            chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+            assert file_path.stat().st_mode & 0o777 == 0o644
+            assert dir_path.stat().st_mode & 0o777 == 0o755
+    
+            # Test case to cover lines 126-129
+            chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755, include_parent=True)
+>           assert temp_path.stat().st_mode & 0o777 == 0o755
+E           AssertionError: assert (16832 & 511) == 493
+E            +  where 16832 = os.stat_result(st_mode=16832, st_ino=39460987, st_dev=76, st_nlink=3, st_uid=0, st_gid=0, st_size=4096, st_atime=1717161631, st_mtime=1717161631, st_ctime=1717161631).st_mode
+E            +    where os.stat_result(st_mode=16832, st_ino=39460987, st_dev=76, st_nlink=3, st_uid=0, st_gid=0, st_size=4096, st_atime=1717161631, st_mtime=1717161631, st_ctime=1717161631) = <bound method Path.stat of PosixPath('/tmp/tmp818k0eap')>()
+E            +      where <bound method Path.stat of PosixPath('/tmp/tmp818k0eap')> = PosixPath('/tmp/tmp818k0eap').stat
+
+coverup-tests/tmp_test_riheqh6l.py:30: AssertionError
+
+---- 2024-05-31T13:20:32 flutils/decorators.py:71-79 ----
+s                                                                        [100%]
+
+---- 2024-05-31T13:20:32 flutils/decorators.py:71-79 ----
+This test still lacks coverage: lines 73-79 do not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:32 flutils/codecs/raw_utf8_escape.py:27-88 ----
+```python
+import pytest
+from flutils.codecs.raw_utf8_escape import encode
+
+def test_encode_full_coverage():
+    # Test with a normal string
+    text = "hello"
+    result, length = encode(text)
+    assert result == b'hello'
+    assert length == len(text)
+
+    # Test with a string containing utf-8 characters
+    text = "héllo"
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a string containing escaped utf-8 hexadecimal
+    text = "h\\xc3\\xa9llo"
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a string that will cause a UnicodeDecodeError
+    text = "h\\xc3\\x28llo"
+    with pytest.raises(UnicodeEncodeError):
+        encode(text)
+
+    # Test with a UserString input
+    from collections import UserString
+    text = UserString("hello")
+    result, length = encode(text)
+    assert result == b'hello'
+    assert length == len(text)
+
+    # Test with a UserString containing utf-8 characters
+    text = UserString("héllo")
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a UserString containing escaped utf-8 hexadecimal
+    text = UserString("h\\xc3\\xa9llo")
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a UserString that will cause a UnicodeDecodeError
+    text = UserString("h\\xc3\\x28llo")
+    with pytest.raises(UnicodeEncodeError):
+        encode(text)
+```
+---- 2024-05-31T13:20:32 flutils/codecs/raw_utf8_escape.py:27-88 ----
+total usage: {'prompt_tokens': 8771, 'completion_tokens': 3798}
+---- 2024-05-31T13:20:33 flutils/packages.py:169-292 ----
+```python
+import pytest
+from flutils.packages import bump_version
+
+def test_bump_version():
+    # Test line 233: ver_info.minor.pre_txt is True
+    assert bump_version('1.2a0', position=1) == '1.2a1'
+    
+    # Test lines 239-241: ver_info.minor.pre_txt == 'a'
+    assert bump_version('1.2.0a0', position=1, pre_release='a') == '1.2.0a1'
+    
+    # Test lines 246-254: ver_info.minor.pre_txt == 'a' and 'b'
+    assert bump_version('1.2.0a0', position=1, pre_release='b') == '1.2.0b0'
+    assert bump_version('1.2.0b0', position=1, pre_release='b') == '1.2.0b1'
+    
+    # Test lines 283-289: ver_info.patch.pre_txt == 'b'
+    assert bump_version('1.2.3b0', position=2, pre_release='b') == '1.2.3b1'
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:33 flutils/packages.py:169-292 ----
+total usage: {'prompt_tokens': 10573, 'completion_tokens': 4072}
+---- 2024-05-31T13:20:33 flutils/namedtupleutils.py:107-137 ----
+.                                                                        [100%]
+
+---- 2024-05-31T13:20:33 flutils/namedtupleutils.py:107-137 ----
+This test still lacks coverage: branch 120->113 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:33 flutils/setuputils/cfg.py:44-79 ----
+```python
+import pytest
+from configparser import ConfigParser
+from flutils.setuputils.cfg import _each_setup_cfg_command, SetupCfgCommandConfig
+from unittest.mock import patch
+
+@pytest.fixture
+def mock_config_parser():
+    parser = ConfigParser()
+    parser.add_section('section1')
+    parser.set('section1', 'command', 'echo Hello')
+    parser.set('section1', 'name', 'test_command')
+    parser.set('section1', 'description', 'This is a test command')
+    return parser
+
+def test_each_setup_cfg_command(mock_config_parser):
+    format_kwargs = {'name': 'test'}
+    
+    with patch('flutils.setuputils.cfg._each_setup_cfg_command_section', return_value=[('section1', 'test_command')]):
+        commands = list(_each_setup_cfg_command(mock_config_parser, format_kwargs))
+    
+    assert len(commands) == 1
+    command = commands[0]
+    assert isinstance(command, SetupCfgCommandConfig)
+    assert command.cmd_name == 'test_command'
+    assert command.class_name == 'TestCommand'
+    assert command.description == 'This is a test command'
+    assert command.commands == ('echo Hello',)
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:33 flutils/setuputils/cfg.py:44-79 ----
+total usage: {'prompt_tokens': 11538, 'completion_tokens': 4341}
+---- 2024-05-31T13:20:33 flutils/txtutils.py:25-56 ----
+......                                                                   [100%]
+
+---- 2024-05-31T13:20:33 flutils/txtutils.py:25-56 ----
+This test still lacks coverage: branch 51->50 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:34 flutils/decorators.py:61-69 ----
+s                                                                        [100%]
+
+---- 2024-05-31T13:20:34 flutils/decorators.py:61-69 ----
+This test still lacks coverage: line 66 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:34 flutils/codecs/raw_utf8_escape.py:27-88 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_encode_full_coverage():
+        # Test with a normal string
+        text = "hello"
+        result, length = encode(text)
+        assert result == b'hello'
+        assert length == len(text)
+    
+        # Test with a string containing utf-8 characters
+        text = "héllo"
+        result, length = encode(text)
+>       assert result == b'h\xc3\xa9llo'
+E       AssertionError: assert b'h\\xc3\\xa9llo' == b'h\xc3\xa9llo'
+E         At index 1 diff: b'\\' != b'\xc3'
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_w34ia8mf.py:14: AssertionError
+
+---- 2024-05-31T13:20:34 flutils/packages.py:169-292 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_bump_version():
+        # Test line 233: ver_info.minor.pre_txt is True
+>       assert bump_version('1.2a0', position=1) == '1.2a1'
+E       AssertionError: assert '1.2' == '1.2a1'
+E         - 1.2a1
+E         ?    --
+E         + 1.2
+
+coverup-tests/tmp_test_ziaz4oq_.py:6: AssertionError
+
+---- 2024-05-31T13:20:35 flutils/pathutils.py:574-621 ----
+```python
+import os
+import pytest
+import tempfile
+from unittest import mock
+from flutils.pathutils import path_absent
+
+@pytest.fixture
+def temp_dir():
+    dirpath = tempfile.mkdtemp()
+    yield dirpath
+    if os.path.exists(dirpath):
+        for root, dirs, files in os.walk(dirpath, topdown=False):
+            for name in files:
+                os.unlink(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(dirpath)
+
+def test_path_absent_file(temp_dir):
+    file_path = os.path.join(temp_dir, 'test_file')
+    with open(file_path, 'w') as f:
+        f.write('test')
+    assert os.path.isfile(file_path)
+    path_absent(file_path)
+    assert not os.path.exists(file_path)
+
+def test_path_absent_symlink(temp_dir):
+    target_path = os.path.join(temp_dir, 'target')
+    symlink_path = os.path.join(temp_dir, 'symlink')
+    with open(target_path, 'w') as f:
+        f.write('test')
+    os.symlink(target_path, symlink_path)
+    assert os.path.islink(symlink_path)
+    path_absent(symlink_path)
+    assert not os.path.exists(symlink_path)
+    assert os.path.exists(target_path)
+    path_absent(target_path)
+    assert not os.path.exists(target_path)
+
+def test_path_absent_directory_with_symlink(temp_dir):
+    dir_path = os.path.join(temp_dir, 'test_dir')
+    os.mkdir(dir_path)
+    file_path = os.path.join(dir_path, 'test_file')
+    with open(file_path, 'w') as f:
+        f.write('test')
+    symlink_path = os.path.join(dir_path, 'symlink')
+    os.symlink(file_path, symlink_path)
+    assert os.path.isdir(dir_path)
+    assert os.path.isfile(file_path)
+    assert os.path.islink(symlink_path)
+    path_absent(dir_path)
+    assert not os.path.exists(dir_path)
+    assert not os.path.exists(file_path)
+    assert not os.path.exists(symlink_path)
+
+def test_path_absent_directory_with_nested_symlink(temp_dir):
+    dir_path = os.path.join(temp_dir, 'test_dir')
+    os.mkdir(dir_path)
+    nested_dir_path = os.path.join(dir_path, 'nested_dir')
+    os.mkdir(nested_dir_path)
+    file_path = os.path.join(nested_dir_path, 'test_file')
+    with open(file_path, 'w') as f:
+        f.write('test')
+    symlink_path = os.path.join(nested_dir_path, 'symlink')
+    os.symlink(file_path, symlink_path)
+    assert os.path.isdir(dir_path)
+    assert os.path.isdir(nested_dir_path)
+    assert os.path.isfile(file_path)
+    assert os.path.islink(symlink_path)
+    path_absent(dir_path)
+    assert not os.path.exists(dir_path)
+    assert not os.path.exists(nested_dir_path)
+    assert not os.path.exists(file_path)
+    assert not os.path.exists(symlink_path)
+```
+---- 2024-05-31T13:20:35 flutils/pathutils.py:574-621 ----
+total usage: {'prompt_tokens': 12102, 'completion_tokens': 4997}
+---- 2024-05-31T13:20:35 flutils/setuputils/cfg.py:44-79 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_config_parser = <configparser.ConfigParser object at 0x7fd05ba77130>
+
+    def test_each_setup_cfg_command(mock_config_parser):
+        format_kwargs = {'name': 'test'}
+    
+        with patch('flutils.setuputils.cfg._each_setup_cfg_command_section', return_value=[('section1', 'test_command')]):
+            commands = list(_each_setup_cfg_command(mock_config_parser, format_kwargs))
+    
+        assert len(commands) == 1
+        command = commands[0]
+        assert isinstance(command, SetupCfgCommandConfig)
+>       assert command.cmd_name == 'test_command'
+E       AttributeError: 'SetupCfgCommandConfig' object has no attribute 'cmd_name'
+
+coverup-tests/tmp_test_h_uccxfd.py:24: AttributeError
+
+---- 2024-05-31T13:20:37 flutils/pathutils.py:574-621 ----
+....                                                                     [100%]
+
+---- 2024-05-31T13:20:37 flutils/pathutils.py:574-621 ----
+This test still lacks coverage: line 615 and branches 610->608, 618->exit do not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:38 flutils/decorators.py:71-79 ----
+```python
+import pytest
+import asyncio
+from flutils.decorators import cached_property
+
+class TestCachedProperty:
+    @pytest.mark.asyncio
+    async def test_wrap_in_coroutine(self, mocker):
+        class TestClass:
+            def __init__(self):
+                self._value = 'result'
+
+            @cached_property
+            async def async_method(self):
+                await asyncio.sleep(0.1)
+                return self._value
+
+        obj = TestClass()
+        cached_prop = obj.__class__.async_method
+
+        # Mock the function to ensure it gets called
+        mock_func = mocker.patch.object(cached_prop, 'func', wraps=cached_prop.func)
+
+        # Directly call the _wrap_in_coroutine method to ensure lines 73-79 are executed
+        coroutine = cached_prop._wrap_in_coroutine(obj)
+        result = await coroutine()
+
+        # Assertions to verify the behavior
+        assert isinstance(result, asyncio.Future)
+        assert result.result() == 'result'
+        assert obj.__dict__['async_method'] == result
+        mock_func.assert_called_once_with(obj)
+```
+---- 2024-05-31T13:20:38 flutils/decorators.py:71-79 ----
+total usage: {'prompt_tokens': 12871, 'completion_tokens': 5223}
+---- 2024-05-31T13:20:39 flutils/pathutils.py:138-216 ----
+```python
+import os
+import pytest
+from unittest.mock import patch, MagicMock
+from flutils.pathutils import chown
+
+@pytest.fixture
+def mock_normalize_path(mocker):
+    return mocker.patch('flutils.pathutils.normalize_path')
+
+@pytest.fixture
+def mock_get_os_user(mocker):
+    return mocker.patch('flutils.pathutils.get_os_user')
+
+@pytest.fixture
+def mock_get_os_group(mocker):
+    return mocker.patch('flutils.pathutils.get_os_group')
+
+@pytest.fixture
+def mock_path(mocker):
+    return mocker.patch('flutils.pathutils.Path')
+
+@pytest.fixture
+def mock_os_chown(mocker):
+    return mocker.patch('os.chown')
+
+def test_chown_full_coverage(mock_normalize_path, mock_get_os_user, mock_get_os_group, mock_path, mock_os_chown):
+    # Mocking normalize_path to return a Path object
+    mock_normalize_path.return_value = mock_path.return_value
+    mock_path.return_value.as_posix.return_value = '/mocked/path/*'
+    mock_path.return_value.exists.return_value = True
+    mock_path.return_value.is_dir.return_value = True
+    mock_path.return_value.is_file.return_value = True
+    mock_path.return_value.parent = mock_path.return_value
+
+    # Mocking get_os_user and get_os_group to return objects with pw_uid and gr_gid attributes
+    mock_get_os_user.return_value.pw_uid = 1000
+    mock_get_os_group.return_value.gr_gid = 1000
+
+    # Mocking Path().glob to return an iterator with one Path object
+    mock_path.return_value.glob.return_value = iter([mock_path.return_value])
+
+    # Test case where user and group are '-1'
+    chown('/mocked/path/*', user='-1', group='-1')
+    mock_os_chown.assert_called_with('/mocked/path/*', -1, -1)
+
+    # Test case where user and group are valid
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_called_with('/mocked/path/*', 1000, 1000)
+
+    # Test case where include_parent is True
+    chown('/mocked/path/*', user='testuser', group='testgroup', include_parent=True)
+    mock_os_chown.assert_called_with('/mocked/path/*', 1000, 1000)
+
+    # Test case where path does not exist
+    mock_path.return_value.exists.return_value = False
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_not_called()
+
+    # Test case where Path().glob raises NotImplementedError
+    mock_path.return_value.glob.side_effect = NotImplementedError
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_not_called()
+```
+---- 2024-05-31T13:20:39 flutils/pathutils.py:138-216 ----
+total usage: {'prompt_tokens': 13855, 'completion_tokens': 5830}
+---- 2024-05-31T13:20:39 flutils/packages.py:169-292 ----
+```python
+import pytest
+from flutils.packages import bump_version
+
+def test_bump_version():
+    # Test line 233: ver_info.minor.pre_txt is True
+    assert bump_version('1.2a0', position=2) == '1.2.0a1'
+    
+    # Test lines 239-241: ver_info.minor.pre_txt == 'a'
+    assert bump_version('1.2.0a0', position=2, pre_release='a') == '1.2.0a1'
+    
+    # Test lines 246-254: ver_info.minor.pre_txt == 'a' and 'b'
+    assert bump_version('1.2.0a0', position=2, pre_release='b') == '1.2.0b0'
+    assert bump_version('1.2.0b0', position=2, pre_release='b') == '1.2.0b1'
+    
+    # Test lines 283-289: ver_info.patch.pre_txt == 'b'
+    assert bump_version('1.2.3b0', position=2, pre_release='b') == '1.2.3b1'
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:39 flutils/packages.py:169-292 ----
+total usage: {'prompt_tokens': 16073, 'completion_tokens': 6106}
+---- 2024-05-31T13:20:40 flutils/decorators.py:71-79 ----
+s                                                                        [100%]
+
+---- 2024-05-31T13:20:40 flutils/decorators.py:71-79 ----
+This test still lacks coverage: lines 73-79 do not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:40 flutils/decorators.py:71-79 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:40 flutils/pathutils.py:51-135 ----
+```python
+import os
+import pytest
+import tempfile
+from pathlib import Path
+from flutils.pathutils import chmod
+
+def test_chmod_full_coverage(mocker):
+    # Create a temporary directory and files for testing
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        file_path = temp_path / "test_file.txt"
+        dir_path = temp_path / "test_dir"
+        nested_file_path = dir_path / "nested_file.txt"
+        
+        # Create the test file and directory
+        file_path.touch()
+        dir_path.mkdir()
+        nested_file_path.touch()
+        
+        # Mock normalize_path to return the path as is
+        mocker.patch('flutils.pathutils.normalize_path', side_effect=lambda x: Path(x))
+        
+        # Test case to cover lines 114-117
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+        assert file_path.stat().st_mode & 0o777 == 0o644
+        assert dir_path.stat().st_mode & 0o777 == 0o755
+        
+        # Test case to cover lines 126-129
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755, include_parent=True)
+        assert temp_path.stat().st_mode & 0o777 == 0o755
+        
+        # Test case to cover branch 134->exit
+        chmod(str(file_path), mode_file=0o600)
+        assert file_path.stat().st_mode & 0o777 == 0o600
+
+        # Test case to cover NotImplementedError in glob
+        mocker.patch('pathlib.Path.glob', side_effect=NotImplementedError)
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+        
+        # Clean up mock
+        mocker.stopall()
+```
+
+---- 2024-05-31T13:20:40 flutils/pathutils.py:51-135 ----
+total usage: {'prompt_tokens': 17943, 'completion_tokens': 6506}
+---- 2024-05-31T13:20:41 flutils/pathutils.py:138-216 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_with at 0x7f81a84c36d0>
+args = (<MagicMock name='chown' id='140194856910960'>, '/mocked/path/*', 1000, 1000)
+kwargs = {}, __tracebackhide__ = True
+msg = "expected call not found.\nExpected: chown('/mocked/path/*', 1000, 1000)\nActual: chown('/mocked/path/*', -1, -1)\n\np...('/mocked/path/*', -1, -1) == ('/mocked/path/*', 1000, 1000)\n  At index 1 diff: -1 != 1000\n  Use -v to get more diff"
+__mock_self = <MagicMock name='chown' id='140194856910960'>
+actual_args = ('/mocked/path/*', -1, -1), actual_kwargs = {}
+introspection = "\nArgs:\nassert ('/mocked/path/*', -1, -1) == ('/mocked/path/*', 1000, 1000)\n  At index 1 diff: -1 != 1000\n  Use -v to get more diff"
+@py_assert2 = ('/mocked/path/*', 1000, 1000), @py_assert1 = None
+@py_format4 = "('/mocked/path/*', -1, -1) == ('/mocked/path/*', 1000, 1000)\n~At index 1 diff: -1 != 1000\n~Use -v to get more diff"
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='chown' id='140194856910960'>
+args = ('/mocked/path/*', 1000, 1000), kwargs = {}
+expected = call('/mocked/path/*', 1000, 1000)
+actual = call('/mocked/path/*', -1, -1)
+_error_message = <function NonCallableMock.assert_called_with.<locals>._error_message at 0x7f81a83a3400>
+cause = None
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\nActual: %s'
+                    % (expected, actual))
+            raise AssertionError(error_message)
+    
+        def _error_message():
+            msg = self._format_mock_failure_message(args, kwargs)
+            return msg
+        expected = self._call_matcher(_Call((args, kwargs), two=True))
+        actual = self._call_matcher(self.call_args)
+        if actual != expected:
+            cause = expected if isinstance(expected, Exception) else None
+>           raise AssertionError(_error_message()) from cause
+E           AssertionError: expected call not found.
+E           Expected: chown('/mocked/path/*', 1000, 1000)
+E           Actual: chown('/mocked/path/*', -1, -1)
+
+/usr/local/lib/python3.10/unittest/mock.py:919: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_normalize_path = <MagicMock name='normalize_path' id='140194867581600'>
+mock_get_os_user = <MagicMock name='get_os_user' id='140194851492416'>
+mock_get_os_group = <MagicMock name='get_os_group' id='140194851388288'>
+mock_path = <MagicMock name='Path' id='140194848475648'>
+mock_os_chown = <MagicMock name='chown' id='140194856910960'>
+
+    def test_chown_full_coverage(mock_normalize_path, mock_get_os_user, mock_get_os_group, mock_path, mock_os_chown):
+        # Mocking normalize_path to return a Path object
+        mock_normalize_path.return_value = mock_path.return_value
+        mock_path.return_value.as_posix.return_value = '/mocked/path/*'
+        mock_path.return_value.exists.return_value = True
+        mock_path.return_value.is_dir.return_value = True
+        mock_path.return_value.is_file.return_value = True
+        mock_path.return_value.parent = mock_path.return_value
+    
+        # Mocking get_os_user and get_os_group to return objects with pw_uid and gr_gid attributes
+        mock_get_os_user.return_value.pw_uid = 1000
+        mock_get_os_group.return_value.gr_gid = 1000
+    
+        # Mocking Path().glob to return an iterator with one Path object
+        mock_path.return_value.glob.return_value = iter([mock_path.return_value])
+    
+        # Test case where user and group are '-1'
+        chown('/mocked/path/*', user='-1', group='-1')
+        mock_os_chown.assert_called_with('/mocked/path/*', -1, -1)
+    
+        # Test case where user and group are valid
+        chown('/mocked/path/*', user='testuser', group='testgroup')
+>       mock_os_chown.assert_called_with('/mocked/path/*', 1000, 1000)
+E       AssertionError: expected call not found.
+E       Expected: chown('/mocked/path/*', 1000, 1000)
+E       Actual: chown('/mocked/path/*', -1, -1)
+E       
+E       pytest introspection follows:
+E       
+E       Args:
+E       assert ('/mocked/path/*', -1, -1) == ('/mocked/path/*', 1000, 1000)
+E         At index 1 diff: -1 != 1000
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_xgifky72.py:48: AssertionError
+
+---- 2024-05-31T13:20:41 flutils/packages.py:169-292 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_bump_version():
+        # Test line 233: ver_info.minor.pre_txt is True
+>       assert bump_version('1.2a0', position=2) == '1.2.0a1'
+E       AssertionError: assert '1.2.1' == '1.2.0a1'
+E         - 1.2.0a1
+E         ?     --
+E         + 1.2.1
+
+coverup-tests/tmp_test_0nd9vfe4.py:6: AssertionError
+
+---- 2024-05-31T13:20:41 flutils/packages.py:169-292 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:41 flutils/namedtupleutils.py:107-137 ----
+```python
+import pytest
+from collections import OrderedDict
+from collections.abc import Mapping
+from typing import NamedTuple, Union, Tuple, Any, cast
+from flutils.namedtupleutils import _to_namedtuple
+
+def validate_identifier(identifier: str, allow_underscore: bool = True) -> None:
+    if not identifier.isidentifier() or (not allow_underscore and identifier.startswith('_')):
+        raise SyntaxError(f"Invalid identifier: {identifier}")
+
+@pytest.fixture
+def mock_validate_identifier(mocker):
+    return mocker.patch('flutils.namedtupleutils.validate_identifier', side_effect=validate_identifier)
+
+def test_to_namedtuple_with_non_identifier_keys(mock_validate_identifier):
+    data = {
+        'validKey': 'value1',
+        'invalid key': 'value2',  # This key will cause validate_identifier to raise SyntaxError
+        'anotherValidKey': 'value3',
+        '123invalid': 'value4'  # This key will be skipped because it is not a valid identifier
+    }
+    
+    result = _to_namedtuple(data)
+    
+    assert isinstance(result, tuple)
+    assert hasattr(result, 'validKey')
+    assert hasattr(result, 'anotherValidKey')
+    assert not hasattr(result, 'invalid key')
+    assert not hasattr(result, '123invalid')
+    assert result.validKey == 'value1'
+    assert result.anotherValidKey == 'value3'
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:41 flutils/namedtupleutils.py:107-137 ----
+total usage: {'prompt_tokens': 19145, 'completion_tokens': 6815}
+---- 2024-05-31T13:20:41 flutils/setuputils/cfg.py:44-79 ----
+```python
+import pytest
+from configparser import ConfigParser
+from flutils.setuputils.cfg import _each_setup_cfg_command, SetupCfgCommandConfig
+from unittest.mock import patch
+
+@pytest.fixture
+def mock_config_parser():
+    parser = ConfigParser()
+    parser.add_section('section1')
+    parser.set('section1', 'command', 'echo Hello')
+    parser.set('section1', 'name', 'test_command')
+    parser.set('section1', 'description', 'This is a test command')
+    return parser
+
+def test_each_setup_cfg_command(mock_config_parser):
+    format_kwargs = {'name': 'test'}
+    
+    with patch('flutils.setuputils.cfg._each_setup_cfg_command_section', return_value=[('section1', 'test_command')]):
+        commands = list(_each_setup_cfg_command(mock_config_parser, format_kwargs))
+    
+    assert len(commands) == 1
+    command = commands[0]
+    assert isinstance(command, SetupCfgCommandConfig)
+    assert command.command_name == 'test_command'
+    assert command.class_name == 'TestCommand'
+    assert command.description == 'This is a test command'
+    assert command.commands == ('echo Hello',)
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # Add any necessary cleanup code here
+
+```
+---- 2024-05-31T13:20:41 flutils/setuputils/cfg.py:44-79 ----
+total usage: {'prompt_tokens': 20577, 'completion_tokens': 7084}
+---- 2024-05-31T13:20:42 flutils/txtutils.py:273-396 ----
+```python
+import pytest
+from flutils.txtutils import AnsiTextWrapper
+from textwrap import TextWrapper
+
+def len_without_ansi(text):
+    # Dummy implementation for len_without_ansi
+    return len(text)
+
+@pytest.fixture
+def mock_len_without_ansi(mocker):
+    return mocker.patch('flutils.txtutils.len_without_ansi', side_effect=len_without_ansi)
+
+def test_ansi_text_wrapper(mock_len_without_ansi):
+    # Test for width <= 0
+    with pytest.raises(ValueError, match="invalid width"):
+        wrapper = AnsiTextWrapper(width=0)
+        wrapper._wrap_chunks(["test"])
+
+    # Test for max_lines > 1 and placeholder too large
+    with pytest.raises(ValueError, match="placeholder too large for max width"):
+        wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder=" " * 11)
+        wrapper._wrap_chunks(["test"])
+
+    # Test for drop_whitespace and chunks[-1].strip() == ''
+    wrapper = AnsiTextWrapper(width=10, drop_whitespace=True)
+    result = wrapper._wrap_chunks(["test", " "])
+    assert result == ["test"]
+
+    # Test for _handle_long_word
+    wrapper = AnsiTextWrapper(width=5)
+    result = wrapper._wrap_chunks(["longword"])
+    assert result == ["longwo", "rd"]
+
+    # Test for max_lines and placeholder fitting
+    wrapper = AnsiTextWrapper(width=10, max_lines=1, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test"])
+    assert result == ["testtest..."]
+
+    # Test for max_lines and placeholder not fitting
+    wrapper = AnsiTextWrapper(width=10, max_lines=1, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test"])
+    assert result == ["testtest", "..."]
+
+    # Test for placeholder fitting on previous line
+    wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test"])
+    assert result == ["testtest", "test..."]
+
+    # Test for placeholder not fitting on previous line
+    wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test", "test"])
+    assert result == ["testtest", "testtest", "..."]
+```
+---- 2024-05-31T13:20:42 flutils/txtutils.py:273-396 ----
+total usage: {'prompt_tokens': 21990, 'completion_tokens': 7611}
+---- 2024-05-31T13:20:42 flutils/pathutils.py:51-135 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f5d3fefab30>
+
+    def test_chmod_full_coverage(mocker):
+        # Create a temporary directory and files for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_file.txt"
+            dir_path = temp_path / "test_dir"
+            nested_file_path = dir_path / "nested_file.txt"
+    
+            # Create the test file and directory
+            file_path.touch()
+            dir_path.mkdir()
+            nested_file_path.touch()
+    
+            # Mock normalize_path to return the path as is
+            mocker.patch('flutils.pathutils.normalize_path', side_effect=lambda x: Path(x))
+    
+            # Test case to cover lines 114-117
+            chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+            assert file_path.stat().st_mode & 0o777 == 0o644
+            assert dir_path.stat().st_mode & 0o777 == 0o755
+    
+            # Test case to cover lines 126-129
+            chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755, include_parent=True)
+>           assert temp_path.stat().st_mode & 0o777 == 0o755
+E           AssertionError: assert (16832 & 511) == 493
+E            +  where 16832 = os.stat_result(st_mode=16832, st_ino=39460981, st_dev=76, st_nlink=3, st_uid=0, st_gid=0, st_size=4096, st_atime=1717161641, st_mtime=1717161641, st_ctime=1717161641).st_mode
+E            +    where os.stat_result(st_mode=16832, st_ino=39460981, st_dev=76, st_nlink=3, st_uid=0, st_gid=0, st_size=4096, st_atime=1717161641, st_mtime=1717161641, st_ctime=1717161641) = <bound method Path.stat of PosixPath('/tmp/tmpw00mhgfo')>()
+E            +      where <bound method Path.stat of PosixPath('/tmp/tmpw00mhgfo')> = PosixPath('/tmp/tmpw00mhgfo').stat
+
+coverup-tests/tmp_test_xuqepaot.py:30: AssertionError
+
+---- 2024-05-31T13:20:43 flutils/txtutils.py:25-56 ----
+```python
+import pytest
+from flutils.txtutils import len_without_ansi
+
+def test_len_without_ansi_with_ansi_codes():
+    # Test input with ANSI codes
+    text_with_ansi = '\x1b[38;5;209mfoobar\x1b[0m'
+    assert len_without_ansi(text_with_ansi) == 6
+
+def test_len_without_ansi_without_ansi_codes():
+    # Test input without ANSI codes
+    text_without_ansi = 'foobar'
+    assert len_without_ansi(text_without_ansi) == 6
+
+def test_len_without_ansi_mixed_ansi_codes():
+    # Test input with mixed ANSI codes
+    text_mixed_ansi = 'foo\x1b[38;5;209mbar\x1b[0m'
+    assert len_without_ansi(text_mixed_ansi) == 6
+
+def test_len_without_ansi_empty_string():
+    # Test empty string input
+    empty_string = ''
+    assert len_without_ansi(empty_string) == 0
+
+def test_len_without_ansi_list_of_strings():
+    # Test list of strings input
+    list_of_strings = ['foo', '\x1b[38;5;209mbar\x1b[0m', 'baz']
+    assert len_without_ansi(list_of_strings) == 9
+
+def test_len_without_ansi_tuple_of_strings():
+    # Test tuple of strings input
+    tuple_of_strings = ('foo', '\x1b[38;5;209mbar\x1b[0m', 'baz')
+    assert len_without_ansi(tuple_of_strings) == 9
+
+def test_len_without_ansi_ansi_code_only():
+    # Test input with only ANSI code
+    ansi_code_only = '\x1b[38;5;209m'
+    assert len_without_ansi(ansi_code_only) == 0
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    # Cleanup code if necessary
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T13:20:43 flutils/txtutils.py:25-56 ----
+total usage: {'prompt_tokens': 22868, 'completion_tokens': 8034}
+---- 2024-05-31T13:20:43 flutils/namedtupleutils.py:107-137 ----
+.                                                                        [100%]
+
+---- 2024-05-31T13:20:43 flutils/namedtupleutils.py:107-137 ----
+This test still lacks coverage: branch 120->113 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:43 flutils/namedtupleutils.py:107-137 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:43 flutils/setuputils/cfg.py:44-79 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_config_parser = <configparser.ConfigParser object at 0x7feb1d3a3130>
+
+    def test_each_setup_cfg_command(mock_config_parser):
+        format_kwargs = {'name': 'test'}
+    
+        with patch('flutils.setuputils.cfg._each_setup_cfg_command_section', return_value=[('section1', 'test_command')]):
+            commands = list(_each_setup_cfg_command(mock_config_parser, format_kwargs))
+    
+        assert len(commands) == 1
+        command = commands[0]
+        assert isinstance(command, SetupCfgCommandConfig)
+>       assert command.command_name == 'test_command'
+E       AttributeError: 'SetupCfgCommandConfig' object has no attribute 'command_name'
+
+coverup-tests/tmp_test__cfqhqd6.py:24: AttributeError
+
+---- 2024-05-31T13:20:43 flutils/setuputils/cfg.py:44-79 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:44 flutils/txtutils.py:273-396 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_len_without_ansi = <MagicMock name='len_without_ansi' id='139743358050864'>
+
+    def test_ansi_text_wrapper(mock_len_without_ansi):
+        # Test for width <= 0
+        with pytest.raises(ValueError, match="invalid width"):
+            wrapper = AnsiTextWrapper(width=0)
+            wrapper._wrap_chunks(["test"])
+    
+        # Test for max_lines > 1 and placeholder too large
+>       with pytest.raises(ValueError, match="placeholder too large for max width"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+coverup-tests/tmp_test_4rt5fw0d.py:20: Failed
+
+---- 2024-05-31T13:20:44 flutils/txtutils.py:25-56 ----
+.......                                                                  [100%]
+
+---- 2024-05-31T13:20:44 flutils/txtutils.py:25-56 ----
+This test still lacks coverage: branch 51->50 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:44 flutils/namedtupleutils.py:141-177 ----
+```python
+import pytest
+from collections import namedtuple
+from typing import NamedTuple, Sequence, Union, List, Tuple, Any, cast
+from flutils.namedtupleutils import _to_namedtuple
+
+def test_to_namedtuple_with_empty_namedtuple():
+    # Define an empty namedtuple
+    EmptyNamedTuple = namedtuple('EmptyNamedTuple', [])
+    empty_nt = EmptyNamedTuple()
+
+    # Call the function with the empty namedtuple
+    result = _to_namedtuple(empty_nt)
+
+    # Assert that the result is the same empty namedtuple
+    assert result == empty_nt
+
+def test_to_namedtuple_with_non_empty_namedtuple():
+    # Define a non-empty namedtuple
+    NonEmptyNamedTuple = namedtuple('NonEmptyNamedTuple', ['a', 'b'])
+    non_empty_nt = NonEmptyNamedTuple(a=1, b=2)
+
+    # Call the function with the non-empty namedtuple
+    result = _to_namedtuple(non_empty_nt)
+
+    # Assert that the result is the same non-empty namedtuple
+    assert result == non_empty_nt
+
+def test_to_namedtuple_with_list():
+    # Define a list
+    lst = [1, 2, 3]
+
+    # Call the function with the list
+    result = _to_namedtuple(lst)
+
+    # Assert that the result is the same list
+    assert result == lst
+
+def test_to_namedtuple_with_tuple():
+    # Define a tuple
+    tpl = (1, 2, 3)
+
+    # Call the function with the tuple
+    result = _to_namedtuple(tpl)
+
+    # Assert that the result is the same tuple
+    assert result == tpl
+
+def test_to_namedtuple_with_string():
+    # Define a string
+    s = "test"
+
+    # Call the function with the string and expect a TypeError
+    with pytest.raises(TypeError):
+        _to_namedtuple(s)
+
+def test_to_namedtuple_with_namedtuple_with_fields():
+    # Define a namedtuple with fields
+    SampleNamedTuple = namedtuple('SampleNamedTuple', ['a', 'b'])
+    sample_nt = SampleNamedTuple(a=1, b=2)
+
+    # Call the function with the namedtuple
+    result = _to_namedtuple(sample_nt)
+
+    # Assert that the result is a namedtuple with the same fields and values
+    assert isinstance(result, SampleNamedTuple)
+    assert result.a == 1
+    assert result.b == 2
+```
+---- 2024-05-31T13:20:44 flutils/namedtupleutils.py:141-177 ----
+total usage: {'prompt_tokens': 23825, 'completion_tokens': 8545}
+---- 2024-05-31T13:20:45 flutils/codecs/raw_utf8_escape.py:27-88 ----
+```python
+import pytest
+from flutils.codecs.raw_utf8_escape import encode
+from collections import UserString
+
+def test_encode_full_coverage():
+    # Test with a normal string
+    text = "hello"
+    result, length = encode(text)
+    assert result == b'hello'
+    assert length == len(text)
+
+    # Test with a string containing utf-8 characters
+    text = "héllo"
+    result, length = encode(text)
+    assert result == b'h\\xc3\\xa9llo'.encode('utf-8')
+    assert length == len(text)
+
+    # Test with a string containing escaped utf-8 hexadecimal
+    text = "h\\xc3\\xa9llo"
+    result, length = encode(text)
+    assert result == b'h\\xc3\\xa9llo'.encode('utf-8')
+    assert length == len(text)
+
+    # Test with a string that will cause a UnicodeDecodeError
+    text = "h\\xc3\\x28llo"
+    with pytest.raises(UnicodeEncodeError):
+        encode(text)
+
+    # Test with a UserString input
+    text = UserString("hello")
+    result, length = encode(text)
+    assert result == b'hello'
+    assert length == len(text)
+
+    # Test with a UserString containing utf-8 characters
+    text = UserString("héllo")
+    result, length = encode(text)
+    assert result == b'h\\xc3\\xa9llo'.encode('utf-8')
+    assert length == len(text)
+
+    # Test with a UserString containing escaped utf-8 hexadecimal
+    text = UserString("h\\xc3\\xa9llo")
+    result, length = encode(text)
+    assert result == b'h\\xc3\\xa9llo'.encode('utf-8')
+    assert length == len(text)
+
+    # Test with a UserString that will cause a UnicodeDecodeError
+    text = UserString("h\\xc3\\x28llo")
+    with pytest.raises(UnicodeEncodeError):
+        encode(text)
+```
+---- 2024-05-31T13:20:45 flutils/codecs/raw_utf8_escape.py:27-88 ----
+total usage: {'prompt_tokens': 25208, 'completion_tokens': 8973}
+---- 2024-05-31T13:20:46 flutils/namedtupleutils.py:141-177 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_to_namedtuple_with_namedtuple_with_fields():
+        # Define a namedtuple with fields
+        SampleNamedTuple = namedtuple('SampleNamedTuple', ['a', 'b'])
+        sample_nt = SampleNamedTuple(a=1, b=2)
+    
+        # Call the function with the namedtuple
+        result = _to_namedtuple(sample_nt)
+    
+        # Assert that the result is a namedtuple with the same fields and values
+>       assert isinstance(result, SampleNamedTuple)
+E       AssertionError: assert False
+E        +  where False = isinstance(NamedTuple(a=1, b=2), <class 'tmp_test_rc2pquk6.SampleNamedTuple'>)
+
+coverup-tests/tmp_test_rc2pquk6.py:65: AssertionError
+
+---- 2024-05-31T13:20:46 flutils/codecs/raw_utf8_escape.py:27-88 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_encode_full_coverage():
+        # Test with a normal string
+        text = "hello"
+        result, length = encode(text)
+        assert result == b'hello'
+        assert length == len(text)
+    
+        # Test with a string containing utf-8 characters
+        text = "héllo"
+        result, length = encode(text)
+>       assert result == b'h\\xc3\\xa9llo'.encode('utf-8')
+E       AttributeError: 'bytes' object has no attribute 'encode'. Did you mean: 'decode'?
+
+coverup-tests/tmp_test_xegi4xho.py:15: AttributeError
+
+---- 2024-05-31T13:20:49 flutils/decorators.py:61-69 ----
+```python
+import pytest
+import asyncio
+from flutils.decorators import cached_property
+
+class TestCachedProperty:
+    @pytest.fixture
+    def mock_obj(self):
+        class MockClass:
+            @cached_property
+            async def async_prop(self):
+                return 'async_value'
+        return MockClass()
+
+    @pytest.mark.asyncio
+    async def test_async_cached_property(self, mock_obj):
+        # Ensure the property is not already in the object's __dict__
+        assert 'async_prop' not in mock_obj.__dict__
+
+        # Access the async property to trigger the __get__ method
+        value = await mock_obj.async_prop
+
+        # Verify the value and that it is now cached in the object's __dict__
+        assert value == 'async_value'
+        assert mock_obj.__dict__['async_prop'] == 'async_value'
+```
+---- 2024-05-31T13:20:49 flutils/decorators.py:61-69 ----
+total usage: {'prompt_tokens': 25944, 'completion_tokens': 9145}
+---- 2024-05-31T13:20:50 flutils/pathutils.py:574-621 ----
+```python
+import os
+import pytest
+import tempfile
+from flutils.pathutils import path_absent
+
+@pytest.fixture
+def temp_dir():
+    dirpath = tempfile.mkdtemp()
+    yield dirpath
+    if os.path.exists(dirpath):
+        for root, dirs, files in os.walk(dirpath, topdown=False):
+            for name in files:
+                os.unlink(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(dirpath)
+
+def test_path_absent_file(temp_dir):
+    file_path = os.path.join(temp_dir, 'test_file')
+    with open(file_path, 'w') as f:
+        f.write('test')
+    assert os.path.isfile(file_path)
+    path_absent(file_path)
+    assert not os.path.exists(file_path)
+
+def test_path_absent_symlink(temp_dir):
+    target_path = os.path.join(temp_dir, 'target')
+    symlink_path = os.path.join(temp_dir, 'symlink')
+    with open(target_path, 'w') as f:
+        f.write('test')
+    os.symlink(target_path, symlink_path)
+    assert os.path.islink(symlink_path)
+    path_absent(symlink_path)
+    assert not os.path.exists(symlink_path)
+    assert os.path.exists(target_path)
+    path_absent(target_path)
+    assert not os.path.exists(target_path)
+
+def test_path_absent_directory_with_symlink(temp_dir):
+    dir_path = os.path.join(temp_dir, 'test_dir')
+    os.mkdir(dir_path)
+    file_path = os.path.join(dir_path, 'test_file')
+    with open(file_path, 'w') as f:
+        f.write('test')
+    symlink_path = os.path.join(dir_path, 'symlink')
+    os.symlink(file_path, symlink_path)
+    assert os.path.isdir(dir_path)
+    assert os.path.isfile(file_path)
+    assert os.path.islink(symlink_path)
+    path_absent(dir_path)
+    assert not os.path.exists(dir_path)
+    assert not os.path.exists(file_path)
+    assert not os.path.exists(symlink_path)
+
+def test_path_absent_directory_with_nested_symlink(temp_dir):
+    dir_path = os.path.join(temp_dir, 'test_dir')
+    os.mkdir(dir_path)
+    nested_dir_path = os.path.join(dir_path, 'nested_dir')
+    os.mkdir(nested_dir_path)
+    file_path = os.path.join(nested_dir_path, 'test_file')
+    with open(file_path, 'w') as f:
+        f.write('test')
+    symlink_path = os.path.join(nested_dir_path, 'symlink')
+    os.symlink(file_path, symlink_path)
+    assert os.path.isdir(dir_path)
+    assert os.path.isdir(nested_dir_path)
+    assert os.path.isfile(file_path)
+    assert os.path.islink(symlink_path)
+    path_absent(dir_path)
+    assert not os.path.exists(dir_path)
+    assert not os.path.exists(nested_dir_path)
+    assert not os.path.exists(file_path)
+    assert not os.path.exists(symlink_path)
+
+def test_path_absent_directory_with_symlinked_dir(temp_dir):
+    dir_path = os.path.join(temp_dir, 'test_dir')
+    os.mkdir(dir_path)
+    nested_dir_path = os.path.join(dir_path, 'nested_dir')
+    os.mkdir(nested_dir_path)
+    symlinked_dir_path = os.path.join(dir_path, 'symlinked_dir')
+    os.symlink(nested_dir_path, symlinked_dir_path)
+    assert os.path.isdir(dir_path)
+    assert os.path.isdir(nested_dir_path)
+    assert os.path.islink(symlinked_dir_path)
+    path_absent(dir_path)
+    assert not os.path.exists(dir_path)
+    assert not os.path.exists(nested_dir_path)
+    assert not os.path.exists(symlinked_dir_path)
+```
+---- 2024-05-31T13:20:50 flutils/pathutils.py:574-621 ----
+total usage: {'prompt_tokens': 27213, 'completion_tokens': 9958}
+---- 2024-05-31T13:20:51 flutils/decorators.py:61-69 ----
+s                                                                        [100%]
+
+---- 2024-05-31T13:20:51 flutils/decorators.py:61-69 ----
+This test still lacks coverage: line 66 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:51 flutils/decorators.py:61-69 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:52 flutils/pathutils.py:574-621 ----
+.....                                                                    [100%]
+
+---- 2024-05-31T13:20:52 flutils/pathutils.py:574-621 ----
+Saved as /output/coverup-tests/test_coverup_67.py
+
+---- 2024-05-31T13:20:52 flutils/txtutils.py:25-56 ----
+```python
+import pytest
+from flutils.txtutils import len_without_ansi
+
+def test_len_without_ansi_with_ansi_codes():
+    # Test input with ANSI codes
+    text_with_ansi = '\x1b[38;5;209mfoobar\x1b[0m'
+    assert len_without_ansi(text_with_ansi) == 6
+
+def test_len_without_ansi_without_ansi_codes():
+    # Test input without ANSI codes
+    text_without_ansi = 'foobar'
+    assert len_without_ansi(text_without_ansi) == 6
+
+def test_len_without_ansi_mixed_ansi_codes():
+    # Test input with mixed ANSI codes
+    text_mixed_ansi = 'foo\x1b[38;5;209mbar\x1b[0m'
+    assert len_without_ansi(text_mixed_ansi) == 6
+
+def test_len_without_ansi_empty_string():
+    # Test empty string input
+    empty_string = ''
+    assert len_without_ansi(empty_string) == 0
+
+def test_len_without_ansi_list_of_strings():
+    # Test list of strings input
+    list_of_strings = ['foo', '\x1b[38;5;209mbar\x1b[0m', 'baz']
+    assert len_without_ansi(list_of_strings) == 9
+
+def test_len_without_ansi_tuple_of_strings():
+    # Test tuple of strings input
+    tuple_of_strings = ('foo', '\x1b[38;5;209mbar\x1b[0m', 'baz')
+    assert len_without_ansi(tuple_of_strings) == 9
+
+def test_len_without_ansi_ansi_code_only():
+    # Test input with only ANSI code
+    ansi_code_only = '\x1b[38;5;209m'
+    assert len_without_ansi(ansi_code_only) == 0
+
+def test_len_without_ansi_non_string_sequence():
+    # Test input with a non-string sequence
+    non_string_sequence = ['\x1b[38;5;209m', 'foo', '\x1b[0m', 'bar']
+    assert len_without_ansi(non_string_sequence) == 6
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    # Cleanup code if necessary
+    yield
+    # Add any necessary cleanup code here
+```
+---- 2024-05-31T13:20:52 flutils/txtutils.py:25-56 ----
+total usage: {'prompt_tokens': 28554, 'completion_tokens': 10447}
+---- 2024-05-31T13:20:54 flutils/txtutils.py:25-56 ----
+........                                                                 [100%]
+
+---- 2024-05-31T13:20:54 flutils/txtutils.py:25-56 ----
+This test still lacks coverage: branch 51->50 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:54 flutils/txtutils.py:25-56 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:55 flutils/codecs/raw_utf8_escape.py:27-88 ----
+```python
+import pytest
+from flutils.codecs.raw_utf8_escape import encode
+from collections import UserString
+
+def test_encode_full_coverage():
+    # Test with a normal string
+    text = "hello"
+    result, length = encode(text)
+    assert result == b'hello'
+    assert length == len(text)
+
+    # Test with a string containing utf-8 characters
+    text = "héllo"
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a string containing escaped utf-8 hexadecimal
+    text = "h\\xc3\\xa9llo"
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a string that will cause a UnicodeDecodeError
+    text = "h\\xc3\\x28llo"
+    with pytest.raises(UnicodeEncodeError):
+        encode(text)
+
+    # Test with a UserString input
+    text = UserString("hello")
+    result, length = encode(text)
+    assert result == b'hello'
+    assert length == len(text)
+
+    # Test with a UserString containing utf-8 characters
+    text = UserString("héllo")
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a UserString containing escaped utf-8 hexadecimal
+    text = UserString("h\\xc3\\xa9llo")
+    result, length = encode(text)
+    assert result == b'h\xc3\xa9llo'
+    assert length == len(text)
+
+    # Test with a UserString that will cause a UnicodeDecodeError
+    text = UserString("h\\xc3\\x28llo")
+    with pytest.raises(UnicodeEncodeError):
+        encode(text)
+```
+---- 2024-05-31T13:20:55 flutils/codecs/raw_utf8_escape.py:27-88 ----
+total usage: {'prompt_tokens': 30535, 'completion_tokens': 10843}
+---- 2024-05-31T13:20:56 flutils/pathutils.py:51-135 ----
+```python
+import os
+import pytest
+import tempfile
+from pathlib import Path
+from flutils.pathutils import chmod
+
+def test_chmod_full_coverage(mocker):
+    # Create a temporary directory and files for testing
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        file_path = temp_path / "test_file.txt"
+        dir_path = temp_path / "test_dir"
+        nested_file_path = dir_path / "nested_file.txt"
+        
+        # Create the test file and directory
+        file_path.touch()
+        dir_path.mkdir()
+        nested_file_path.touch()
+        
+        # Mock normalize_path to return the path as is
+        mocker.patch('flutils.pathutils.normalize_path', side_effect=lambda x: Path(x))
+        
+        # Test case to cover lines 114-117
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+        assert file_path.stat().st_mode & 0o777 == 0o644
+        assert dir_path.stat().st_mode & 0o777 == 0o755
+        
+        # Test case to cover lines 126-129
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755, include_parent=True)
+        assert temp_path.stat().st_mode & 0o777 == 0o755
+        
+        # Test case to cover branch 134->exit
+        chmod(str(file_path), mode_file=0o600)
+        assert file_path.stat().st_mode & 0o777 == 0o600
+
+        # Test case to cover NotImplementedError in glob
+        mocker.patch('pathlib.Path.glob', side_effect=NotImplementedError)
+        chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+        
+        # Clean up mock
+        mocker.stopall()
+```
+
+---- 2024-05-31T13:20:56 flutils/pathutils.py:51-135 ----
+total usage: {'prompt_tokens': 33384, 'completion_tokens': 11243}
+---- 2024-05-31T13:20:56 flutils/namedtupleutils.py:141-177 ----
+```python
+import pytest
+from collections import namedtuple
+from typing import NamedTuple, Sequence, Union, List, Tuple, Any, cast
+from flutils.namedtupleutils import _to_namedtuple
+
+def test_to_namedtuple_with_empty_namedtuple():
+    # Define an empty namedtuple
+    EmptyNamedTuple = namedtuple('EmptyNamedTuple', [])
+    empty_nt = EmptyNamedTuple()
+
+    # Call the function with the empty namedtuple
+    result = _to_namedtuple(empty_nt)
+
+    # Assert that the result is the same empty namedtuple
+    assert result == empty_nt
+
+def test_to_namedtuple_with_non_empty_namedtuple():
+    # Define a non-empty namedtuple
+    NonEmptyNamedTuple = namedtuple('NonEmptyNamedTuple', ['a', 'b'])
+    non_empty_nt = NonEmptyNamedTuple(a=1, b=2)
+
+    # Call the function with the non-empty namedtuple
+    result = _to_namedtuple(non_empty_nt)
+
+    # Assert that the result is the same non-empty namedtuple
+    assert result == non_empty_nt
+
+def test_to_namedtuple_with_list():
+    # Define a list
+    lst = [1, 2, 3]
+
+    # Call the function with the list
+    result = _to_namedtuple(lst)
+
+    # Assert that the result is the same list
+    assert result == lst
+
+def test_to_namedtuple_with_tuple():
+    # Define a tuple
+    tpl = (1, 2, 3)
+
+    # Call the function with the tuple
+    result = _to_namedtuple(tpl)
+
+    # Assert that the result is the same tuple
+    assert result == tpl
+
+def test_to_namedtuple_with_string():
+    # Define a string
+    s = "test"
+
+    # Call the function with the string and expect a TypeError
+    with pytest.raises(TypeError):
+        _to_namedtuple(s)
+
+def test_to_namedtuple_with_namedtuple_with_fields():
+    # Define a namedtuple with fields
+    SampleNamedTuple = namedtuple('SampleNamedTuple', ['a', 'b'])
+    sample_nt = SampleNamedTuple(a=1, b=2)
+
+    # Call the function with the namedtuple
+    result = _to_namedtuple(sample_nt)
+
+    # Assert that the result is a namedtuple with the same fields and values
+    assert isinstance(result, tuple)
+    assert result.a == 1
+    assert result.b == 2
+```
+---- 2024-05-31T13:20:56 flutils/namedtupleutils.py:141-177 ----
+total usage: {'prompt_tokens': 35052, 'completion_tokens': 11752}
+---- 2024-05-31T13:20:57 flutils/codecs/raw_utf8_escape.py:27-88 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+    def test_encode_full_coverage():
+        # Test with a normal string
+        text = "hello"
+        result, length = encode(text)
+        assert result == b'hello'
+        assert length == len(text)
+    
+        # Test with a string containing utf-8 characters
+        text = "héllo"
+        result, length = encode(text)
+>       assert result == b'h\xc3\xa9llo'
+E       AssertionError: assert b'h\\xc3\\xa9llo' == b'h\xc3\xa9llo'
+E         At index 1 diff: b'\\' != b'\xc3'
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_ju8y60gd.py:15: AssertionError
+
+---- 2024-05-31T13:20:57 flutils/codecs/raw_utf8_escape.py:27-88 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:57 flutils/pathutils.py:51-135 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f5f9de86b30>
+
+    def test_chmod_full_coverage(mocker):
+        # Create a temporary directory and files for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            file_path = temp_path / "test_file.txt"
+            dir_path = temp_path / "test_dir"
+            nested_file_path = dir_path / "nested_file.txt"
+    
+            # Create the test file and directory
+            file_path.touch()
+            dir_path.mkdir()
+            nested_file_path.touch()
+    
+            # Mock normalize_path to return the path as is
+            mocker.patch('flutils.pathutils.normalize_path', side_effect=lambda x: Path(x))
+    
+            # Test case to cover lines 114-117
+            chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755)
+            assert file_path.stat().st_mode & 0o777 == 0o644
+            assert dir_path.stat().st_mode & 0o777 == 0o755
+    
+            # Test case to cover lines 126-129
+            chmod(str(temp_path / "*"), mode_file=0o644, mode_dir=0o755, include_parent=True)
+>           assert temp_path.stat().st_mode & 0o777 == 0o755
+E           AssertionError: assert (16832 & 511) == 493
+E            +  where 16832 = os.stat_result(st_mode=16832, st_ino=39460987, st_dev=76, st_nlink=3, st_uid=0, st_gid=0, st_size=4096, st_atime=1717161656, st_mtime=1717161656, st_ctime=1717161656).st_mode
+E            +    where os.stat_result(st_mode=16832, st_ino=39460987, st_dev=76, st_nlink=3, st_uid=0, st_gid=0, st_size=4096, st_atime=1717161656, st_mtime=1717161656, st_ctime=1717161656) = <bound method Path.stat of PosixPath('/tmp/tmpugptc3xj')>()
+E            +      where <bound method Path.stat of PosixPath('/tmp/tmpugptc3xj')> = PosixPath('/tmp/tmpugptc3xj').stat
+
+coverup-tests/tmp_test_0cm65kfv.py:30: AssertionError
+
+---- 2024-05-31T13:20:57 flutils/pathutils.py:51-135 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:58 flutils/pathutils.py:138-216 ----
+```python
+import os
+import pytest
+from unittest.mock import patch, MagicMock
+from flutils.pathutils import chown
+
+@pytest.fixture
+def mock_normalize_path(mocker):
+    return mocker.patch('flutils.pathutils.normalize_path')
+
+@pytest.fixture
+def mock_get_os_user(mocker):
+    return mocker.patch('flutils.pathutils.get_os_user')
+
+@pytest.fixture
+def mock_get_os_group(mocker):
+    return mocker.patch('flutils.pathutils.get_os_group')
+
+@pytest.fixture
+def mock_path(mocker):
+    return mocker.patch('flutils.pathutils.Path')
+
+@pytest.fixture
+def mock_os_chown(mocker):
+    return mocker.patch('os.chown')
+
+def test_chown_full_coverage(mock_normalize_path, mock_get_os_user, mock_get_os_group, mock_path, mock_os_chown):
+    # Mocking normalize_path to return a Path object
+    mock_normalize_path.return_value = mock_path.return_value
+    mock_path.return_value.as_posix.return_value = '/mocked/path/*'
+    mock_path.return_value.exists.return_value = True
+    mock_path.return_value.is_dir.return_value = True
+    mock_path.return_value.is_file.return_value = True
+    mock_path.return_value.parent = mock_path.return_value
+
+    # Mocking get_os_user and get_os_group to return objects with pw_uid and gr_gid attributes
+    mock_get_os_user.return_value.pw_uid = 1000
+    mock_get_os_group.return_value.gr_gid = 1000
+
+    # Mocking Path().glob to return an iterator with one Path object
+    mock_path.return_value.glob.return_value = iter([mock_path.return_value])
+
+    # Test case where user and group are '-1'
+    chown('/mocked/path/*', user='-1', group='-1')
+    mock_os_chown.assert_called_with('/mocked/path/*', -1, -1)
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where user and group are valid
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_called_with('/mocked/path/*', 1000, 1000)
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where include_parent is True
+    chown('/mocked/path/*', user='testuser', group='testgroup', include_parent=True)
+    mock_os_chown.assert_called_with('/mocked/path/*', 1000, 1000)
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where path does not exist
+    mock_path.return_value.exists.return_value = False
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_not_called()
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where Path().glob raises NotImplementedError
+    mock_path.return_value.glob.side_effect = NotImplementedError
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_not_called()
+```
+---- 2024-05-31T13:20:58 flutils/pathutils.py:138-216 ----
+total usage: {'prompt_tokens': 38085, 'completion_tokens': 12427}
+---- 2024-05-31T13:20:58 flutils/namedtupleutils.py:141-177 ----
+......                                                                   [100%]
+
+---- 2024-05-31T13:20:58 flutils/namedtupleutils.py:141-177 ----
+This test still lacks coverage: branch 163->169 does not execute.
+Modify it to correct that; respond only with the complete Python code in backticks.
+
+---- 2024-05-31T13:20:58 flutils/namedtupleutils.py:141-177 ----
+Too many attempts, giving up
+---- 2024-05-31T13:20:59 flutils/pathutils.py:138-216 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_with at 0x7f9dfe0176d0>
+args = (<MagicMock name='chown' id='140316544970000'>, '/mocked/path/*', 1000, 1000)
+kwargs = {}, __tracebackhide__ = True
+msg = "expected call not found.\nExpected: chown('/mocked/path/*', 1000, 1000)\nActual: not called."
+__mock_self = <MagicMock name='chown' id='140316544970000'>
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='chown' id='140316544970000'>
+args = ('/mocked/path/*', 1000, 1000), kwargs = {}
+expected = "chown('/mocked/path/*', 1000, 1000)", actual = 'not called.'
+error_message = "expected call not found.\nExpected: chown('/mocked/path/*', 1000, 1000)\nActual: not called."
+
+    def assert_called_with(self, /, *args, **kwargs):
+        """assert that the last call was made with the specified arguments.
+    
+        Raises an AssertionError if the args and keyword args passed in are
+        different to the last call to the mock."""
+        if self.call_args is None:
+            expected = self._format_mock_call_signature(args, kwargs)
+            actual = 'not called.'
+            error_message = ('expected call not found.\nExpected: %s\nActual: %s'
+                    % (expected, actual))
+>           raise AssertionError(error_message)
+E           AssertionError: expected call not found.
+E           Expected: chown('/mocked/path/*', 1000, 1000)
+E           Actual: not called.
+
+/usr/local/lib/python3.10/unittest/mock.py:910: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_normalize_path = <MagicMock name='normalize_path' id='140316545490304'>
+mock_get_os_user = <MagicMock name='get_os_user' id='140316548355296'>
+mock_get_os_group = <MagicMock name='get_os_group' id='140316548185392'>
+mock_path = <MagicMock name='Path' id='140316544918304'>
+mock_os_chown = <MagicMock name='chown' id='140316544970000'>
+
+    def test_chown_full_coverage(mock_normalize_path, mock_get_os_user, mock_get_os_group, mock_path, mock_os_chown):
+        # Mocking normalize_path to return a Path object
+        mock_normalize_path.return_value = mock_path.return_value
+        mock_path.return_value.as_posix.return_value = '/mocked/path/*'
+        mock_path.return_value.exists.return_value = True
+        mock_path.return_value.is_dir.return_value = True
+        mock_path.return_value.is_file.return_value = True
+        mock_path.return_value.parent = mock_path.return_value
+    
+        # Mocking get_os_user and get_os_group to return objects with pw_uid and gr_gid attributes
+        mock_get_os_user.return_value.pw_uid = 1000
+        mock_get_os_group.return_value.gr_gid = 1000
+    
+        # Mocking Path().glob to return an iterator with one Path object
+        mock_path.return_value.glob.return_value = iter([mock_path.return_value])
+    
+        # Test case where user and group are '-1'
+        chown('/mocked/path/*', user='-1', group='-1')
+        mock_os_chown.assert_called_with('/mocked/path/*', -1, -1)
+    
+        # Reset mock to clear previous calls
+        mock_os_chown.reset_mock()
+    
+        # Test case where user and group are valid
+        chown('/mocked/path/*', user='testuser', group='testgroup')
+>       mock_os_chown.assert_called_with('/mocked/path/*', 1000, 1000)
+E       AssertionError: expected call not found.
+E       Expected: chown('/mocked/path/*', 1000, 1000)
+E       Actual: not called.
+
+coverup-tests/tmp_test_2turkkli.py:51: AssertionError
+
+---- 2024-05-31T13:21:00 flutils/txtutils.py:273-396 ----
+```python
+import pytest
+from flutils.txtutils import AnsiTextWrapper
+from textwrap import TextWrapper
+
+def len_without_ansi(text):
+    # Dummy implementation for len_without_ansi
+    return len(text)
+
+@pytest.fixture
+def mock_len_without_ansi(mocker):
+    return mocker.patch('flutils.txtutils.len_without_ansi', side_effect=len_without_ansi)
+
+def test_ansi_text_wrapper(mock_len_without_ansi):
+    # Test for width <= 0
+    with pytest.raises(ValueError, match="invalid width"):
+        wrapper = AnsiTextWrapper(width=0)
+        wrapper._wrap_chunks(["test"])
+
+    # Test for max_lines > 1 and placeholder too large
+    with pytest.raises(ValueError, match="placeholder too large for max width"):
+        wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder=" " * 11)
+        wrapper._wrap_chunks(["test"])
+
+    # Test for drop_whitespace and chunks[-1].strip() == ''
+    wrapper = AnsiTextWrapper(width=10, drop_whitespace=True)
+    result = wrapper._wrap_chunks(["test", " "])
+    assert result == ["test"]
+
+    # Test for _handle_long_word
+    wrapper = AnsiTextWrapper(width=5)
+    result = wrapper._wrap_chunks(["longword"])
+    assert result == ["longw", "ord"]
+
+    # Test for max_lines and placeholder fitting
+    wrapper = AnsiTextWrapper(width=10, max_lines=1, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test"])
+    assert result == ["testtest..."]
+
+    # Test for max_lines and placeholder not fitting
+    wrapper = AnsiTextWrapper(width=10, max_lines=1, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test"])
+    assert result == ["testtest", "..."]
+
+    # Test for placeholder fitting on previous line
+    wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test"])
+    assert result == ["testtest", "test..."]
+
+    # Test for placeholder not fitting on previous line
+    wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test", "test"])
+    assert result == ["testtest", "testtest", "..."]
+```
+---- 2024-05-31T13:21:00 flutils/txtutils.py:273-396 ----
+total usage: {'prompt_tokens': 40205, 'completion_tokens': 12954}
+---- 2024-05-31T13:21:02 flutils/txtutils.py:273-396 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_len_without_ansi = <MagicMock name='len_without_ansi' id='139798572032560'>
+
+    def test_ansi_text_wrapper(mock_len_without_ansi):
+        # Test for width <= 0
+        with pytest.raises(ValueError, match="invalid width"):
+            wrapper = AnsiTextWrapper(width=0)
+            wrapper._wrap_chunks(["test"])
+    
+        # Test for max_lines > 1 and placeholder too large
+>       with pytest.raises(ValueError, match="placeholder too large for max width"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+coverup-tests/tmp_test_ojss5xxz.py:20: Failed
+
+---- 2024-05-31T13:21:11 flutils/txtutils.py:273-396 ----
+```python
+import pytest
+from flutils.txtutils import AnsiTextWrapper
+from textwrap import TextWrapper
+
+def len_without_ansi(text):
+    # Dummy implementation for len_without_ansi
+    return len(text)
+
+@pytest.fixture
+def mock_len_without_ansi(mocker):
+    return mocker.patch('flutils.txtutils.len_without_ansi', side_effect=len_without_ansi)
+
+def test_ansi_text_wrapper(mock_len_without_ansi):
+    # Test for width <= 0
+    with pytest.raises(ValueError, match="invalid width"):
+        wrapper = AnsiTextWrapper(width=0)
+        wrapper._wrap_chunks(["test"])
+
+    # Test for max_lines > 1 and placeholder too large
+    with pytest.raises(ValueError, match="placeholder too large for max width"):
+        wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder=" " * 11)
+        wrapper._wrap_chunks(["test"])
+
+    # Test for drop_whitespace and chunks[-1].strip() == ''
+    wrapper = AnsiTextWrapper(width=10, drop_whitespace=True)
+    result = wrapper._wrap_chunks(["test", " "])
+    assert result == ["test"]
+
+    # Test for _handle_long_word
+    wrapper = AnsiTextWrapper(width=5)
+    result = wrapper._wrap_chunks(["longword"])
+    assert result == ["longw", "ord"]
+
+    # Test for max_lines and placeholder fitting
+    wrapper = AnsiTextWrapper(width=10, max_lines=1, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test"])
+    assert result == ["testtest..."]
+
+    # Test for max_lines and placeholder not fitting
+    wrapper = AnsiTextWrapper(width=10, max_lines=1, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test"])
+    assert result == ["testtest", "..."]
+
+    # Test for placeholder fitting on previous line
+    wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test"])
+    assert result == ["testtest", "test..."]
+
+    # Test for placeholder not fitting on previous line
+    wrapper = AnsiTextWrapper(width=10, max_lines=2, placeholder="...")
+    result = wrapper._wrap_chunks(["test", "test", "test", "test", "test"])
+    assert result == ["testtest", "testtest", "..."]
+```
+---- 2024-05-31T13:21:11 flutils/txtutils.py:273-396 ----
+total usage: {'prompt_tokens': 43031, 'completion_tokens': 13481}
+---- 2024-05-31T13:21:13 flutils/txtutils.py:273-396 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_len_without_ansi = <MagicMock name='len_without_ansi' id='139759826608688'>
+
+    def test_ansi_text_wrapper(mock_len_without_ansi):
+        # Test for width <= 0
+        with pytest.raises(ValueError, match="invalid width"):
+            wrapper = AnsiTextWrapper(width=0)
+            wrapper._wrap_chunks(["test"])
+    
+        # Test for max_lines > 1 and placeholder too large
+>       with pytest.raises(ValueError, match="placeholder too large for max width"):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+coverup-tests/tmp_test_tll6qwte.py:20: Failed
+
+---- 2024-05-31T13:21:13 flutils/txtutils.py:273-396 ----
+Too many attempts, giving up
+---- 2024-05-31T13:21:17 flutils/pathutils.py:138-216 ----
+```python
+import os
+import pytest
+from unittest.mock import patch, MagicMock
+from flutils.pathutils import chown
+
+@pytest.fixture
+def mock_normalize_path(mocker):
+    return mocker.patch('flutils.pathutils.normalize_path')
+
+@pytest.fixture
+def mock_get_os_user(mocker):
+    return mocker.patch('flutils.pathutils.get_os_user')
+
+@pytest.fixture
+def mock_get_os_group(mocker):
+    return mocker.patch('flutils.pathutils.get_os_group')
+
+@pytest.fixture
+def mock_path(mocker):
+    return mocker.patch('flutils.pathutils.Path')
+
+@pytest.fixture
+def mock_os_chown(mocker):
+    return mocker.patch('os.chown')
+
+def test_chown_full_coverage(mock_normalize_path, mock_get_os_user, mock_get_os_group, mock_path, mock_os_chown):
+    # Mocking normalize_path to return a Path object
+    mock_normalize_path.return_value = mock_path.return_value
+    mock_path.return_value.as_posix.return_value = '/mocked/path/*'
+    mock_path.return_value.exists.return_value = True
+    mock_path.return_value.is_dir.return_value = True
+    mock_path.return_value.is_file.return_value = True
+    mock_path.return_value.parent = mock_path.return_value
+
+    # Mocking get_os_user and get_os_group to return objects with pw_uid and gr_gid attributes
+    mock_get_os_user.return_value.pw_uid = 1000
+    mock_get_os_group.return_value.gr_gid = 1000
+
+    # Mocking Path().glob to return an iterator with one Path object
+    mock_path.return_value.glob.return_value = iter([mock_path.return_value])
+
+    # Test case where user and group are '-1'
+    chown('/mocked/path/*', user='-1', group='-1')
+    mock_os_chown.assert_called_with('/mocked/path/*', -1, -1)
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where user and group are valid
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    for call in mock_os_chown.call_args_list:
+        if call == (('/mocked/path/*', 1000, 1000),):
+            break
+    else:
+        pytest.fail("Expected call not found: chown('/mocked/path/*', 1000, 1000)")
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where include_parent is True
+    chown('/mocked/path/*', user='testuser', group='testgroup', include_parent=True)
+    for call in mock_os_chown.call_args_list:
+        if call == (('/mocked/path/*', 1000, 1000),):
+            break
+    else:
+        pytest.fail("Expected call not found: chown('/mocked/path/*', 1000, 1000)")
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where path does not exist
+    mock_path.return_value.exists.return_value = False
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_not_called()
+
+    # Reset mock to clear previous calls
+    mock_os_chown.reset_mock()
+
+    # Test case where Path().glob raises NotImplementedError
+    mock_path.return_value.glob.side_effect = NotImplementedError
+    chown('/mocked/path/*', user='testuser', group='testgroup')
+    mock_os_chown.assert_not_called()
+```
+---- 2024-05-31T13:21:17 flutils/pathutils.py:138-216 ----
+total usage: {'prompt_tokens': 47782, 'completion_tokens': 14240}
+---- 2024-05-31T13:21:19 flutils/pathutils.py:138-216 ----
+Executing the test yields an error, shown below.
+Modify the test to correct it; respond only with the complete Python code in backticks.
+
+mock_normalize_path = <MagicMock name='normalize_path' id='140124274946832'>
+mock_get_os_user = <MagicMock name='get_os_user' id='140124278248096'>
+mock_get_os_group = <MagicMock name='get_os_group' id='140124286103280'>
+mock_path = <MagicMock name='Path' id='140124294439232'>
+mock_os_chown = <MagicMock name='chown' id='140124277793856'>
+
+    def test_chown_full_coverage(mock_normalize_path, mock_get_os_user, mock_get_os_group, mock_path, mock_os_chown):
+        # Mocking normalize_path to return a Path object
+        mock_normalize_path.return_value = mock_path.return_value
+        mock_path.return_value.as_posix.return_value = '/mocked/path/*'
+        mock_path.return_value.exists.return_value = True
+        mock_path.return_value.is_dir.return_value = True
+        mock_path.return_value.is_file.return_value = True
+        mock_path.return_value.parent = mock_path.return_value
+    
+        # Mocking get_os_user and get_os_group to return objects with pw_uid and gr_gid attributes
+        mock_get_os_user.return_value.pw_uid = 1000
+        mock_get_os_group.return_value.gr_gid = 1000
+    
+        # Mocking Path().glob to return an iterator with one Path object
+        mock_path.return_value.glob.return_value = iter([mock_path.return_value])
+    
+        # Test case where user and group are '-1'
+        chown('/mocked/path/*', user='-1', group='-1')
+        mock_os_chown.assert_called_with('/mocked/path/*', -1, -1)
+    
+        # Reset mock to clear previous calls
+        mock_os_chown.reset_mock()
+    
+        # Test case where user and group are valid
+        chown('/mocked/path/*', user='testuser', group='testgroup')
+        for call in mock_os_chown.call_args_list:
+            if call == (('/mocked/path/*', 1000, 1000),):
+                break
+        else:
+>           pytest.fail("Expected call not found: chown('/mocked/path/*', 1000, 1000)")
+E           Failed: Expected call not found: chown('/mocked/path/*', 1000, 1000)
+
+coverup-tests/tmp_test_8o9p32pe.py:55: Failed
+
+---- 2024-05-31T13:21:19 flutils/pathutils.py:138-216 ----
+Too many attempts, giving up
