@@ -19,7 +19,7 @@ def parse_args():
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use for the first CoverUp')
 
     def other_system(value):
-        coda_choices = ['codamosa-gpt4', 'codamosa-codex', 'codamosa-gpt4-isolated', 'codamosa-codex-isolated']
+        coda_choices = [f'codamosa-{r}' for r in ['codex', 'codex-isolated', 'gpt4', 'gpt4-isolated', 'gpt4o']]
         if not (value.startswith('coverup-') or value in coda_choices):
             raise argparse.ArgumentTypeError(f'invalid choice: select {", ".join(coda_choices)} or coverup-..config..')
         return value
