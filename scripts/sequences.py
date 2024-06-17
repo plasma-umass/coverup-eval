@@ -100,7 +100,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     seq_count = defaultdict(int)
-    for file in (Path('output') / (args.suite + (f".{args.config}" if args.config else ""))).glob(args.logs):
+    path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
+    for file in path.glob(args.logs):
         if '.' in file.name: # "foobar.failed" and such
             continue
 
@@ -128,22 +129,15 @@ if __name__ == '__main__':
 #    print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
 
 ## P and C seqs
-#    p_count = defaultdict(int)
-#    for seq, count in seq_count.items():
-#        if seq[0] == 'P':
-#            if seq[-1] in ('-', 'T', 'M'):
-#                seq = seq[0] + '..' + seq[-1]
-#            p_count[seq] += count
-#    print('')
-#    print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
-#
-#    c_count = defaultdict(int)
-#    for seq, count in seq_count.items():
-#        if seq[-1] in ('-', 'T', 'M'):
-#            seq = seq[0] + '..' + seq[-1]
-#        c_count[seq] += count
-#    print('')
-#    print(tabulate(mktable(c_count), headers=["seq", "count", "%"]))
+#    for start in ('P', 'C'):
+#        p_count = defaultdict(int)
+#        for seq, count in seq_count.items():
+#            if seq[0] == start:
+#                if seq[-1] in ('-', 'T', 'M'):
+#                    seq = seq[0] + '..' + seq[-1]
+#                p_count[seq] += count
+#        print('')
+#        print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
 #
 # final states
     end_count = defaultdict(int)
@@ -155,6 +149,27 @@ if __name__ == '__main__':
     total_seq = sum(end_count.values())
     print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
+    end_count = defaultdict(int)
+    for seq, count in seq_count.items():
+        if seq[-1] == 'G':
+            end_count[seq[0] + ('.' * (len(seq)-2)) + 'G'] += count
+
+    print('')
+    total_seq = sum(end_count.values())
+    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
+
+    f_count = defaultdict(int)
+    for seq, count in seq_count.items():
+        if 'F' in seq:
+            f_count['F'] += count
+        elif seq[-1] == 'G':
+            f_count['...G'] += count
+        else:
+            f_count[seq] += count
+
+    print('')
+    total_seq = sum(f_count.values())
+    print(tabulate(mktable(f_count), headers=["seq", "count", "%"]))
 
 ## coverage prompts
 #    cov_count = defaultdict(int)
