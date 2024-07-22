@@ -284,6 +284,8 @@ if __name__ == "__main__":
 
             fig.savefig('histogram.pdf')
         else:
+            cov_delta = sorted(cov_delta, reverse=True)
+
             fig, ax = plt.subplots()
             if args.title:
                 ax.set_title(args.title, size=20)
