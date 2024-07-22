@@ -5,6 +5,7 @@ import subprocess
 import os
 
 test_apps = Path("codamosa/replication/test-apps")
+mutap_benchmarks = Path("MuTAP-benchmarks")
 pip_cache = Path("pip-cache")  # set to None to disable
 eval_path = Path(__file__).parent.parent
 
@@ -19,7 +20,7 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help=f'only print out the command(s), but don\'t execute them')
 
-    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+    ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
                     help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
@@ -41,26 +42,50 @@ def parse_args():
 
 args = parse_args()
 
-modules_csv = test_apps / f"{args.suite}_modules.csv"
+def load_suite(suite):
+    pkg = dict()
 
-pkg = defaultdict(list)
+    if suite == 'mutap':
+        for d in sorted(mutap_benchmarks.iterdir()):
+            pkg[d] = {
+                'package': d.name,
+                'src': Path(),
+                'files': []
+            }
+    else:
+        modules_csv = test_apps / f"{suite}_modules.csv"
+        with modules_csv.open() as f:
+            reader = csv.reader(f)
+            for d, m in reader:
+                d = Path(d)
+                assert d.parts[0] == 'test-apps'
+                pkg_top = test_apps / d.parts[1] # package topdir
+                pkg_name = m.split('.')[0] # package/module name
+                src = Path(*d.parts[2:]) # relative path to 'src' or similar
 
-with modules_csv.open() as f:
-    reader = csv.reader(f)
-    for d, m in reader:
-        pkg[d].append(m)
+                if pkg_top not in pkg:
+                    pkg[pkg_top] = {
+                        'package': pkg_name,
+                        'src': src,
+                        'files': []
+                    }
+                else:
+                    assert pkg[pkg_top]['package'] == pkg_name
+                    assert pkg[pkg_top]['src'] == src
 
-for d in pkg:
-    if args.module and args.module not in d:
+                pkg[pkg_top]['files'].append(str(src / (m.replace('.','/') + ".py")))
+
+    return pkg
+
+pkg = load_suite(args.suite)
+
+for pkg_top in pkg:
+    if args.module and args.module not in str(pkg_top):
         continue
 
-    package = pkg[d][0].split('.')[0]
-
-    assert Path(d).parts[0] == 'test-apps'
-    pkg_top = test_apps / Path(d).parts[1] # just top level
-    src = (test_apps / Path(*Path(d).parts[1:])).relative_to(pkg_top)
-
-    files = [str(src / (m.replace('.','/') + ".py")) for m in pkg[d]]
+    package = pkg[pkg_top]['package']
+    src = pkg[pkg_top]['src']
+    files = pkg[pkg_top]['files']
 
     output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
 

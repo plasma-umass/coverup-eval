@@ -8,12 +8,13 @@ import sys
 
 coverup_output = Path("output")
 replication = Path("codamosa") / "replication"
+mutap_benchmarks = Path("MuTAP-benchmarks")
 
 def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+    ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
                     help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use for the first CoverUp')
@@ -44,17 +45,26 @@ args = parse_args()
 
 def load_suite(suite_name):
     modules_list = []
-    with (replication / "test-apps" / f"{suite_name}_modules.csv").open() as f:
-        reader = csv.reader(f)
-        for d, m in reader:
-            dp = Path(d)
-            assert dp.parts[0] == 'test-apps'
 
+    if suite_name == 'mutap':
+        for d in sorted(mutap_benchmarks.iterdir()):
             modules_list.append({
-                'name': m,
-                'base_module': m.split('.')[0],
-                'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
+                'name': f"{d.name}.__init__",
+                'base_module': d.name,
+                'source_dir': ''
             })
+    else:
+        with (replication / "test-apps" / f"{suite_name}_modules.csv").open() as f:
+            reader = csv.reader(f)
+            for d, m in reader:
+                dp = Path(d)
+                assert dp.parts[0] == 'test-apps'
+
+                modules_list.append({
+                    'name': m,
+                    'base_module': m.split('.')[0],
+                    'source_dir': str(Path(*dp.parts[2:])) + "/" if len(dp.parts) > 2 else ''
+                })
 
     return {
         "name": suite_name,
