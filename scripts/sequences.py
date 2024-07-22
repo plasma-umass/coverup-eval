@@ -114,16 +114,13 @@ if __name__ == '__main__':
 
             seq_count[seq] += 1
 
-    total_seq = sum(seq_count.values())
-
 
     def mktable(data):
-        row_total = 0
+        total = sum(data.values())
         for seq, count in sorted(data.items(), key=lambda item: item[1], reverse=True):
-            row_total += count
-            yield seq, count, round(100*count/total_seq, 1)
+            yield seq, count, round(100*count/total, 1)
 
-        yield '(total)', row_total, round(100*row_total/total_seq, 1)
+        yield '(total)', total, None
 
 # all sequences
 #    print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
@@ -146,7 +143,6 @@ if __name__ == '__main__':
             end_count[('.' * (len(seq)-1)) + 'G'] += count
 
     print('')
-    total_seq = sum(end_count.values())
     print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
     end_count = defaultdict(int)
@@ -155,7 +151,6 @@ if __name__ == '__main__':
             end_count[seq[0] + ('.' * (len(seq)-2)) + 'G'] += count
 
     print('')
-    total_seq = sum(end_count.values())
     print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
     f_count = defaultdict(int)
@@ -168,7 +163,6 @@ if __name__ == '__main__':
             f_count[seq] += count
 
     print('')
-    total_seq = sum(f_count.values())
     print(tabulate(mktable(f_count), headers=["seq", "count", "%"]))
 
 ## coverage prompts
