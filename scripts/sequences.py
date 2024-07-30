@@ -14,15 +14,94 @@ def parse_args():
     ap.add_argument('--show', type=str,
                     help='print out instances of a given sequence')
 
+    ap.add_argument('--check-c-p', action="store_true",
+                    help='check for C prompts that are equivalent to a C prompt')
+
     ap.add_argument('--skip', type=str,
                     help='skip files containing this string')
 
     ap.add_argument('logs', type=str, help='log files to process')
     return ap.parse_args()
 
+
 TERMINAL_EVENTS=('G', 'M', 'T', '-', '*')
 
-def parse_log(log_content: str):
+
+def is_same_as_P(content, begin, end):
+    """This attempts to detect 'C' (context) prompts that were only issued as context prompts
+       because their 'def' executed when their module was loaded to 'P' (initial) prompts,
+       which is what they should have been."""
+
+    begin, end = int(begin), int(end)
+
+    if (rng := re.search(r'^when tested, lines (\d+)-(\d+) do not execute', content, re.M)) and \
+       (py := re.search('```python\n(.*)```', content, re.S)):
+        first, last = int(rng.group(1)), int(rng.group(2))
+
+        def del_line_markup(s):
+            # CoverUp "   nnn: " line markup
+            line_markup_len = 12
+            s = '\n'.join(l[line_markup_len:] for l in s.splitlines())
+
+            import textwrap
+            return textwrap.dedent(s)
+
+        try:
+            import ast
+            tree = ast.parse(del_line_markup(py.group(1)))
+            block = next(iter(node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))), None)
+            if block is None:
+                block = next(iter(node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)))
+        except Exception:
+            print("----")
+            print(py.group(1))
+            print("----")
+            print(del_line_markup(py.group(1)))
+            print("----")
+            raise
+
+        if ast.get_docstring(block, clean=False) is not None:
+            block.body.pop(0)
+
+        for first_stmt in block.body:
+            if not isinstance(first_stmt, (ast.Global, ast.Nonlocal)):
+                break
+
+        last_stmt = block.body[-1]
+
+        block.lineno = min([block.lineno, *(d.lineno for d in block.decorator_list)])
+
+        # CoverUp may include "class" statements in a segment, or it may start a segment
+        # within the class and just emit "class" statements for context. We have no way
+        # of knowing which one we're seeing, so we need to look for both cases (below).
+
+        # We also need to allow the last line to fall anywhere within the last statement
+        # because of things like:
+        #     return (
+        #         foo
+        #     )
+
+        if (begin - 1 + first_stmt.lineno == first and
+              (begin - 1 + last_stmt.lineno <= last and
+               begin - 1 + last_stmt.end_lineno >= last)):
+            # segment started at line 1
+            return True
+        elif (begin - block.lineno + first_stmt.lineno == first and
+            (begin - block.lineno + last_stmt.lineno <= last and
+             begin - block.lineno + last_stmt.end_lineno >= last)):
+            # segment started with the 'def', with other lines for context
+            return True
+#            else:
+#                print("----")
+#                print(f"{first=} {last=} {rng.group(0)=}")
+#                print(f"{block.lineno=} {begin=}")
+#                print(f"{first_stmt=} {begin - block.lineno + first_stmt.lineno} {first}")
+#                print(f"{last_stmt=} {begin - block.lineno + last_stmt.end_lineno} {last}")
+#                print(py.group(1))
+
+    return False
+
+def parse_log(log_content: str, check_c_p_equivalence=False):
     for m in re.finditer('---- (?:(\S+) )?([\S+ ]+) ----\n\n?(.*?)(?=\n---- |\Z)', log_content, re.DOTALL):
         timestamp, event, content = m.groups()
 
@@ -39,6 +118,8 @@ def parse_log(log_content: str):
             if content.startswith(("The code below,", "You are an expert")): # prompt
                 if "\nwhen tested, it does not execute." in content:
                     return 'P'
+                if check_c_p_equivalence and is_same_as_P(content, begin, end):
+                    return 'p'
                 return 'C'
             elif content.startswith("Executing the test yields an error"):
                 return 'F'
@@ -66,7 +147,7 @@ def parse_log(log_content: str):
         yield timestamp, what(), (py, int(begin), int(end)), content
 
 
-def get_sequences(log_content: str):
+def get_sequences(log_content: str, check_c_p_equivalence=False):
     seqs = defaultdict(str)
     seq_ts = defaultdict(lambda:[])
 
@@ -79,7 +160,7 @@ def get_sequences(log_content: str):
                 yield seg, seq, seq_ts[seg]
         seqs.clear()
 
-    for ts, ev, details, _ in parse_log(log_content):
+    for ts, ev, details, _ in parse_log(log_content, check_c_p_equivalence):
         if ev == 'startup':
             yield from yield_sequences()
             continue
@@ -108,7 +189,7 @@ if __name__ == '__main__':
         if args.skip and args.skip in str(file):
             continue
 
-        for seg, seq, _ in get_sequences(file.read_text()):
+        for seg, seq, _ in get_sequences(file.read_text(), check_c_p_equivalence=args.check_c_p):
             if args.show and args.show == seq:
                 print(f"{seg} {seq}")
 
@@ -125,17 +206,17 @@ if __name__ == '__main__':
 # all sequences
 #    print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
 
-## P and C seqs
-#    for start in ('P', 'C'):
-#        p_count = defaultdict(int)
-#        for seq, count in seq_count.items():
-#            if seq[0] == start:
-#                if seq[-1] in ('-', 'T', 'M'):
-#                    seq = seq[0] + '..' + seq[-1]
-#                p_count[seq] += count
-#        print('')
-#        print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
-#
+# P and C seqs
+    for start in ('P', 'C', 'p'):
+        p_count = defaultdict(int)
+        for seq, count in seq_count.items():
+            if seq[0] == start:
+                if seq[-1] in ('-', 'T', 'M'):
+                    seq = seq[0] + '..' + seq[-1]
+                p_count[seq] += count
+        print('')
+        print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
+
 # final states
     end_count = defaultdict(int)
     for seq, count in seq_count.items():
