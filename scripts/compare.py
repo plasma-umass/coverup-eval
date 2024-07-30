@@ -333,7 +333,6 @@ if __name__ == "__main__":
         print('')
         print(tabulate(table(), headers=headers))
 
-
         for ds in datasets:
             name = ds['name']
             dataset = ds['data']
@@ -346,7 +345,7 @@ if __name__ == "__main__":
                 label = '+'.join(metrics)
                 short_label = '+'.join(m[0] for m in metrics)
 
-                data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in dataset]
+                data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in module_names]
                 data = [d for d in data if d is not None]
 
                 print(f"{name + ' ' + short_label + ':':30} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
@@ -355,8 +354,8 @@ if __name__ == "__main__":
 
             for metrics in [['lines'], ['branches'], ['lines','branches']]:
                 short_label = '+'.join(m[0] for m in metrics)
-                covered = sum(sample[f'covered_{metric}'] for metric in metrics for m in dataset for sample in dataset[m])
-                total = covered + sum(sample[f'missing_{metric}'] for metric in metrics for m in dataset for sample in dataset[m])
+                covered = sum(sample[f'covered_{metric}'] for metric in metrics for m in module_names for sample in dataset[m])
+                total = covered + sum(sample[f'missing_{metric}'] for metric in metrics for m in module_names for sample in dataset[m])
 
                 pct = f"{100*covered/total:.1f}%  " if total>0 else ""
                 print(f"   overall {short_label+':':6} {pct}({covered}/{total})")
