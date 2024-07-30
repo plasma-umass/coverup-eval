@@ -207,10 +207,11 @@ if __name__ == '__main__':
 #    print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
 
 # P and C seqs
-    for start in ('P', 'C', 'p'):
+    for start in (('P','p'), ('C',)):
         p_count = defaultdict(int)
         for seq, count in seq_count.items():
-            if seq[0] == start:
+            if seq[0] in start:
+                seq = start[0] + seq[1:] # p -> P
                 if seq[-1] in ('-', 'T', 'M'):
                     seq = seq[0] + '..' + seq[-1]
                 p_count[seq] += count
