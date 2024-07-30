@@ -25,9 +25,13 @@ def parse_args():
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
+    ap.add_argument('--get-test-coverage', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='measure per-test coverage (rather than run CoverUp)')
+
     ap.add_argument('-i', '--interactive', default=False,
                     action=argparse.BooleanOptionalAction,
-                    help=f'start interactive docker (rather than run CoverUp)')
+                    help='start interactive docker (rather than run CoverUp)')
 
     ap.add_argument('--pip-cache', default=True,
                     action=argparse.BooleanOptionalAction,
@@ -40,8 +44,6 @@ def parse_args():
 
     return args
 
-args = parse_args()
-
 def load_suite(suite):
     pkg = dict()
 
@@ -50,7 +52,7 @@ def load_suite(suite):
             pkg[d] = {
                 'package': d.name,
                 'src': Path(),
-                'files': []
+                'files': [str(Path(d.name) / "__init__.py")]
             }
     else:
         modules_csv = test_apps / f"{suite}_modules.csv"
@@ -77,40 +79,44 @@ def load_suite(suite):
 
     return pkg
 
-pkg = load_suite(args.suite)
+if __name__ == "__main__":
+    args = parse_args()
+    pkg = load_suite(args.suite)
 
-for pkg_top in pkg:
-    if args.module and args.module not in str(pkg_top):
-        continue
+    for pkg_top in pkg:
+        if args.module and args.module not in str(pkg_top):
+            continue
 
-    package = pkg[pkg_top]['package']
-    src = pkg[pkg_top]['src']
-    files = pkg[pkg_top]['files']
+        package = pkg[pkg_top]['package']
+        src = pkg[pkg_top]['src']
+        files = pkg[pkg_top]['files']
 
-    output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
+        output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
 
-    if (output / "final.json").exists() and not (args.dry_run or args.interactive):
-        if args.module: print(f"{str(output/'final.json')} exists, skipping.")
-        continue
+        if (output / "final.json").exists() and not (args.dry_run or args.interactive or args.get_test_coverage):
+            if args.module: print(f"{str(output/'final.json')} exists, skipping.")
+            continue
 
-    if not args.dry_run:
-        output.mkdir(parents=True, exist_ok=True)
+        if not args.dry_run:
+            output.mkdir(parents=True, exist_ok=True)
 
-    config = args.config if args.config else 'default'
+        config = args.config if args.config else 'default'
 
-    # topmost directory for sources
-    src_topdir = src.parts[0] if src.parts else package
+        # topmost directory for sources
+        src_topdir = src.parts[0] if src.parts else package
 
-    cmd = f"docker run --rm " +\
-          f"-v {str(eval_path.absolute())}:/eval:ro " +\
-          f"-v {str(output.absolute())}:/output " +\
-          f"-v {str(pkg_top.absolute())}:/package:ro " +\
-          f"-v {str((pkg_top / src_topdir).resolve())}:/output/{src_topdir}:ro " +\
-          (f"-v {str((eval_path / 'pip-cache').absolute())}:/root/.cache/pip " if args.pip_cache else "") +\
-          ("-ti " if args.interactive else "-t ") +\
-           "coverup-runner bash " +\
-          (f"/eval/scripts/run_coverup.sh {config} {src} {package} {' '.join(files)}" if not args.interactive else "")
+        script = 'get_test_coverage.sh' if args.get_test_coverage else 'run_coverup.sh'
 
-    print(cmd)
-    if not args.dry_run:
-        subprocess.run(cmd, shell=True, check=True)
+        cmd = f"docker run --rm " +\
+              f"-v {str(eval_path.absolute())}:/eval:ro " +\
+              f"-v {str(output.absolute())}:/output " +\
+              f"-v {str(pkg_top.absolute())}:/package:ro " +\
+              f"-v {str((pkg_top / src_topdir).resolve())}:/output/{src_topdir}:ro " +\
+              (f"-v {str((eval_path / 'pip-cache').absolute())}:/root/.cache/pip " if args.pip_cache else "") +\
+              ("-ti " if args.interactive else "-t ") +\
+               "coverup-runner bash " +\
+              (f"/eval/scripts/{script} {config} {src} {package} {' '.join(files)}" if not args.interactive else "")
+
+        print(cmd)
+        if not args.dry_run:
+            subprocess.run(cmd, shell=True, check=True)
