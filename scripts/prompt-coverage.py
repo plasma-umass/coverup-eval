@@ -152,14 +152,25 @@ if __name__ == "__main__":
 
         slipcover.merge_coverage(cov['C'], cov['P'])
 
-        entries.append([
-            pkg.name,
-            cov['C']['summary']['covered_lines'] + cov['C']['summary']['missing_lines'],
-            pct(cov['start']), 
-            pct(cov['P']),
-            pct(cov['C']),
-            pct(cov['C']) - pct(cov['P'])
-        ])
+        if pkg_info['files']:
+            for f in sorted(pkg_info['files']):
+                entries.append([
+                    f,
+                    cov['C']['files'][f]['summary']['covered_lines'] + cov['C']['files'][f]['summary']['missing_lines'],
+                    pct(cov['start']['files'][f]), 
+                    pct(cov['P']['files'][f]),
+                    pct(cov['C']['files'][f]),
+                    pct(cov['C']['files'][f]) - pct(cov['P']['files'][f])
+                ])
+        else:
+            entries.append([
+                pkg.name,
+                cov['C']['summary']['covered_lines'] + cov['C']['summary']['missing_lines'],
+                pct(cov['start']), 
+                pct(cov['P']),
+                pct(cov['C']),
+                pct(cov['C']) - pct(cov['P'])
+            ])
 
         entries = sorted(entries, key=lambda x: x[-1], reverse=True)
 
@@ -217,7 +228,7 @@ if __name__ == "__main__":
     ])
 
     print(tabulate(entries, headers=[
-        'package',
+        'pkg/file',
         'lines/br.',
         'start %',
         'after init. prompts %',
