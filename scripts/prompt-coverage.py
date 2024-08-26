@@ -1,6 +1,6 @@
 from pathlib import Path
 from collections import defaultdict
-from sequences import parse_log, TERMINAL_EVENTS
+from coverup.logreader import parse_log, TERMINAL_EVENTS
 import json
 import re
 
