@@ -1,5 +1,6 @@
 from pathlib import Path
-from sequences import parse_args, parse_log, get_sequences
+from coverup.logreader import parse_log, get_sequences
+from sequences import parse_args
 from datetime import datetime
 import llm_utils
 
