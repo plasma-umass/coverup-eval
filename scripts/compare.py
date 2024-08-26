@@ -313,7 +313,10 @@ if __name__ == "__main__":
 
         headers=["Module", "Lines", "Branches", datasets[0]['name'] + " %", datasets[1]['name'] + " %", "samples"]
         def table():
-            from simple_colors import red, green
+            if sys.stdout.isatty():
+                from simple_colors import red, green
+            else:
+                red = green = lambda v: v
 
             for m, a, b in zip(module_names, coverage_lb[0], coverage_lb[1]):
                 if a is not None: a = round(a, 2)
