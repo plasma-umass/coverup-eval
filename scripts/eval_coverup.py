@@ -33,6 +33,8 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help='start interactive docker (rather than run CoverUp)')
 
+    ap.add_argument('--only', type=str, help='only run for the given source file')
+
     ap.add_argument('--pip-cache', default=True,
                     action=argparse.BooleanOptionalAction,
                     help=f'whether to pass in the pip cache')
@@ -90,6 +92,12 @@ if __name__ == "__main__":
         package = pkg[pkg_top]['package']
         src = pkg[pkg_top]['src']
         files = pkg[pkg_top]['files']
+
+        if args.only:
+            if args.only not in files:
+                print(f"{args.only} not among {package} suite files.")
+                continue
+            files = [args.only]
 
         output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
 
