@@ -40,9 +40,10 @@ run "pip install -r /eval/coverup/test-modules.txt"
 PYTEST_ARGS+=" --rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 
 SLIPCOVER_ARGS+=" --source $SRC/$PKG --branch --json"
-COVERUP_ARGS+=" --source-dir $SRC/$PKG --tests-dir coverup-tests --pytest-args \"$PYTEST_ARGS\""
+COVERUP_ARGS+=" --source-dir $SRC/$PKG --tests-dir coverup-tests --save-coverage-to coverage --pytest-args \"$PYTEST_ARGS\""
 
 [ -d coverup-tests ] || mkdir coverup-tests
+[ -d coverage ] || mkdir coverage
 
 # set Python path so the package can be 'import'ed
 export PYTHONPATH=$SRC
