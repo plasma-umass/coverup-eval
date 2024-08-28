@@ -64,3 +64,5 @@ if ! [ -e /output/final.json ]; then
     run "python3 -m slipcover $SLIPCOVER_ARGS --out final.json -m pytest -qq --disable-warnings $PYTEST_ARGS $PYTEST_FINAL_ARGS coverup-tests || [ \$? == 5 ]"
     run "chown $OWNER final.json"
 fi
+
+run "chown -R $OWNER coverage"
