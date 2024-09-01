@@ -58,7 +58,7 @@ for RUN in 1 2 3; do
     if ! [ -e coverup-ckpt-$RUN.json ]; then
         # run CoverUp on it
         run "coverup $COVERUP_ARGS --log-file coverup-log-$RUN --checkpoint coverup-ckpt.json $FILES"
-        run "chown -R $OWNER coverup-log* *.json *.txt coverup-tests missing-modules.*"
+        run "chown -R $OWNER coverup-log* *.json *.txt coverup-tests"
         if [ -e missing-modules.txt ]; then
             run "chown $OWNER missing-modules.txt"
         fi
