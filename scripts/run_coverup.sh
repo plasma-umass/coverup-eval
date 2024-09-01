@@ -33,6 +33,11 @@ if ! [ -e package.txt ]; then
 fi
 run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 
+# (re)install modules previously found missing
+if [ -r missing-modules.txt ]; then
+    run "pip install -r missing-modules.txt"
+fi
+
 # install CoverUp and common test modules
 run "pip install /eval/coverup"
 run "pip install -r /eval/coverup/test-modules.txt"
@@ -53,7 +58,10 @@ for RUN in 1 2 3; do
     if ! [ -e coverup-ckpt-$RUN.json ]; then
         # run CoverUp on it
         run "coverup $COVERUP_ARGS --log-file coverup-log-$RUN --checkpoint coverup-ckpt.json $FILES"
-        run "chown -R $OWNER coverup-log* *.json *.txt coverup-tests"
+        run "chown -R $OWNER coverup-log* *.json *.txt coverup-tests missing-modules.*"
+        if [ -e missing-modules.txt ]; then
+            run "chown $OWNER missing-modules.txt"
+        fi
         run "mv coverup-ckpt.json coverup-ckpt-$RUN.json"
     fi
 done
