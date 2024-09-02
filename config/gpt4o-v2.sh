@@ -4,7 +4,7 @@ PYTEST_FINAL_ARGS=" --cleanslate"
 
 if [ $PKG == "mimesis" ]; then
     # tests are randomized, so prone to flakies
-    COVERUP_ARGS+=" --repeat-tests 10"
+    COVERUP_ARGS+=" --repeat-tests 20"
 else
     COVERUP_ARGS+=" --repeat-tests 5"
 fi
