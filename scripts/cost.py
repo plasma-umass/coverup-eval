@@ -32,12 +32,16 @@ if __name__ == '__main__':
     total = 0
 
     path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
-    for file in path.glob("*/coverup-log-*"):
-        if '.' in file.name: # "foobar.failed" and such
-            continue
+    if not path.exists():
+        print(f"{path} doesn't exist")
 
-        cost = cost_of(file.read_text())
-        print(f"{str(file):<50} $ {cost:6.2f}")
-        total += cost
+    else:
+        for file in path.glob("*/coverup-log-*"):
+            if '.' in file.name: # "foobar.failed" and such
+                continue
 
-    print(f"\nTotal cost: $ {total:6.2f}")
+            cost = cost_of(file.read_text())
+            print(f"{str(file.relative_to(path)):<55} $ {cost:6.2f}")
+            total += cost
+
+        print(f"\nTotal cost: $ {total:6.2f}")
