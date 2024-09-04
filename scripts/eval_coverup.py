@@ -13,8 +13,8 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('module', type=str, nargs='?',
-                    help='only process the given module')
+    ap.add_argument('package', type=str, nargs='?',
+                    help='only process the given package')
 
     ap.add_argument('--dry-run', default=False,
                     action=argparse.BooleanOptionalAction,
@@ -22,6 +22,8 @@ def parse_args():
 
     ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
                     help='suite of modules to compare')
+
+    ap.add_argument('--skip-package', action='append', help='skip given package')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
@@ -41,8 +43,8 @@ def parse_args():
 
     args = ap.parse_args()
 
-    if args.interactive and not args.module:
-        ap.error("module is required when using --interactive.")
+    if args.interactive and not args.package:
+        ap.error("package is required when using --interactive.")
 
     return args
 
@@ -86,12 +88,15 @@ if __name__ == "__main__":
     pkg = load_suite(args.suite)
 
     for pkg_top in pkg:
-        if args.module and args.module not in str(pkg_top):
+        if args.package and args.package not in str(pkg_top):
             continue
 
         package = pkg[pkg_top]['package']
         src = pkg[pkg_top]['src']
         files = pkg[pkg_top]['files']
+
+        if package in args.skip_package:
+            continue
 
         if args.only:
             if args.only not in files:
@@ -102,7 +107,7 @@ if __name__ == "__main__":
         output = Path("output") / (args.suite + (f".{args.config}" if args.config else "")) / package
 
         if (output / "final.json").exists() and not (args.dry_run or args.interactive or args.get_test_coverage):
-            if args.module: print(f"{str(output/'final.json')} exists, skipping.")
+            if args.package : print(f"{str(output/'final.json')} exists, skipping.")
             continue
 
         if not args.dry_run:
