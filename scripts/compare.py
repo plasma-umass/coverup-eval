@@ -8,6 +8,7 @@ import sys
 
 coverup_output = Path("output")
 replication = Path("codamosa") / "replication"
+mutap_output = Path("MuTAP-results")
 mutap_benchmarks = Path("MuTAP-benchmarks")
 
 def parse_args():
@@ -21,7 +22,7 @@ def parse_args():
 
     def other_system(value):
         coda_choices = [f'codamosa-{r}' for r in ['codex', 'codex-isolated', 'gpt4', 'gpt4-isolated', 'gpt4o']]
-        if not (value.startswith('coverup-') or value in coda_choices):
+        if not (value.startswith('coverup-') or value.startswith('mutap-') or value in coda_choices):
             raise argparse.ArgumentTypeError(f'invalid choice: select {", ".join(coda_choices)} or coverup-..config..')
         return value
 
@@ -31,6 +32,9 @@ def parse_args():
     ap.add_argument('--plot', default=False,
                     action=argparse.BooleanOptionalAction,
                     help='plot results instead of showing a table')
+
+    ap.add_argument('--rename-first', type=str,
+                    help='Rename the first data point (CoverUp) in a plot')
 
     ap.add_argument('--histogram', choices=['coverage', 'delta', 'lines', 'lines+branches'],
                     help='draw a histogram')
@@ -122,6 +126,40 @@ def load_coverup(suite, config = None):
     }
 
 
+def load_mutap(suite, config = None):
+    # per-module dictonary -> list of [coverage 'summary']
+    data = defaultdict(list)
+
+    config_output_dir = mutap_output / (config if config else 'Codex_few_augmented')
+
+    if not config_output_dir.exists():
+        print(f"Cannot load data: directory {config_output_dir} missing")
+        sys.exit(1)
+
+    for m in suite['modules']:
+        m_name = m['name']
+
+        m = re.match('f(\d+)\.__init__', m_name)
+        m_num = m.group(1)
+
+        cov_file = config_output_dir / f"{m_num}.json"
+        if not cov_file.exists():
+            continue
+
+        cov = json_load(cov_file)
+        file = [n for n in cov['files'] if Path(n).name == 'm.py']
+        assert len(file) < 2
+
+        if file:
+            file = file[0]
+            data[m_name].append(cov['files'][file]['summary'])
+
+    return {
+        "name": "MuTAP" + (f" ({config})" if config else ""),
+        "data": data
+    }
+
+
 def load_codamosa(suite, coda_config):
     assert suite['name'] == 'good'
 
@@ -209,6 +247,8 @@ if __name__ == "__main__":
             datasets.append(fake_full_coverage(datasets[0]['data'], "CodaMosa (fake)"))
         else:
             datasets.append(load_codamosa(suite, second_config))
+    elif args.compare_to.startswith('mutap-'):
+        datasets.append(load_mutap(suite, second_config))
     else:
         datasets.append(load_coverup(suite, second_config))
 
@@ -286,13 +326,15 @@ if __name__ == "__main__":
         else:
             cov_delta = sorted(cov_delta, reverse=True)
 
+            first_label = args.rename_first if args.rename_first else datasets[0]["name"]
+
             fig, ax = plt.subplots()
             if args.title:
                 ax.set_title(args.title, size=20)
             else:
-                ax.set_title(f'Coverage increase {datasets[0]["name"]} vs. {datasets[1]["name"]} (larger is better)', size=20)
+                ax.set_title(f'Coverage increase {first_label} vs. {datasets[1]["name"]} (larger is better)', size=20, weight='bold')
 
-            ax.set_ylabel('% coverage increase', size=18)
+            ax.set_ylabel('Coverage increase (%)', size=18)
 
             colors = ['green' if d>0 else 'black' for d in cov_delta]
             bars_x = np.arange(len(cov_delta))
