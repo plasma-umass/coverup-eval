@@ -23,7 +23,7 @@ def parse_args():
     ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
                     help='suite of modules to compare')
 
-    ap.add_argument('--skip-package', action='append', help='skip given package')
+    ap.add_argument('--skip-package', action='append', default=[], help='skip given package')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
 
