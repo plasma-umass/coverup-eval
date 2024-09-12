@@ -9,7 +9,7 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+    ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
                     help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
