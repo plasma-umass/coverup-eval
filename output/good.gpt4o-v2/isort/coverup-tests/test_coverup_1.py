@@ -1,0 +1,12 @@
+# file: isort/exceptions.py:8-9
+# asked: {"lines": [8, 9], "branches": []}
+# gained: {"lines": [8, 9], "branches": []}
+
+import pytest
+from isort.exceptions import ISortError
+
+def test_isort_error_inheritance():
+    with pytest.raises(ISortError):
+        raise ISortError("This is a test exception")
+
+    assert issubclass(ISortError, Exception)

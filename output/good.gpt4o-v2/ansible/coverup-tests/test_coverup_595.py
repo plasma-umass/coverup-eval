@@ -1,0 +1,32 @@
+# file: lib/ansible/utils/collection_loader/_collection_finder.py:994-998
+# asked: {"lines": [994, 995, 996, 998], "branches": [[995, 996], [995, 998]]}
+# gained: {"lines": [994, 995, 996, 998], "branches": [[995, 996], [995, 998]]}
+
+import pytest
+from ansible.utils.collection_loader._collection_finder import _get_import_redirect
+
+def test_get_import_redirect_with_empty_dict():
+    result = _get_import_redirect({}, 'some_fullname')
+    assert result is None
+
+def test_get_import_redirect_with_no_redirection():
+    collection_meta_dict = {
+        'import_redirection': {
+            'some_other_fullname': {
+                'redirect': 'some_value'
+            }
+        }
+    }
+    result = _get_import_redirect(collection_meta_dict, 'some_fullname')
+    assert result is None
+
+def test_get_import_redirect_with_redirection():
+    collection_meta_dict = {
+        'import_redirection': {
+            'some_fullname': {
+                'redirect': 'some_value'
+            }
+        }
+    }
+    result = _get_import_redirect(collection_meta_dict, 'some_fullname')
+    assert result == 'some_value'

@@ -1,0 +1,19 @@
+# file: lib/ansible/module_utils/common/dict_transformations.py:86-109
+# asked: {"lines": [88, 89, 91, 92, 96, 98, 100, 101, 102, 103, 106, 107, 108, 109], "branches": [[91, 92], [91, 96], [100, 101], [100, 102], [102, 103], [102, 106]]}
+# gained: {"lines": [88, 89, 91, 92, 96, 98, 100, 101, 102, 103, 106, 107, 108, 109], "branches": [[91, 92], [91, 96], [100, 101], [100, 102], [102, 103], [102, 106]]}
+
+import pytest
+import re
+from ansible.module_utils.common.dict_transformations import _camel_to_snake
+
+def test_camel_to_snake_reversible():
+    assert _camel_to_snake('CamelCaseTest', reversible=True) == 'camel_case_test'
+    assert _camel_to_snake('CamelCaseTest', reversible=False) == 'camel_case_test'
+    assert _camel_to_snake('CamelCase', reversible=True) == 'camel_case'
+    assert _camel_to_snake('CamelCase', reversible=False) == 'camel_case'
+    assert _camel_to_snake('CamelCaseTestABC', reversible=True) == 'camel_case_test_a_b_c'
+    assert _camel_to_snake('CamelCaseTestABC', reversible=False) == 'camel_case_test_abc'
+    assert _camel_to_snake('CamelCaseTestABCs', reversible=True) == 'camel_case_test_a_b_cs'
+    assert _camel_to_snake('CamelCaseTestABCs', reversible=False) == 'camel_case_test_abcs'
+    assert _camel_to_snake('CamelCaseTestABCDs', reversible=True) == 'camel_case_test_a_b_c_ds'
+    assert _camel_to_snake('CamelCaseTestABCDs', reversible=False) == 'camel_case_test_abcds'

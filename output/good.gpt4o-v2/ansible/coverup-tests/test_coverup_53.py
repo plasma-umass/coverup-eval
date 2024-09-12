@@ -1,0 +1,51 @@
+# file: lib/ansible/module_utils/common/validation.py:173-210
+# asked: {"lines": [173, 187, 188, 189, 191, 192, 193, 194, 196, 197, 198, 199, 200, 202, 203, 204, 205, 206, 207, 208, 210], "branches": [[188, 189], [188, 191], [191, 192], [191, 202], [192, 193], [192, 194], [196, 197], [196, 198], [198, 191], [198, 199], [199, 198], [199, 200], [202, 203], [202, 210], [203, 204], [203, 210], [204, 203], [204, 205], [206, 207], [206, 208]]}
+# gained: {"lines": [173, 187, 188, 189, 191, 192, 193, 194, 196, 197, 198, 199, 200, 202, 203, 204, 205, 206, 207, 208, 210], "branches": [[188, 189], [188, 191], [191, 192], [191, 202], [192, 193], [192, 194], [196, 197], [196, 198], [198, 191], [198, 199], [199, 198], [199, 200], [202, 203], [202, 210], [203, 204], [203, 210], [204, 203], [204, 205], [206, 207], [206, 208]]}
+
+import pytest
+from ansible.module_utils.common.validation import check_required_by
+from ansible.module_utils._text import to_native
+from ansible.module_utils.six import string_types
+
+def test_check_required_by_no_requirements():
+    assert check_required_by(None, {}) == {}
+
+def test_check_required_by_empty_requirements():
+    assert check_required_by({}, {}) == {}
+
+def test_check_required_by_no_parameters():
+    requirements = {'key1': 'value1'}
+    assert check_required_by(requirements, {}) == {}
+
+def test_check_required_by_parameters_none():
+    requirements = {'key1': 'value1'}
+    parameters = {'key1': None}
+    assert check_required_by(requirements, parameters) == {}
+
+def test_check_required_by_single_string():
+    requirements = {'key1': 'value1'}
+    parameters = {'key1': 'value1', 'value1': 'some_value'}
+    assert check_required_by(requirements, parameters) == {'key1': []}
+
+def test_check_required_by_list_of_values():
+    requirements = {'key1': ['value1', 'value2']}
+    parameters = {'key1': 'value1', 'value1': 'some_value', 'value2': 'some_value'}
+    assert check_required_by(requirements, parameters) == {'key1': []}
+
+def test_check_required_by_missing_parameter():
+    requirements = {'key1': 'value1'}
+    parameters = {'key1': 'value1'}
+    with pytest.raises(TypeError, match="missing parameter\\(s\\) required by 'key1': value1"):
+        check_required_by(requirements, {'key1': 'value1'})
+
+def test_check_required_by_with_options_context():
+    requirements = {'key1': 'value1'}
+    parameters = {'key1': 'value1'}
+    with pytest.raises(TypeError, match="missing parameter\\(s\\) required by 'key1': value1 found in context"):
+        check_required_by(requirements, {'key1': 'value1'}, options_context=['context'])
+
+def test_check_required_by_multiple_missing_parameters():
+    requirements = {'key1': ['value1', 'value2']}
+    parameters = {'key1': 'value1'}
+    with pytest.raises(TypeError, match="missing parameter\\(s\\) required by 'key1': value1, value2"):
+        check_required_by(requirements, parameters)
