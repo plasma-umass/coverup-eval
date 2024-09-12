@@ -150,6 +150,7 @@ def load_mutap(suite, config = None):
         file = [n for n in cov['files'] if Path(n).name == 'm.py']
         assert len(file) < 2
 
+        assert file, f"m.py missing in {cov_file}"
         if file:
             file = file[0]
             data[m_name].append(cov['files'][file]['summary'])
@@ -334,6 +335,7 @@ if __name__ == "__main__":
             else:
                 ax.set_title(f'Coverage increase {first_label} vs. {datasets[1]["name"]} (larger is better)', size=20, weight='bold')
 
+            ax.set_xlabel('Modules', size=18)
             ax.set_ylabel('Coverage increase (%)', size=18)
 
             colors = ['green' if d>0 else 'black' for d in cov_delta]
