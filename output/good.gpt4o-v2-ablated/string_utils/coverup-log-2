@@ -1,0 +1,1972 @@
+---- 2024-09-05T14:55:16 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --max-attempts 3 --isolate-tests --prompt-family gpt-v2-ablated --install-missing-modules --write-requirements-to missing-modules.txt --repeat-tests 5 --source-dir ./string_utils --tests-dir coverup-tests --save-coverage-to coverage --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json string_utils/generation.py string_utils/manipulation.py string_utils/validation.py
+---- 2024-09-05T14:55:23 string_utils/generation.py:88-140 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/generation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def roman_range(stop: int, start: int = 1, step: int = 1) -> Generator:\n                \"\"\"\n                Similarly to native Python's `range()`, returns a Generator object which generates a new roman number\n                on each iteration instead of an integer.\n            \n                *Example:*\n            \n                >>> for n in roman_range(7): print(n)\n                >>> # prints: I, II, III, IV, V, VI, VII\n                >>> for n in roman_range(start=7, stop=1, step=-1): print(n)\n                >>> # prints: VII, VI, V, IV, III, II, I\n            \n                :param stop: Number at which the generation must stop (must be <= 3999).\n                :param start: Number at which the generation must start (must be >= 1).\n                :param step: Increment of each generation step (default to 1).\n                :return: Generator of roman numbers.\n                \"\"\"\n            \n                def validate(arg_value, arg_name, allow_negative=False):\n                    msg = '\"{}\" must be an integer in the range 1-3999'.format(arg_name)\n            \n                    if not isinstance(arg_value, int):\n                        raise ValueError(msg)\n            \n                    if allow_negative:\n                        arg_value = abs(arg_value)\n            \n                    if arg_value < 1 or arg_value > 3999:\n                        raise ValueError(msg)\n            \n                def generate():\n                    current = start\n            \n                    # generate values for each step\n                    while current != stop:\n                        yield roman_encode(current)\n                        current += step\n            \n                    # last value to return\n                    yield roman_encode(current)\n            \n                # checks each single argument value\n                validate(stop, 'stop')\n                validate(start, 'start')\n                validate(step, 'step', allow_negative=True)\n            \n                # checks if the provided configuration leads to a feasible iteration with respect to boundaries or not\n                forward_exceed = step > 0 and (start > stop or start + step > stop)\n                backward_exceed = step < 0 and (start < stop or start + step < stop)\n                if forward_exceed or backward_exceed:\n                    raise OverflowError('Invalid start/stop/step configuration')\n            \n                return generate()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:451-494 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_palindrome(input_string: Any, ignore_spaces: bool = False, ignore_case: bool = False) -> bool:\n                \"\"\"\n                Checks if the string is a palindrome (https://en.wikipedia.org/wiki/Palindrome).\n            \n                *Examples:*\n            \n                >>> is_palindrome('LOL') # returns true\n                >>> is_palindrome('Lol') # returns false\n                >>> is_palindrome('Lol', ignore_case=True) # returns true\n                >>> is_palindrome('ROTFL') # returns false\n            \n                :param input_string: String to check.\n                :type input_string: str\n                :param ignore_spaces: False if white spaces matter (default), true otherwise.\n                :type ignore_spaces: bool\n                :param ignore_case: False if char case matters (default), true otherwise.\n                :type ignore_case: bool\n                :return: True if the string is a palindrome (like \"otto\", or \"i topi non avevano nipoti\" if strict=False),\\\n                False otherwise\n                \"\"\"\n                if not is_full_string(input_string):\n                    return False\n            \n                if ignore_spaces:\n                    input_string = SPACES_RE.sub('', input_string)\n            \n                string_len = len(input_string)\n            \n                # Traverse the string one char at step, and for each step compares the\n                # \"head_char\" (the one on the left of the string) to the \"tail_char\" (the one on the right).\n                # In this way we avoid to manipulate the whole string in advance if not necessary and provide a faster\n                # algorithm which can scale very well for long strings.\n                for index in range(string_len):\n                    head_char = input_string[index]\n                    tail_char = input_string[string_len - index - 1]\n            \n                    if ignore_case:\n                        head_char = head_char.lower()\n                        tail_char = tail_char.lower()\n            \n                    if head_char != tail_char:\n                        return False\n            \n                return True\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:204-244 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_email(input_string: Any) -> bool:\n                \"\"\"\n                Check if a string is a valid email.\n            \n                Reference: https://tools.ietf.org/html/rfc3696#section-3\n            \n                *Examples:*\n            \n                >>> is_email('my.email@the-provider.com') # returns true\n                >>> is_email('@gmail.com') # returns false\n            \n                :param input_string: String to check.\n                :type input_string: str\n                :return: True if email, false otherwise.\n                \"\"\"\n                # first simple \"pre check\": it must be a non empty string with max len 320 and cannot start with a dot\n                if not is_full_string(input_string) or len(input_string) > 320 or input_string.startswith('.'):\n                    return False\n            \n                try:\n                    # we expect 2 tokens, one before \"@\" and one after, otherwise we have an exception and the email is not valid\n                    head, tail = input_string.split('@')\n            \n                    # head's size must be <= 64, tail <= 255, head must not start with a dot or contain multiple consecutive dots\n                    if len(head) > 64 or len(tail) > 255 or head.endswith('.') or ('..' in head):\n                        return False\n            \n                    # removes escaped spaces, so that later on the test regex will accept the string\n                    head = head.replace('\\\\ ', '')\n                    if head.startswith('\"') and head.endswith('\"'):\n                        head = head.replace(' ', '')[1:-1]\n            \n                    return EMAIL_RE.match(head + '@' + tail) is not None\n            \n                except ValueError:\n                    # borderline case in which we have multiple \"@\" signs but the head part is correctly escaped\n                    if ESCAPED_AT_SIGN.search(input_string) is not None:\n                        # replace \"@\" with \"a\" in the head\n                        return is_email(ESCAPED_AT_SIGN.sub('a', input_string))\n            \n                    return False\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:250-277 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def format(self) -> str:\n                    # map of temporary placeholders\n                    placeholders = {}\n                    out = self.input_string\n            \n                    # looks for url or email and updates placeholders map with found values\n                    placeholders.update({self.__placeholder_key(): m[0] for m in URLS_RE.findall(out)})\n                    placeholders.update({self.__placeholder_key(): m for m in EMAILS_RE.findall(out)})\n            \n                    # replace original value with the placeholder key\n                    for p in placeholders:\n                        out = out.replace(placeholders[p], p, 1)\n            \n                    out = PRETTIFY_RE['UPPERCASE_FIRST_LETTER'].sub(self.__uppercase_first_char, out)\n                    out = PRETTIFY_RE['DUPLICATES'].sub(self.__remove_duplicates, out)\n                    out = PRETTIFY_RE['RIGHT_SPACE'].sub(self.__ensure_right_space_only, out)\n                    out = PRETTIFY_RE['LEFT_SPACE'].sub(self.__ensure_left_space_only, out)\n                    out = PRETTIFY_RE['SPACES_AROUND'].sub(self.__ensure_spaces_around, out)\n                    out = PRETTIFY_RE['SPACES_INSIDE'].sub(self.__remove_internal_spaces, out)\n                    out = PRETTIFY_RE['UPPERCASE_AFTER_SIGN'].sub(self.__uppercase_first_letter_after_sign, out)\n                    out = PRETTIFY_RE['SAXON_GENITIVE'].sub(self.__fix_saxon_genitive, out)\n                    out = out.strip()\n            \n                    # restore placeholder keys with their associated original value\n                    for p in placeholders:\n                        out = out.replace(p, placeholders[p], 1)\n            \n                    return out\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:247-283 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_credit_card(input_string: Any, card_type: str = None) -> bool:\n                \"\"\"\n                Checks if a string is a valid credit card number.\n                If card type is provided then it checks against that specific type only,\n                otherwise any known credit card number will be accepted.\n            \n                Supported card types are the following:\n            \n                - VISA\n                - MASTERCARD\n                - AMERICAN_EXPRESS\n                - DINERS_CLUB\n                - DISCOVER\n                - JCB\n            \n                :param input_string: String to check.\n                :type input_string: str\n                :param card_type: Card type. Default to None (any card).\n                :type card_type: str\n            \n                :return: True if credit card, false otherwise.\n                \"\"\"\n                if not is_full_string(input_string):\n                    return False\n            \n                if card_type:\n                    if card_type not in CREDIT_CARDS:\n                        raise KeyError(\n                            'Invalid card type \"{}\". Valid types are: {}'.format(card_type, ', '.join(CREDIT_CARDS.keys()))\n                        )\n                    return CREDIT_CARDS[card_type].match(input_string) is not None\n            \n                for c in CREDIT_CARDS:\n                    if CREDIT_CARDS[c].match(input_string) is not None:\n                        return True\n            \n                return False\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:116-156 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __RomanNumbers:\n                @classmethod\n                def decode(cls, input_string: str) -> int:\n                    if not is_full_string(input_string):\n                        raise ValueError('Input must be a non empty string')\n            \n                    # reverse the provided string so that we can start parsing from units to thousands\n                    reversed_string = reverse(input_string.upper())\n            \n                    # track last used value\n                    last_value = None\n            \n                    # computed number to return\n                    output = 0\n            \n                    # for each sign in the string we get its numeric value and add or subtract it to the computed output\n                    for sign in reversed_string:\n                        # are we dealing with units, tens, hundreds or thousands?\n                        index = cls.__index_for_sign(sign)\n            \n                        # it's basically 1 or 5 (based on mapping rules definitions)\n                        key_value = cls.__reversed_mappings[index][sign]\n            \n                        # Based on the level (tens, hundreds...) we have to add as many zeroes as the level into which we are\n                        # in order to have the actual sign value.\n                        # For instance, if we are at level 2 we are dealing with hundreds, therefore instead of 1 or 5, we will\n                        # obtain 100 or 500 by adding 2 zeroes\n                        sign_value = int(str(key_value) + '0' * index)\n            \n                        # increase total value if we are moving on with level\n                        if last_value is None or sign_value >= last_value:\n                            output += sign_value\n            \n                        # Decrease value if we are back to a previous level\n                        # For instance, if we are parsing \"IX\", we first encounter \"X\" which is ten then \"I\" which is unit,\n                        # So we have to do the following operation in order to get 9 (the final result): 10 - 1\n                        else:\n                            output -= sign_value\n            \n                        last_value = sign_value\n            \n                    return output\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:324-354 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def snake_case_to_camel(input_string: str, upper_case_first: bool = True, separator: str = '_') -> str:\n                \"\"\"\n                Convert a snake case string into a camel case one.\n                (The original string is returned if is not a valid snake case string)\n            \n                *Example:*\n            \n                >>> snake_case_to_camel('the_snake_is_green') # returns 'TheSnakeIsGreen'\n            \n                :param input_string: String to convert.\n                :type input_string: str\n                :param upper_case_first: True to turn the first letter into uppercase (default).\n                :type upper_case_first: bool\n                :param separator: Sign to use as separator (default to \"_\").\n                :type separator: str\n                :return: Converted string\n                \"\"\"\n                if not is_string(input_string):\n                    raise InvalidInputError(input_string)\n            \n                if not is_snake_case(input_string, separator):\n                    return input_string\n            \n                tokens = [s.title() for s in input_string.split(separator) if is_full_string(s)]\n            \n                if not upper_case_first:\n                    tokens[0] = tokens[0].lower()\n            \n                out = ''.join(tokens)\n            \n                return out\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:308-342 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_snake_case(input_string: Any, separator: str = '_') -> bool:\n                \"\"\"\n                Checks if a string is formatted as \"snake case\".\n            \n                A string is considered snake case when:\n            \n                - it's composed only by lowercase/uppercase letters and digits\n                - it contains at least one underscore (or provided separator)\n                - it does not start with a number\n            \n                *Examples:*\n            \n                >>> is_snake_case('foo_bar_baz') # returns true\n                >>> is_snake_case('foo') # returns false\n            \n                :param input_string: String to test.\n                :type input_string: str\n                :param separator: String to use as separator.\n                :type separator: str\n                :return: True for a snake case string, false otherwise.\n                \"\"\"\n                if is_full_string(input_string):\n                    re_map = {\n                        '_': SNAKE_CASE_TEST_RE,\n                        '-': SNAKE_CASE_TEST_DASH_RE\n                    }\n                    re_template = r'([a-z]+\\d*{sign}[a-z\\d{sign}]*|{sign}+[a-z\\d]+[a-z\\d{sign}]*)'\n                    r = re_map.get(\n                        separator,\n                        re.compile(re_template.format(sign=re.escape(separator)), re.IGNORECASE)\n                    )\n            \n                    return r.match(input_string) is not None\n            \n                return False\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:300-321 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def camel_case_to_snake(input_string, separator='_'):\n                \"\"\"\n                Convert a camel case string into a snake case one.\n                (The original string is returned if is not a valid camel case string)\n            \n                *Example:*\n            \n                >>> camel_case_to_snake('ThisIsACamelStringTest') # returns 'this_is_a_camel_case_string_test'\n            \n                :param input_string: String to convert.\n                :type input_string: str\n                :param separator: Sign to use as separator.\n                :type separator: str\n                :return: Converted string.\n                \"\"\"\n                if not is_string(input_string):\n                    raise InvalidInputError(input_string)\n            \n                if not is_camel_case(input_string):\n                    return input_string\n            \n                return CAMEL_CASE_REPLACE_RE.sub(lambda m: m.group(1) + separator, input_string).lower()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:108-114 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __RomanNumbers:\n                @classmethod\n                def __index_for_sign(cls, sign: str) -> int:\n                    for index, mapping in enumerate(cls.__reversed_mappings):\n                        if sign in mapping:\n                            return index\n            \n                    raise ValueError('Invalid token found: \"{}\"'.format(sign))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:433-459 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def asciify(input_string: str) -> str:\n                \"\"\"\n                Force string content to be ascii-only by translating all non-ascii chars into the closest possible representation\n                (eg: \u00f3 -> o, \u00cb -> E, \u00e7 -> c...).\n            \n                **Bear in mind**: Some chars may be lost if impossible to translate.\n            \n                *Example:*\n            \n                >>> asciify('\u00e8\u00e9\u00f9\u00fa\u00f2\u00f3\u00e4\u00e5\u00eb\u00fd\u00f1\u00c5\u00c0\u00c1\u00c7\u00cc\u00cd\u00d1\u00d3\u00cb') # returns 'eeuuooaaeynAAACIINOE'\n            \n                :param input_string: String to convert\n                :return: Ascii utf-8 string\n                \"\"\"\n                if not is_string(input_string):\n                    raise InvalidInputError(input_string)\n            \n                # \"NFKD\" is the algorithm which is able to successfully translate the most of non-ascii chars\n                normalized = unicodedata.normalize('NFKD', input_string)\n            \n                # encode string forcing ascii and ignore any errors (unrepresentable chars will be stripped out)\n                ascii_bytes = normalized.encode('ascii', 'ignore')\n            \n                # turns encoded bytes into an utf-8 string\n                ascii_string = ascii_bytes.decode('utf-8')\n            \n                return ascii_string\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:462-497 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def slugify(input_string: str, separator: str = '-') -> str:\n                \"\"\"\n                Converts a string into a \"slug\" using provided separator.\n                The returned string has the following properties:\n            \n                - it has no spaces\n                - all letters are in lower case\n                - all punctuation signs and non alphanumeric chars are removed\n                - words are divided using provided separator\n                - all chars are encoded as ascii (by using `asciify()`)\n                - is safe for URL\n            \n                *Examples:*\n            \n                >>> slugify('Top 10 Reasons To Love Dogs!!!') # returns: 'top-10-reasons-to-love-dogs'\n                >>> slugify('M\u00f6nst\u00e9r M\u00e4gn\u00ebt') # returns 'monster-magnet'\n            \n                :param input_string: String to convert.\n                :type input_string: str\n                :param separator: Sign used to join string tokens (default to \"-\").\n                :type separator: str\n                :return: Slug string\n                \"\"\"\n                if not is_string(input_string):\n                    raise InvalidInputError(input_string)\n            \n                # replace any character that is NOT letter or number with spaces\n                out = NO_LETTERS_OR_NUMBERS_RE.sub(' ', input_string.lower()).strip()\n            \n                # replace spaces with join sign\n                out = SPACES_RE.sub(separator, out)\n            \n                # normalize joins (remove duplicates)\n                out = re.sub(re.escape(separator) + r'+', separator, out)\n            \n                return asciify(out)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:529-558 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def strip_margin(input_string: str) -> str:\n                \"\"\"\n                Removes tab indentation from multi line strings (inspired by analogous Scala function).\n            \n                *Example:*\n            \n                >>> strip_margin('''\n                >>>                 line 1\n                >>>                 line 2\n                >>>                 line 3\n                >>> ''')\n                >>> # returns:\n                >>> '''\n                >>> line 1\n                >>> line 2\n                >>> line 3\n                >>> '''\n            \n                :param input_string: String to format\n                :type input_string: str\n                :return: A string without left margins\n                \"\"\"\n                if not is_string(input_string):\n                    raise InvalidInputError(input_string)\n            \n                line_separator = '\\n'\n                lines = [MARGIN_RE.sub('', line) for line in input_string.split(line_separator)]\n                out = line_separator.join(lines)\n            \n                return out\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:532-552 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_slug(input_string: Any, separator: str = '-') -> bool:\n                \"\"\"\n                Checks if a given string is a slug (as created by `slugify()`).\n            \n                *Examples:*\n            \n                >>> is_slug('my-blog-post-title') # returns true\n                >>> is_slug('My blog post title') # returns false\n            \n                :param input_string: String to check.\n                :type input_string: str\n                :param separator: Join sign used by the slug.\n                :type separator: str\n                :return: True if slug, false otherwise.\n                \"\"\"\n                if not is_full_string(input_string):\n                    return False\n            \n                rex = r'^([a-z\\d]+' + re.escape(separator) + r'*?)*[a-z\\d]$'\n            \n                return re.match(rex, input_string) is not None\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:161-170 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringCompressor:\n                @staticmethod\n                def __require_valid_input_and_encoding(input_string: str, encoding: str):\n                    if not is_string(input_string):\n                        raise InvalidInputError(input_string)\n            \n                    if len(input_string) == 0:\n                        raise ValueError('Input string cannot be empty')\n            \n                    if not is_string(encoding):\n                        raise ValueError('Invalid encoding')\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:497-513 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_pangram(input_string: Any) -> bool:\n                \"\"\"\n                Checks if the string is a pangram (https://en.wikipedia.org/wiki/Pangram).\n            \n                *Examples:*\n            \n                >>> is_pangram('The quick brown fox jumps over the lazy dog') # returns true\n                >>> is_pangram('hello world') # returns false\n            \n                :param input_string: String to check.\n                :type input_string: str\n                :return: True if the string is a pangram, False otherwise.\n                \"\"\"\n                if not is_full_string(input_string):\n                    return False\n            \n                return set(SPACES_RE.sub('', input_string)).issuperset(set(string.ascii_lowercase))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:213-217 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __init__(self, input_string):\n                    if not is_string(input_string):\n                        raise InvalidInputError(input_string)\n            \n                    self.input_string = input_string\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:52-76 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __RomanNumbers:\n                @classmethod\n                def __encode_digit(cls, index: int, value: int) -> str:\n                    # if digit is zero, there is no sign to display\n                    if value == 0:\n                        return ''\n            \n                    # from 1 to 3 we have just to repeat the sign N times (eg: III, XXX...)\n                    if value <= 3:\n                        return cls.__mappings[index][1] * value\n            \n                    # if 4 we have to add unit prefix\n                    if value == 4:\n                        return cls.__mappings[index][1] + cls.__mappings[index][5]\n            \n                    # if is 5, is a straight map\n                    if value == 5:\n                        return cls.__mappings[index][5]\n            \n                    # if 6, 7 or 8 we have to append unit suffixes\n                    if value <= 8:\n                        suffix = cls.__mappings[index][1] * (value - 5)\n                        return cls.__mappings[index][5] + suffix\n            \n                    # if 9 we have to prepend current unit to next\n                    return cls.__mappings[index][1] + cls.__mappings[index + 1][1]\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:225-227 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __uppercase_first_letter_after_sign(self, regex_match):\n                    match = regex_match.group(1)\n                    return match[:-1] + match[2].upper()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:405-430 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def prettify(input_string: str) -> str:\n                \"\"\"\n                Reformat a string by applying the following basic grammar and formatting rules:\n            \n                - String cannot start or end with spaces\n                - The first letter in the string and the ones after a dot, an exclamation or a question mark must be uppercase\n                - String cannot have multiple sequential spaces, empty lines or punctuation (except for \"?\", \"!\" and \".\")\n                - Arithmetic operators (+, -, /, \\\\*, =) must have one, and only one space before and after themselves\n                - One, and only one space should follow a dot, a comma, an exclamation or a question mark\n                - Text inside double quotes cannot start or end with spaces, but one, and only one space must come first and \\\n                after quotes (foo\" bar\"baz -> foo \"bar\" baz)\n                - Text inside round brackets cannot start or end with spaces, but one, and only one space must come first and \\\n                after brackets (\"foo(bar )baz\" -> \"foo (bar) baz\")\n                - Percentage sign (\"%\") cannot be preceded by a space if there is a number before (\"100 %\" -> \"100%\")\n                - Saxon genitive is correct (\"Dave' s dog\" -> \"Dave's dog\")\n            \n                *Examples:*\n            \n                >>> prettify(' unprettified string ,, like this one,will be\"prettified\" .it\\\\' s awesome! ')\n                >>> # -> 'Unprettified string, like this one, will be \"prettified\". It\\'s awesome!'\n            \n                :param input_string: String to manipulate\n                :return: Prettified string.\n                \"\"\"\n                formatted = __StringFormatter(input_string).format()\n                return formatted\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:159-172 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_decimal(input_string: str) -> bool:\n                \"\"\"\n                Checks whether the given string represents a decimal or not.\n            \n                A decimal may be signed or unsigned or use a \"scientific notation\".\n            \n                >>> is_decimal('42.0') # returns true\n                >>> is_decimal('42') # returns false\n            \n                :param input_string: String to check\n                :type input_string: str\n                :return: True if integer, false otherwise\n                \"\"\"\n                return is_number(input_string) and '.' in input_string\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:286-305 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_camel_case(input_string: Any) -> bool:\n                \"\"\"\n                Checks if a string is formatted as camel case.\n            \n                A string is considered camel case when:\n            \n                - it's composed only by letters ([a-zA-Z]) and optionally numbers ([0-9])\n                - it contains both lowercase and uppercase letters\n                - it does not start with a number\n            \n                *Examples:*\n            \n                >>> is_camel_case('MyString') # returns true\n                >>> is_camel_case('mystring') # returns false\n            \n                :param input_string: String to test.\n                :type input_string: str\n                :return: True for a camel case string, false otherwise.\n                \"\"\"\n                return is_full_string(input_string) and CAMEL_CASE_TEST_RE.match(input_string) is not None\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/validation.py:516-529 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/validation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_isogram(input_string: Any) -> bool:\n                \"\"\"\n                Checks if the string is an isogram (https://en.wikipedia.org/wiki/Isogram).\n            \n                *Examples:*\n            \n                >>> is_isogram('dermatoglyphics') # returns true\n                >>> is_isogram('hello') # returns false\n            \n                :param input_string: String to check.\n                :type input_string: str\n                :return: True if isogram, false otherwise.\n                \"\"\"\n                return is_full_string(input_string) and len(set(input_string)) == len(input_string)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:219-220 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __uppercase_first_char(self, regex_match):\n                    return regex_match.group(0).upper()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:222-223 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __remove_duplicates(self, regex_match):\n                    return regex_match.group(1)[0]\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:229-230 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __ensure_right_space_only(self, regex_match):\n                    return regex_match.group(1).strip() + ' '\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:232-233 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __ensure_left_space_only(self, regex_match):\n                    return ' ' + regex_match.group(1).strip()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:235-236 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __ensure_spaces_around(self, regex_match):\n                    return ' ' + regex_match.group(1).strip() + ' '\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:238-239 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __remove_internal_spaces(self, regex_match):\n                    return regex_match.group(1).strip()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:241-242 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                def __fix_saxon_genitive(self, regex_match):\n                    return regex_match.group(1).replace(' ', '') + ' '\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:24 string_utils/manipulation.py:246-248 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from string_utils/manipulation.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class __StringFormatter:\n                @staticmethod\n                def __placeholder_key():\n                    return '$' + uuid4().hex + '$'\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:55:26 string_utils/manipulation.py:246-248 ----
+{
+  "id": "chatcmpl-A48BIZwE12zlaJVERyh32XBYW7JRb",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import __StringFormatter\nimport uuid\n\n@pytest.fixture\ndef mock_uuid4(mocker):\n    mock_uuid = mocker.patch('uuid.uuid4')\n    mock_uuid.return_value.hex = '1234567890abcdef'\n    return mock_uuid\n\ndef test_placeholder_key(mock_uuid4):\n    key = __StringFormatter.__placeholder_key()\n    assert key == '$1234567890abcdef$'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 92,
+    "prompt_tokens": 209,
+    "total_tokens": 301
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:27 string_utils/validation.py:159-172 ----
+{
+  "id": "chatcmpl-A48BIXwDS7Vue8w4dz9JpXpoubUCO",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_decimal\n\ndef test_is_decimal_with_decimal():\n    assert is_decimal('42.0') == True\n\ndef test_is_decimal_with_integer():\n    assert is_decimal('42') == False\n\ndef test_is_decimal_with_negative_decimal():\n    assert is_decimal('-42.0') == True\n\ndef test_is_decimal_with_scientific_notation():\n    assert is_decimal('4.2e1') == True\n\ndef test_is_decimal_with_invalid_string():\n    assert is_decimal('abc') == False\n\ndef test_is_decimal_with_empty_string():\n    assert is_decimal('') == False\n\ndef test_is_decimal_with_only_dot():\n    assert is_decimal('.') == False\n\ndef test_is_decimal_with_dot_and_number():\n    assert is_decimal('.42') == True\n\ndef test_is_decimal_with_number_and_dot():\n    assert is_decimal('42.') == True\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 185,
+    "prompt_tokens": 292,
+    "total_tokens": 477
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:27 string_utils/validation.py:286-305 ----
+{
+  "id": "chatcmpl-A48BITsjIp6VcaSa3eSNfxcWAtoBU",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_camel_case\n\ndef test_is_camel_case_valid():\n    assert is_camel_case('MyString') == True\n    assert is_camel_case('myString123') == True\n\ndef test_is_camel_case_invalid():\n    assert is_camel_case('mystring') == False\n    assert is_camel_case('Mystring') == False\n    assert is_camel_case('myString!') == False\n    assert is_camel_case('123MyString') == False\n    assert is_camel_case('') == False\n    assert is_camel_case(None) == False\n\ndef test_is_camel_case_non_string():\n    assert is_camel_case(123) == False\n    assert is_camel_case([]) == False\n    assert is_camel_case({}) == False\n    assert is_camel_case(12.34) == False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 193,
+    "prompt_tokens": 349,
+    "total_tokens": 542
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:27 string_utils/manipulation.py:213-217 ----
+{
+  "id": "chatcmpl-A48BIUd7PHR8rPNDVehEsgVbDZMVN",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import __StringFormatter, InvalidInputError\nfrom string_utils.validation import is_string\n\ndef test_string_formatter_with_valid_string(monkeypatch):\n    def mock_is_string(input_string):\n        return True\n\n    monkeypatch.setattr('string_utils.validation.is_string', mock_is_string)\n    formatter = __StringFormatter(\"valid_string\")\n    assert formatter.input_string == \"valid_string\"\n\ndef test_string_formatter_with_invalid_string(monkeypatch):\n    def mock_is_string(input_string):\n        return False\n\n    monkeypatch.setattr('string_utils.validation.is_string', mock_is_string)\n    with pytest.raises(InvalidInputError) as excinfo:\n        __StringFormatter(123)\n    assert excinfo.value.args[0] == 123\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 161,
+    "prompt_tokens": 222,
+    "total_tokens": 383
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:28 string_utils/validation.py:516-529 ----
+{
+  "id": "chatcmpl-A48BIwSWgVldp7Pp9LF8YpeecAn3g",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_isogram\n\ndef test_is_isogram_with_isogram_string():\n    assert is_isogram('dermatoglyphics') == True\n\ndef test_is_isogram_with_non_isogram_string():\n    assert is_isogram('hello') == False\n\ndef test_is_isogram_with_empty_string():\n    assert is_isogram('') == True\n\ndef test_is_isogram_with_non_string_input():\n    assert is_isogram(12345) == False\n\ndef test_is_isogram_with_mixed_case_isogram():\n    assert is_isogram('Dermatoglyphics') == True\n\ndef test_is_isogram_with_mixed_case_non_isogram():\n    assert is_isogram('Hello') == False\n\ndef test_is_isogram_with_special_characters():\n    assert is_isogram('!@#$%^&*()') == True\n\ndef test_is_isogram_with_repeated_special_characters():\n    assert is_isogram('!@#$%^&*()!') == False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 212,
+    "prompt_tokens": 301,
+    "total_tokens": 513
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:28 string_utils/manipulation.py:246-248 ----
+Test failed:
+
+mock_uuid4 = <MagicMock name='uuid4' id='139802859496944'>
+
+    def test_placeholder_key(mock_uuid4):
+>       key = __StringFormatter.__placeholder_key()
+E       AttributeError: type object '__StringFormatter' has no attribute '__placeholder_key'
+
+coverup-tests/tmp_test_y0m3e1d8.py:12: AttributeError
+
+---- 2024-09-05T14:55:28 string_utils/manipulation.py:241-242 ----
+{
+  "id": "chatcmpl-A48BIWJuOxdrmvseqdFFlZnOJ9nkm",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\n\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_fix_saxon_genitive_with_space(string_formatter):\n    regex = re.compile(r\"(.*)'s\")\n    match = regex.match(\"John 's\")\n    result = string_formatter.___StringFormatter__fix_saxon_genitive(match)\n    assert result == \"John's \"\n\ndef test_fix_saxon_genitive_without_space(string_formatter):\n    regex = re.compile(r\"(.*)'s\")\n    match = regex.match(\"John's\")\n    result = string_formatter.___StringFormatter__fix_saxon_genitive(match)\n    assert result == \"John's \"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 149,
+    "prompt_tokens": 215,
+    "total_tokens": 364
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:28 string_utils/validation.py:532-552 ----
+{
+  "id": "chatcmpl-A48BIVQTezqLlTJZ6h9nkzXK3sbGk",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_slug\nimport re\nfrom typing import Any\n\ndef is_full_string(input_string: Any) -> bool:\n    return isinstance(input_string, str) and bool(input_string.strip())\n\n@pytest.mark.parametrize(\"input_string, separator, expected\", [\n    ('my-blog-post-title', '-', True),\n    ('My blog post title', '-', False),\n    ('my_blog_post_title', '_', True),\n    ('my-blog-post-title', '_', False),\n    ('my-blog-post-title-', '-', False),\n    ('my-blog-post-title-', '_', False),\n    ('my-blog-post-title', '', False),\n    ('', '-', False),\n    (None, '-', False),\n    (12345, '-', False),\n    ('my-blog-post-title', '-', True),\n])\ndef test_is_slug(input_string, separator, expected, monkeypatch):\n    monkeypatch.setattr('string_utils.validation.is_full_string', is_full_string)\n    assert is_slug(input_string, separator) == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 209,
+    "prompt_tokens": 358,
+    "total_tokens": 567
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:28 string_utils/manipulation.py:219-220 ----
+{
+  "id": "chatcmpl-A48BIPr8Aws9Fg58bv8XaFSJxwHaO",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_uppercase_first_char(string_formatter):\n    regex_match = re.match(r'[a-z]', 'hello')\n    result = string_formatter.___StringFormatter__uppercase_first_char(regex_match)\n    assert result == 'H'\n\ndef test_uppercase_first_char_no_match(string_formatter):\n    regex_match = re.match(r'[a-z]', '123')\n    result = string_formatter.___StringFormatter__uppercase_first_char(regex_match)\n    assert result is None\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 127,
+    "prompt_tokens": 208,
+    "total_tokens": 335
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/manipulation.py:222-223 ----
+{
+  "id": "chatcmpl-A48BIYppxwo2tMpfEMQ0AysC4DioZ",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_remove_duplicates_single_character(string_formatter):\n    regex = re.compile(r'(.)\\1*')\n    match = regex.match('aaaa')\n    result = string_formatter.___StringFormatter__remove_duplicates(match)\n    assert result == 'a'\n\ndef test_remove_duplicates_multiple_characters(string_formatter):\n    regex = re.compile(r'(.)\\1*')\n    match = regex.match('bbbbb')\n    result = string_formatter.___StringFormatter__remove_duplicates(match)\n    assert result == 'b'\n\ndef test_remove_duplicates_no_duplicates(string_formatter):\n    regex = re.compile(r'(.)\\1*')\n    match = regex.match('c')\n    result = string_formatter.___StringFormatter__remove_duplicates(match)\n    assert result == 'c'\n\ndef test_remove_duplicates_empty_string(string_formatter):\n    regex = re.compile(r'(.)\\1*')\n    match = regex.match('')\n    assert match is None\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 219,
+    "prompt_tokens": 207,
+    "total_tokens": 426
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/manipulation.py:232-233 ----
+{
+  "id": "chatcmpl-A48BImH41Ljq6vIek5qys29KVAQpp",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_ensure_left_space_only(string_formatter):\n    # Create a mock regex match object\n    class MockMatch:\n        def __init__(self, text):\n            self.text = text\n\n        def group(self, index):\n            return self.text\n\n    # Test case where the input has leading and trailing spaces\n    mock_match = MockMatch(\"  test  \")\n    result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)\n    assert result == \" test\"\n\n    # Test case where the input has no leading or trailing spaces\n    mock_match = MockMatch(\"test\")\n    result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)\n    assert result == \" test\"\n\n    # Test case where the input is an empty string\n    mock_match = MockMatch(\"\")\n    result = string_formatter.___StringFormatter__ensure_left_space_only(mock_match)\n    assert result == \" \"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 222,
+    "prompt_tokens": 212,
+    "total_tokens": 434
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/manipulation.py:238-239 ----
+{
+  "id": "chatcmpl-A48BIoWkHtrSvCJ7ujTeO7Yr5QtWQ",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_remove_internal_spaces(string_formatter):\n    # Create a mock regex match object\n    class MockMatch:\n        def __init__(self, text):\n            self.text = text\n\n        def group(self, index):\n            return self.text\n\n    # Test case with leading and trailing spaces\n    mock_match = MockMatch(\"  some text  \")\n    result = string_formatter.___StringFormatter__remove_internal_spaces(mock_match)\n    assert result == \"some text\"\n\n    # Test case with no leading or trailing spaces\n    mock_match = MockMatch(\"some text\")\n    result = string_formatter.___StringFormatter__remove_internal_spaces(mock_match)\n    assert result == \"some text\"\n\n    # Test case with only spaces\n    mock_match = MockMatch(\"   \")\n    result = string_formatter.___StringFormatter__remove_internal_spaces(mock_match)\n    assert result == \"\"\n\n    # Test case with empty string\n    mock_match = MockMatch(\"\")\n    result = string_formatter.___StringFormatter__remove_internal_spaces(mock_match)\n    assert result == \"\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 248,
+    "prompt_tokens": 208,
+    "total_tokens": 456
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/validation.py:451-494 ----
+{
+  "id": "chatcmpl-A48BI50iCDEcV6SKzyh41SEcWRgjj",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_palindrome\n\ndef test_is_palindrome_with_palindrome():\n    assert is_palindrome('LOL') == True\n\ndef test_is_palindrome_with_non_palindrome():\n    assert is_palindrome('ROTFL') == False\n\ndef test_is_palindrome_with_case_sensitivity():\n    assert is_palindrome('Lol') == False\n\ndef test_is_palindrome_with_ignore_case():\n    assert is_palindrome('Lol', ignore_case=True) == True\n\ndef test_is_palindrome_with_spaces():\n    assert is_palindrome('A man a plan a canal Panama', ignore_spaces=True) == True\n\ndef test_is_palindrome_with_spaces_and_case():\n    assert is_palindrome('A man a plan a canal Panama', ignore_spaces=True, ignore_case=True) == True\n\ndef test_is_palindrome_with_non_string_input():\n    assert is_palindrome(12321) == False\n\ndef test_is_palindrome_with_empty_string():\n    assert is_palindrome('') == True\n\ndef test_is_palindrome_with_single_character():\n    assert is_palindrome('a') == True\n\ndef test_is_palindrome_with_mixed_characters():\n    assert is_palindrome('A Santa at NASA', ignore_spaces=True, ignore_case=True) == True\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 261,
+    "prompt_tokens": 582,
+    "total_tokens": 843
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/manipulation.py:108-114 ----
+{
+  "id": "chatcmpl-A48BIhYuWit04fFhOfSfB8NwWjrET",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import __RomanNumbers\n\ndef test_index_for_sign_valid():\n    class TestRomanNumbers(__RomanNumbers):\n        __reversed_mappings = [\n            {'I': 1, 'V': 5},\n            {'X': 10, 'L': 50},\n            {'C': 100, 'D': 500},\n            {'M': 1000}\n        ]\n    \n    assert TestRomanNumbers.__index_for_sign('I') == 0\n    assert TestRomanNumbers.__index_for_sign('X') == 1\n    assert TestRomanNumbers.__index_for_sign('C') == 2\n    assert TestRomanNumbers.__index_for_sign('M') == 3\n\ndef test_index_for_sign_invalid():\n    class TestRomanNumbers(__RomanNumbers):\n        __reversed_mappings = [\n            {'I': 1, 'V': 5},\n            {'X': 10, 'L': 50},\n            {'C': 100, 'D': 500},\n            {'M': 1000}\n        ]\n    \n    with pytest.raises(ValueError, match='Invalid token found: \"Z\"'):\n        TestRomanNumbers.__index_for_sign('Z')\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 258,
+    "prompt_tokens": 245,
+    "total_tokens": 503
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/validation.py:497-513 ----
+{
+  "id": "chatcmpl-A48BIp4vaHWPaIfmPyuBD2Dwni1di",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport string\nfrom string_utils.validation import is_pangram\n\ndef is_full_string(input_string):\n    return isinstance(input_string, str) and bool(input_string.strip())\n\n@pytest.fixture(autouse=True)\ndef setup_and_teardown(monkeypatch):\n    # Mocking SPACES_RE and is_full_string\n    import re\n    monkeypatch.setattr('string_utils.validation.SPACES_RE', re.compile(r'\\s+'))\n    monkeypatch.setattr('string_utils.validation.is_full_string', is_full_string)\n    yield\n    # Teardown code if needed\n\ndef test_is_pangram_with_pangram():\n    assert is_pangram('The quick brown fox jumps over the lazy dog') == True\n\ndef test_is_pangram_with_non_pangram():\n    assert is_pangram('hello world') == False\n\ndef test_is_pangram_with_empty_string():\n    assert is_pangram('') == False\n\ndef test_is_pangram_with_non_string():\n    assert is_pangram(12345) == False\n\ndef test_is_pangram_with_string_with_spaces():\n    assert is_pangram('The quick brown fox jumps over the lazy dog ') == True\n\ndef test_is_pangram_with_string_missing_letters():\n    assert is_pangram('The quick brown fox jumps over the lazy dg') == False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 283,
+    "prompt_tokens": 329,
+    "total_tokens": 612
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:29 string_utils/validation.py:286-305 ----
+Test failed:
+
+    def test_is_camel_case_invalid():
+        assert is_camel_case('mystring') == False
+>       assert is_camel_case('Mystring') == False
+E       AssertionError: assert True == False
+E        +  where True = is_camel_case('Mystring')
+
+coverup-tests/tmp_test_gkiaacmb.py:10: AssertionError
+
+---- 2024-09-05T14:55:30 string_utils/manipulation.py:229-230 ----
+{
+  "id": "chatcmpl-A48BIwHbEt5blZytYyceXnHaIicqo",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_ensure_right_space_only(string_formatter):\n    # Create a mock regex match object\n    class MockMatch:\n        def __init__(self, text):\n            self.text = text\n\n        def group(self, index):\n            return self.text\n\n    # Test case where the string has leading and trailing spaces\n    mock_match = MockMatch(\"  test  \")\n    result = string_formatter.___StringFormatter__ensure_right_space_only(mock_match)\n    assert result == \"test \"\n\n    # Test case where the string has no leading or trailing spaces\n    mock_match = MockMatch(\"test\")\n    result = string_formatter.___StringFormatter__ensure_right_space_only(mock_match)\n    assert result == \"test \"\n\n    # Test case where the string has only leading spaces\n    mock_match = MockMatch(\"  test\")\n    result = string_formatter.___StringFormatter__ensure_right_space_only(mock_match)\n    assert result == \"test \"\n\n    # Test case where the string has only trailing spaces\n    mock_match = MockMatch(\"test  \")\n    result = string_formatter.___StringFormatter__ensure_right_space_only(mock_match)\n    assert result == \"test \"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 272,
+    "prompt_tokens": 212,
+    "total_tokens": 484
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:30 string_utils/manipulation.py:213-217 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1d1b77f730>
+
+    def test_string_formatter_with_invalid_string(monkeypatch):
+        def mock_is_string(input_string):
+            return False
+    
+        monkeypatch.setattr('string_utils.validation.is_string', mock_is_string)
+        with pytest.raises(InvalidInputError) as excinfo:
+            __StringFormatter(123)
+>       assert excinfo.value.args[0] == 123
+E       assert 'Expected "str", received "int"' == 123
+
+coverup-tests/tmp_test_ei7yskh9.py:20: AssertionError
+
+---- 2024-09-05T14:55:30 string_utils/manipulation.py:235-236 ----
+{
+  "id": "chatcmpl-A48BI51cTeuXOsYaZbfT4cggrvenf",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_ensure_spaces_around(string_formatter):\n    # Create a mock regex match object\n    class MockMatch:\n        def __init__(self, text):\n            self.text = text\n\n        def group(self, index):\n            return self.text\n\n    mock_match = MockMatch(\"  test  \")\n    result = string_formatter.___StringFormatter__ensure_spaces_around(mock_match)\n    assert result == \" test \"\n\n    mock_match = MockMatch(\"test\")\n    result = string_formatter.___StringFormatter__ensure_spaces_around(mock_match)\n    assert result == \" test \"\n\n    mock_match = MockMatch(\"  test\")\n    result = string_formatter.___StringFormatter__ensure_spaces_around(mock_match)\n    assert result == \" test \"\n\n    mock_match = MockMatch(\"test  \")\n    result = string_formatter.___StringFormatter__ensure_spaces_around(mock_match)\n    assert result == \" test \"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 221,
+    "prompt_tokens": 215,
+    "total_tokens": 436
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:30 string_utils/validation.py:516-529 ----
+Test failed:
+
+    def test_is_isogram_with_empty_string():
+>       assert is_isogram('') == True
+E       AssertionError: assert False == True
+E        +  where False = is_isogram('')
+
+coverup-tests/tmp_test_wa7d_wk1.py:11: AssertionError
+
+---- 2024-09-05T14:55:30 string_utils/validation.py:159-172 ----
+Test failed:
+
+    def test_is_decimal_with_number_and_dot():
+>       assert is_decimal('42.') == True
+E       AssertionError: assert False == True
+E        +  where False = is_decimal('42.')
+
+coverup-tests/tmp_test_hcwpjrv1.py:29: AssertionError
+
+---- 2024-09-05T14:55:30 string_utils/manipulation.py:241-242 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_u2neftz_.py:8: TypeError
+
+---- 2024-09-05T14:55:30 string_utils/manipulation.py:219-220 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_zdixjz1q.py:7: TypeError
+
+---- 2024-09-05T14:55:30 string_utils/manipulation.py:225-227 ----
+{
+  "id": "chatcmpl-A48BIBfesH1yE4DA6YLsdLh3r47BO",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import __StringFormatter\n\n@pytest.fixture\ndef string_formatter():\n    return __StringFormatter()\n\ndef test_uppercase_first_letter_after_sign(string_formatter):\n    # Test case where the regex match has a sign and a letter to capitalize\n    regex = re.compile(r'(\\+a)')\n    match = regex.search('+a')\n    result = string_formatter._StringFormatter__uppercase_first_letter_after_sign(match)\n    assert result == '+A'\n\n    # Test case where the regex match does not have a letter to capitalize\n    regex = re.compile(r'(\\+1)')\n    match = regex.search('+1')\n    result = string_formatter._StringFormatter__uppercase_first_letter_after_sign(match)\n    assert result == '+1'\n\n    # Test case where the regex match is empty\n    regex = re.compile(r'(\\+)')\n    match = regex.search('+')\n    result = string_formatter._StringFormatter__uppercase_first_letter_after_sign(match)\n    assert result == '+'\n\n    # Test case where the regex match has multiple characters\n    regex = re.compile(r'(\\+abc)')\n    match = regex.search('+abc')\n    result = string_formatter._StringFormatter__uppercase_first_letter_after_sign(match)\n    assert result == '+Abc'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 267,
+    "prompt_tokens": 222,
+    "total_tokens": 489
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:31 string_utils/manipulation.py:222-223 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_69iq1o1b.py:7: TypeError
+
+---- 2024-09-05T14:55:31 string_utils/manipulation.py:232-233 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_9ke_ebmz.py:7: TypeError
+
+---- 2024-09-05T14:55:31 string_utils/manipulation.py:529-558 ----
+{
+  "id": "chatcmpl-A48BI4L47Aty35JdNrYwPmsdwm5QM",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import strip_margin, InvalidInputError\nimport re\n\n# Mocking the dependencies\nMARGIN_RE = re.compile(r'^\\s+')\ndef is_string(input_string):\n    return isinstance(input_string, str)\n\ndef test_strip_margin_valid_input(monkeypatch):\n    # Mocking the MARGIN_RE and is_string function\n    monkeypatch.setattr('string_utils.manipulation.MARGIN_RE', MARGIN_RE)\n    monkeypatch.setattr('string_utils.manipulation.is_string', is_string)\n    \n    input_string = '''\n                line 1\n                line 2\n                line 3\n                '''\n    expected_output = '''\nline 1\nline 2\nline 3\n'''\n    assert strip_margin(input_string) == expected_output\n\ndef test_strip_margin_invalid_input(monkeypatch):\n    # Mocking the is_string function\n    monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: False)\n    \n    with pytest.raises(InvalidInputError):\n        strip_margin(123)\n\ndef test_strip_margin_empty_string(monkeypatch):\n    # Mocking the MARGIN_RE and is_string function\n    monkeypatch.setattr('string_utils.manipulation.MARGIN_RE', MARGIN_RE)\n    monkeypatch.setattr('string_utils.manipulation.is_string', is_string)\n    \n    input_string = ''\n    expected_output = ''\n    assert strip_margin(input_string) == expected_output\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 302,
+    "prompt_tokens": 366,
+    "total_tokens": 668
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:31 string_utils/validation.py:532-552 ----
+Test failed:
+
+input_string = 'my-blog-post-title', separator = '', expected = False
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f81eaae7400>
+
+    @pytest.mark.parametrize("input_string, separator, expected", [
+        ('my-blog-post-title', '-', True),
+        ('My blog post title', '-', False),
+        ('my_blog_post_title', '_', True),
+        ('my-blog-post-title', '_', False),
+        ('my-blog-post-title-', '-', False),
+        ('my-blog-post-title-', '_', False),
+        ('my-blog-post-title', '', False),
+        ('', '-', False),
+        (None, '-', False),
+        (12345, '-', False),
+        ('my-blog-post-title', '-', True),
+    ])
+    def test_is_slug(input_string, separator, expected, monkeypatch):
+        monkeypatch.setattr('string_utils.validation.is_full_string', is_full_string)
+>       assert is_slug(input_string, separator) == expected
+
+coverup-tests/tmp_test_bfeemooy.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+string_utils/validation.py:552: in is_slug
+    return re.match(rex, input_string) is not None
+/usr/local/lib/python3.10/re.py:190: in match
+    return _compile(pattern, flags).match(string)
+/usr/local/lib/python3.10/re.py:303: in _compile
+    p = sre_compile.compile(pattern, flags)
+/usr/local/lib/python3.10/sre_compile.py:764: in compile
+    p = sre_parse.parse(p, flags)
+/usr/local/lib/python3.10/sre_parse.py:948: in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+/usr/local/lib/python3.10/sre_parse.py:443: in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+/usr/local/lib/python3.10/sre_parse.py:834: in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+/usr/local/lib/python3.10/sre_parse.py:443: in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+source = <sre_parse.Tokenizer object at 0x7f81eaae4310>
+state = <sre_parse.State object at 0x7f81eaae70a0>, verbose = 0, nested = 3
+first = False
+
+    def _parse(source, state, verbose, nested, first=False):
+        # parse a simple pattern
+        subpattern = SubPattern(state)
+    
+        # precompute constants into local variables
+        subpatternappend = subpattern.append
+        sourceget = source.get
+        sourcematch = source.match
+        _len = len
+        _ord = ord
+    
+        while True:
+    
+            this = source.next
+            if this is None:
+                break # end of pattern
+            if this in "|)":
+                break # end of subpattern
+            sourceget()
+    
+            if verbose:
+                # skip whitespace and comments
+                if this in WHITESPACE:
+                    continue
+                if this == "#":
+                    while True:
+                        this = sourceget()
+                        if this is None or this == "\n":
+                            break
+                    continue
+    
+            if this[0] == "\\":
+                code = _escape(source, this, state)
+                subpatternappend(code)
+    
+            elif this not in SPECIAL_CHARS:
+                subpatternappend((LITERAL, _ord(this)))
+    
+            elif this == "[":
+                here = source.tell() - 1
+                # character set
+                set = []
+                setappend = set.append
+    ##          if sourcematch(":"):
+    ##              pass # handle character classes
+                if source.next == '[':
+                    import warnings
+                    warnings.warn(
+                        'Possible nested set at position %d' % source.tell(),
+                        FutureWarning, stacklevel=nested + 6
+                    )
+                negate = sourcematch("^")
+                # check remaining characters
+                while True:
+                    this = sourceget()
+                    if this is None:
+                        raise source.error("unterminated character set",
+                                           source.tell() - here)
+                    if this == "]" and set:
+                        break
+                    elif this[0] == "\\":
+                        code1 = _class_escape(source, this)
+                    else:
+                        if set and this in '-&~|' and source.next == this:
+                            import warnings
+                            warnings.warn(
+                                'Possible set %s at position %d' % (
+                                    'difference' if this == '-' else
+                                    'intersection' if this == '&' else
+                                    'symmetric difference' if this == '~' else
+                                    'union',
+                                    source.tell() - 1),
+                                FutureWarning, stacklevel=nested + 6
+                            )
+                        code1 = LITERAL, _ord(this)
+                    if sourcematch("-"):
+                        # potential range
+                        that = sourceget()
+                        if that is None:
+                            raise source.error("unterminated character set",
+                                               source.tell() - here)
+                        if that == "]":
+                            if code1[0] is IN:
+                                code1 = code1[1][0]
+                            setappend(code1)
+                            setappend((LITERAL, _ord("-")))
+                            break
+                        if that[0] == "\\":
+                            code2 = _class_escape(source, that)
+                        else:
+                            if that == '-':
+                                import warnings
+                                warnings.warn(
+                                    'Possible set difference at position %d' % (
+                                        source.tell() - 2),
+                                    FutureWarning, stacklevel=nested + 6
+                                )
+                            code2 = LITERAL, _ord(that)
+                        if code1[0] != LITERAL or code2[0] != LITERAL:
+                            msg = "bad character range %s-%s" % (this, that)
+                            raise source.error(msg, len(this) + 1 + len(that))
+                        lo = code1[1]
+                        hi = code2[1]
+                        if hi < lo:
+                            msg = "bad character range %s-%s" % (this, that)
+                            raise source.error(msg, len(this) + 1 + len(that))
+                        setappend((RANGE, (lo, hi)))
+                    else:
+                        if code1[0] is IN:
+                            code1 = code1[1][0]
+                        setappend(code1)
+    
+                set = _uniq(set)
+                # XXX: <fl> should move set optimization to compiler!
+                if _len(set) == 1 and set[0][0] is LITERAL:
+                    # optimization
+                    if negate:
+                        subpatternappend((NOT_LITERAL, set[0][1]))
+                    else:
+                        subpatternappend(set[0])
+                else:
+                    if negate:
+                        set.insert(0, (NEGATE, None))
+                    # charmap optimization can't be added here because
+                    # global flags still are not known
+                    subpatternappend((IN, set))
+    
+            elif this in REPEAT_CHARS:
+                # repeat previous item
+                here = source.tell()
+                if this == "?":
+                    min, max = 0, 1
+                elif this == "*":
+                    min, max = 0, MAXREPEAT
+    
+                elif this == "+":
+                    min, max = 1, MAXREPEAT
+                elif this == "{":
+                    if source.next == "}":
+                        subpatternappend((LITERAL, _ord(this)))
+                        continue
+    
+                    min, max = 0, MAXREPEAT
+                    lo = hi = ""
+                    while source.next in DIGITS:
+                        lo += sourceget()
+                    if sourcematch(","):
+                        while source.next in DIGITS:
+                            hi += sourceget()
+                    else:
+                        hi = lo
+                    if not sourcematch("}"):
+                        subpatternappend((LITERAL, _ord(this)))
+                        source.seek(here)
+                        continue
+    
+                    if lo:
+                        min = int(lo)
+                        if min >= MAXREPEAT:
+                            raise OverflowError("the repetition number is too large")
+                    if hi:
+                        max = int(hi)
+                        if max >= MAXREPEAT:
+                            raise OverflowError("the repetition number is too large")
+                        if max < min:
+                            raise source.error("min repeat greater than max repeat",
+                                               source.tell() - here)
+                else:
+                    raise AssertionError("unsupported quantifier %r" % (char,))
+                # figure out which item to repeat
+                if subpattern:
+                    item = subpattern[-1:]
+                else:
+                    item = None
+                if not item or item[0][0] is AT:
+                    raise source.error("nothing to repeat",
+                                       source.tell() - here + len(this))
+                if item[0][0] in _REPEATCODES:
+>                   raise source.error("multiple repeat",
+                                       source.tell() - here + len(this))
+E                   re.error: multiple repeat at position 10
+
+/usr/local/lib/python3.10/sre_parse.py:671: error
+
+---- 2024-09-05T14:55:31 string_utils/validation.py:204-244 ----
+{
+  "id": "chatcmpl-A48BIQjgcC4MRWWfu48yfnVJZGJsG",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_email\n\ndef test_is_email_valid():\n    assert is_email('my.email@the-provider.com') is True\n\ndef test_is_email_empty_string():\n    assert is_email('') is False\n\ndef test_is_email_too_long():\n    long_email = 'a' * 321 + '@example.com'\n    assert is_email(long_email) is False\n\ndef test_is_email_starts_with_dot():\n    assert is_email('.email@example.com') is False\n\ndef test_is_email_no_at_symbol():\n    assert is_email('email.example.com') is False\n\ndef test_is_email_multiple_at_symbols():\n    assert is_email('email@@example.com') is False\n\ndef test_is_email_head_too_long():\n    long_head = 'a' * 65 + '@example.com'\n    assert is_email(long_head) is False\n\ndef test_is_email_tail_too_long():\n    long_tail = 'a' * 256 + '@example.com'\n    assert is_email(long_tail) is False\n\ndef test_is_email_head_ends_with_dot():\n    assert is_email('email.@example.com') is False\n\ndef test_is_email_head_contains_consecutive_dots():\n    assert is_email('email..email@example.com') is False\n\ndef test_is_email_escaped_spaces():\n    assert is_email('email\\\\ @example.com') is True\n\ndef test_is_email_quoted_head():\n    assert is_email('\"email\"@example.com') is True\n\ndef test_is_email_escaped_at_sign():\n    assert is_email('email\\\\@example.com') is False\n\n@pytest.fixture(autouse=True)\ndef cleanup(monkeypatch):\n    # Clean up any state if necessary\n    yield\n    # No specific cleanup needed for this test suite\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 366,
+    "prompt_tokens": 587,
+    "total_tokens": 953
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:31 string_utils/manipulation.py:324-354 ----
+{
+  "id": "chatcmpl-A48BI0IaefH0CROL0gFmmnIisSWQP",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import snake_case_to_camel, InvalidInputError\n\ndef is_string(input_string):\n    return isinstance(input_string, str)\n\ndef is_snake_case(input_string, separator):\n    return all(c.islower() or c == separator for c in input_string)\n\ndef is_full_string(s):\n    return bool(s)\n\ndef test_snake_case_to_camel_valid_input_upper_case_first():\n    result = snake_case_to_camel('the_snake_is_green')\n    assert result == 'TheSnakeIsGreen'\n\ndef test_snake_case_to_camel_valid_input_lower_case_first():\n    result = snake_case_to_camel('the_snake_is_green', upper_case_first=False)\n    assert result == 'theSnakeIsGreen'\n\ndef test_snake_case_to_camel_custom_separator():\n    result = snake_case_to_camel('the-snake-is-green', separator='-')\n    assert result == 'TheSnakeIsGreen'\n\ndef test_snake_case_to_camel_invalid_input_not_string():\n    with pytest.raises(InvalidInputError):\n        snake_case_to_camel(123)\n\ndef test_snake_case_to_camel_invalid_input_not_snake_case():\n    result = snake_case_to_camel('TheSnakeIsGreen')\n    assert result == 'TheSnakeIsGreen'\n\ndef test_snake_case_to_camel_empty_string():\n    result = snake_case_to_camel('')\n    assert result == ''\n\ndef test_snake_case_to_camel_single_word():\n    result = snake_case_to_camel('snake')\n    assert result == 'Snake'\n\ndef test_snake_case_to_camel_single_word_lower_case_first():\n    result = snake_case_to_camel('snake', upper_case_first=False)\n    assert result == 'snake'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 360,
+    "prompt_tokens": 434,
+    "total_tokens": 794
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:31 string_utils/manipulation.py:108-114 ----
+Test failed:
+
+    def test_index_for_sign_valid():
+        class TestRomanNumbers(__RomanNumbers):
+            __reversed_mappings = [
+                {'I': 1, 'V': 5},
+                {'X': 10, 'L': 50},
+                {'C': 100, 'D': 500},
+                {'M': 1000}
+            ]
+    
+>       assert TestRomanNumbers.__index_for_sign('I') == 0
+E       AttributeError: type object 'TestRomanNumbers' has no attribute '__index_for_sign'
+
+coverup-tests/tmp_test_d9x_13xu.py:13: AttributeError
+
+---- 2024-09-05T14:55:31 string_utils/manipulation.py:238-239 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_1owgj3nb.py:7: TypeError
+
+---- 2024-09-05T14:55:31 string_utils/validation.py:451-494 ----
+Test failed:
+
+    def test_is_palindrome_with_spaces():
+>       assert is_palindrome('A man a plan a canal Panama', ignore_spaces=True) == True
+E       AssertionError: assert False == True
+E        +  where False = is_palindrome('A man a plan a canal Panama', ignore_spaces=True)
+
+coverup-tests/tmp_test_uty3mrcr.py:17: AssertionError
+
+---- 2024-09-05T14:55:32 string_utils/manipulation.py:229-230 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_4k03ltbr.py:7: TypeError
+
+---- 2024-09-05T14:55:32 string_utils/manipulation.py:235-236 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_jj7e_6_7.py:7: TypeError
+
+---- 2024-09-05T14:55:32 string_utils/validation.py:497-513 ----
+Test failed:
+
+    def test_is_pangram_with_string_missing_letters():
+>       assert is_pangram('The quick brown fox jumps over the lazy dg') == False
+E       AssertionError: assert True == False
+E        +  where True = is_pangram('The quick brown fox jumps over the lazy dg')
+
+coverup-tests/tmp_test_fxqgzlu8.py:33: AssertionError
+
+---- 2024-09-05T14:55:32 string_utils/manipulation.py:433-459 ----
+{
+  "id": "chatcmpl-A48BI7O58LbFKsh2e6E6F1apxceww",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport unicodedata\nfrom string_utils.manipulation import asciify, InvalidInputError\n\ndef is_string(input_string):\n    return isinstance(input_string, str)\n\ndef test_asciify_valid_string():\n    input_string = '\u00e8\u00e9\u00f9\u00fa\u00f2\u00f3\u00e4\u00e5\u00eb\u00fd\u00f1\u00c5\u00c0\u00c1\u00c7\u00cc\u00cd\u00d1\u00d3\u00cb'\n    expected_output = 'eeuuooaaeynAAACIINOE'\n    assert asciify(input_string) == expected_output\n\ndef test_asciify_empty_string():\n    input_string = ''\n    expected_output = ''\n    assert asciify(input_string) == expected_output\n\ndef test_asciify_ascii_string():\n    input_string = 'hello world'\n    expected_output = 'hello world'\n    assert asciify(input_string) == expected_output\n\ndef test_asciify_mixed_string():\n    input_string = 'hello \u00e8\u00e9\u00f9\u00fa\u00f2\u00f3\u00e4\u00e5\u00eb\u00fd\u00f1\u00c5\u00c0\u00c1\u00c7\u00cc\u00cd\u00d1\u00d3\u00cb world'\n    expected_output = 'hello eeuuooaaeynAAACIINOE world'\n    assert asciify(input_string) == expected_output\n\ndef test_asciify_invalid_input():\n    with pytest.raises(InvalidInputError):\n        asciify(12345)\n\ndef test_asciify_non_string_input(monkeypatch):\n    monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: False)\n    with pytest.raises(InvalidInputError):\n        asciify('\u00e8\u00e9\u00f9\u00fa\u00f2\u00f3\u00e4\u00e5\u00eb\u00fd\u00f1\u00c5\u00c0\u00c1\u00c7\u00cc\u00cd\u00d1\u00d3\u00cb')\n\ndef test_asciify_unrepresentable_chars():\n    input_string = 'hello \ud835\udd18\ud835\udd2b\ud835\udd26\ud835\udd20\ud835\udd2c\ud835\udd21\ud835\udd22 world'\n    expected_output = 'hello  world'\n    assert asciify(input_string) == expected_output\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 378,
+    "prompt_tokens": 441,
+    "total_tokens": 819
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:32 string_utils/validation.py:308-342 ----
+{
+  "id": "chatcmpl-A48BJuUapBc5qcrOq01dcIeJJ4Qvi",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.validation import is_snake_case\n\n# Mock dependencies\ndef mock_is_full_string(input_string):\n    return isinstance(input_string, str) and bool(input_string.strip())\n\nSNAKE_CASE_TEST_RE = re.compile(r'([a-z]+\\d*_[a-z\\d_]*|_+[a-z\\d]+[a-z\\d_]*)', re.IGNORECASE)\nSNAKE_CASE_TEST_DASH_RE = re.compile(r'([a-z]+\\d*-[a-z\\d-]*|-+[a-z\\d]+[a-z\\d-]*)', re.IGNORECASE)\n\n@pytest.fixture\ndef mock_dependencies(monkeypatch):\n    monkeypatch.setattr('string_utils.validation.is_full_string', mock_is_full_string)\n    monkeypatch.setattr('string_utils.validation', 'SNAKE_CASE_TEST_RE', SNAKE_CASE_TEST_RE)\n    monkeypatch.setattr('string_utils.validation', 'SNAKE_CASE_TEST_DASH_RE', SNAKE_CASE_TEST_DASH_RE)\n\ndef test_is_snake_case_valid_snake_case(mock_dependencies):\n    assert is_snake_case('foo_bar_baz') == True\n\ndef test_is_snake_case_no_separator(mock_dependencies):\n    assert is_snake_case('foo') == False\n\ndef test_is_snake_case_starts_with_number(mock_dependencies):\n    assert is_snake_case('1foo_bar') == False\n\ndef test_is_snake_case_with_dash_separator(mock_dependencies):\n    assert is_snake_case('foo-bar-baz', separator='-') == True\n\ndef test_is_snake_case_invalid_with_dash_separator(mock_dependencies):\n    assert is_snake_case('foo_bar_baz', separator='-') == False\n\ndef test_is_snake_case_empty_string(mock_dependencies):\n    assert is_snake_case('') == False\n\ndef test_is_snake_case_non_string_input(mock_dependencies):\n    assert is_snake_case(12345) == False\n\ndef test_is_snake_case_custom_separator(mock_dependencies):\n    assert is_snake_case('foo*bar*baz', separator='*') == True\n\ndef test_is_snake_case_invalid_custom_separator(mock_dependencies):\n    assert is_snake_case('foo_bar_baz', separator='*') == False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548125,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 463,
+    "prompt_tokens": 469,
+    "total_tokens": 932
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:32 string_utils/manipulation.py:225-227 ----
+Test failed:
+
+    @pytest.fixture
+    def string_formatter():
+>       return __StringFormatter()
+E       TypeError: __StringFormatter.__init__() missing 1 required positional argument: 'input_string'
+
+coverup-tests/tmp_test_uodetif7.py:7: TypeError
+
+---- 2024-09-05T14:55:33 string_utils/validation.py:247-283 ----
+{
+  "id": "chatcmpl-A48BIJlhekhc0unq3aPQiT6CfRObi",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.validation import is_credit_card\n\n# Mock data for CREDIT_CARDS\nCREDIT_CARDS = {\n    'VISA': re.compile(r'^4[0-9]{12}(?:[0-9]{3})?$'),\n    'MASTERCARD': re.compile(r'^5[1-5][0-9]{14}$'),\n    'AMERICAN_EXPRESS': re.compile(r'^3[47][0-9]{13}$'),\n    'DINERS_CLUB': re.compile(r'^3(?:0[0-5]|[68][0-9])[0-9]{11}$'),\n    'DISCOVER': re.compile(r'^6(?:011|5[0-9]{2})[0-9]{12}$'),\n    'JCB': re.compile(r'^(?:2131|1800|35\\d{3})\\d{11}$')\n}\n\ndef is_full_string(input_string):\n    return isinstance(input_string, str) and bool(input_string.strip())\n\n@pytest.fixture(autouse=True)\ndef mock_dependencies(monkeypatch):\n    monkeypatch.setattr('string_utils.validation.CREDIT_CARDS', CREDIT_CARDS)\n    monkeypatch.setattr('string_utils.validation.is_full_string', is_full_string)\n\ndef test_is_credit_card_valid_visa():\n    assert is_credit_card('4111111111111111', 'VISA') is True\n\ndef test_is_credit_card_invalid_visa():\n    assert is_credit_card('4111111111111', 'VISA') is False\n\ndef test_is_credit_card_valid_mastercard():\n    assert is_credit_card('5555555555554444', 'MASTERCARD') is True\n\ndef test_is_credit_card_invalid_mastercard():\n    assert is_credit_card('555555555555444', 'MASTERCARD') is False\n\ndef test_is_credit_card_invalid_card_type():\n    with pytest.raises(KeyError):\n        is_credit_card('4111111111111111', 'INVALID_CARD')\n\ndef test_is_credit_card_any_valid():\n    assert is_credit_card('4111111111111111') is True\n\ndef test_is_credit_card_any_invalid():\n    assert is_credit_card('1234567890123456') is False\n\ndef test_is_credit_card_empty_string():\n    assert is_credit_card('') is False\n\ndef test_is_credit_card_non_string():\n    assert is_credit_card(4111111111111111) is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 504,
+    "prompt_tokens": 449,
+    "total_tokens": 953
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:33 string_utils/manipulation.py:529-558 ----
+...............                                                          [100%]
+
+---- 2024-09-05T14:55:33 string_utils/manipulation.py:529-558 ----
+Saved as /output/coverup-tests/test_coverup_30.py
+
+---- 2024-09-05T14:55:33 string_utils/manipulation.py:405-430 ----
+{
+  "id": "chatcmpl-A48BIBCJ97Bx0AadVhTuW3isds3xX",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import prettify\n\ndef test_prettify_basic():\n    input_string = ' unprettified string ,, like this one,will be\"prettified\" .it\\\\' s awesome! '\n    expected_output = 'Unprettified string, like this one, will be \"prettified\". It\\'s awesome!'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_no_spaces():\n    input_string = 'NoSpacesHere'\n    expected_output = 'Nospaceshere'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_multiple_spaces():\n    input_string = 'Multiple   spaces   here'\n    expected_output = 'Multiple spaces here'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_arithmetic_operators():\n    input_string = '1+1=2'\n    expected_output = '1 + 1 = 2'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_punctuation_spacing():\n    input_string = 'Hello,world!How are you?I am fine.'\n    expected_output = 'Hello, world! How are you? I am fine.'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_quotes():\n    input_string = 'foo\"bar\"baz'\n    expected_output = 'foo \"bar\" baz'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_brackets():\n    input_string = 'foo(bar)baz'\n    expected_output = 'foo (bar) baz'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_percentage():\n    input_string = '100 %'\n    expected_output = '100%'\n    assert prettify(input_string) == expected_output\n\ndef test_prettify_saxon_genitive():\n    input_string = \"Dave' s dog\"\n    expected_output = \"Dave's dog\"\n    assert prettify(input_string) == expected_output\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 421,
+    "prompt_tokens": 549,
+    "total_tokens": 970
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:34 string_utils/generation.py:88-140 ----
+{
+  "id": "chatcmpl-A48BIbZyA11xEx2N25aQFjw87GWcC",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.generation import roman_range\n\ndef roman_encode(number):\n    # Dummy implementation for testing purposes\n    roman_numerals = {\n        1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII',\n        8: 'VIII', 9: 'IX', 10: 'X', 50: 'L', 100: 'C', 500: 'D', 1000: 'M'\n    }\n    return roman_numerals.get(number, '')\n\ndef test_roman_range_default():\n    result = list(roman_range(7))\n    assert result == ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']\n\ndef test_roman_range_custom_start():\n    result = list(roman_range(7, start=3))\n    assert result == ['III', 'IV', 'V', 'VI', 'VII']\n\ndef test_roman_range_custom_step():\n    result = list(roman_range(7, start=1, step=2))\n    assert result == ['I', 'III', 'V', 'VII']\n\ndef test_roman_range_reverse():\n    result = list(roman_range(start=7, stop=1, step=-1))\n    assert result == ['VII', 'VI', 'V', 'IV', 'III', 'II', 'I']\n\ndef test_roman_range_invalid_start():\n    with pytest.raises(ValueError):\n        list(roman_range(7, start=0))\n\ndef test_roman_range_invalid_stop():\n    with pytest.raises(ValueError):\n        list(roman_range(4000))\n\ndef test_roman_range_invalid_step():\n    with pytest.raises(ValueError):\n        list(roman_range(7, step=0))\n\ndef test_roman_range_overflow_forward():\n    with pytest.raises(OverflowError):\n        list(roman_range(5, start=7, step=1))\n\ndef test_roman_range_overflow_backward():\n    with pytest.raises(OverflowError):\n        list(roman_range(1, start=7, step=-2))\n\n@pytest.fixture(autouse=True)\ndef mock_roman_encode(monkeypatch):\n    monkeypatch.setattr('string_utils.generation.roman_encode', roman_encode)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 489,
+    "prompt_tokens": 644,
+    "total_tokens": 1133
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:34 string_utils/manipulation.py:300-321 ----
+{
+  "id": "chatcmpl-A48BIXe9MIzOcnfdgDUcrqlHKReLx",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import camel_case_to_snake, InvalidInputError\n\ndef test_camel_case_to_snake_valid_input(monkeypatch):\n    # Mocking is_string and is_camel_case functions\n    monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: True)\n    monkeypatch.setattr('string_utils.manipulation.is_camel_case', lambda x: True)\n    monkeypatch.setattr('string_utils.manipulation.CAMEL_CASE_REPLACE_RE.sub', lambda func, s: 'this_is_a_camel_string_test')\n\n    input_string = 'ThisIsACamelStringTest'\n    expected_output = 'this_is_a_camel_string_test'\n    assert camel_case_to_snake(input_string) == expected_output\n\ndef test_camel_case_to_snake_invalid_string(monkeypatch):\n    # Mocking is_string function to return False\n    monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: False)\n    \n    input_string = 12345\n    with pytest.raises(InvalidInputError):\n        camel_case_to_snake(input_string)\n\ndef test_camel_case_to_snake_not_camel_case(monkeypatch):\n    # Mocking is_string and is_camel_case functions\n    monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: True)\n    monkeypatch.setattr('string_utils.manipulation.is_camel_case', lambda x: False)\n    \n    input_string = 'notCamelCase'\n    assert camel_case_to_snake(input_string) == input_string\n\ndef test_camel_case_to_snake_custom_separator(monkeypatch):\n    # Mocking is_string and is_camel_case functions\n    monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: True)\n    monkeypatch.setattr('string_utils.manipulation.is_camel_case', lambda x: True)\n    monkeypatch.setattr('string_utils.manipulation.CAMEL_CASE_REPLACE_RE.sub', lambda func, s: 'this-is-a-camel-string-test')\n\n    input_string = 'ThisIsACamelStringTest'\n    expected_output = 'this-is-a-camel-string-test'\n    assert camel_case_to_snake(input_string, separator='-') == expected_output\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 472,
+    "prompt_tokens": 361,
+    "total_tokens": 833
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:34 string_utils/manipulation.py:324-354 ----
+Test failed:
+
+    def test_snake_case_to_camel_single_word():
+        result = snake_case_to_camel('snake')
+>       assert result == 'Snake'
+E       AssertionError: assert 'snake' == 'Snake'
+E         - Snake
+E         ? ^
+E         + snake
+E         ? ^
+
+coverup-tests/tmp_test_cafxogjy.py:39: AssertionError
+
+---- 2024-09-05T14:55:34 string_utils/validation.py:308-342 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f16f859f970>
+
+    @pytest.fixture
+    def mock_dependencies(monkeypatch):
+        monkeypatch.setattr('string_utils.validation.is_full_string', mock_is_full_string)
+>       monkeypatch.setattr('string_utils.validation', 'SNAKE_CASE_TEST_RE', SNAKE_CASE_TEST_RE)
+E       AttributeError: 'string_utils.validation' has no attribute 'SNAKE_CASE_TEST_RE'
+
+coverup-tests/tmp_test_cypiqnsq.py:15: AttributeError
+
+---- 2024-09-05T14:55:34 string_utils/validation.py:204-244 ----
+Test failed:
+
+    def test_is_email_escaped_at_sign():
+>       assert is_email('email\\@example.com') is False
+E       AssertionError: assert True is False
+E        +  where True = is_email('email\\@example.com')
+
+coverup-tests/tmp_test_4lbjg127.py:44: AssertionError
+
+---- 2024-09-05T14:55:35 string_utils/manipulation.py:433-459 ----
+Test failed:
+
+    def test_asciify_unrepresentable_chars():
+        input_string = 'hello 𝔘𝔫𝔦𝔠𝔬𝔡𝔢 world'
+        expected_output = 'hello  world'
+>       assert asciify(input_string) == expected_output
+E       AssertionError: assert 'hello Unicode world' == 'hello  world'
+E         - hello  world
+E         + hello Unicode world
+E         ?       +++++++
+
+coverup-tests/tmp_test_72k6pj6e.py:40: AssertionError
+
+---- 2024-09-05T14:55:35 string_utils/validation.py:247-283 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module
+    exec(co, module.__dict__)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_cl57fu0v.py:6: in <module>
+    'VISA': re.compile(r'^4[0-9]{12}(?:[0-9]{3})?$'),
+E   NameError: name 're' is not defined
+
+---- 2024-09-05T14:55:35 string_utils/manipulation.py:405-430 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:159: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:359: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+/usr/local/lib/python3.10/ast.py:50: in parse
+    return compile(source, filename, mode, flags,
+E     File "/output/coverup-tests/tmp_test_y7upm6d7.py", line 5
+E       input_string = ' unprettified string ,, like this one,will be"prettified" .it\\' s awesome! '
+E                                                                                                   ^
+E   SyntaxError: unterminated string literal (detected at line 5)
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:610: in _importtestmodule
+    raise self.CollectError(
+E   _pytest.nodes.Collector.CollectError: /usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+E       mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+E   /usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+E       importlib.import_module(module_name)
+E   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+E       return _bootstrap._gcd_import(name[level:], package, level)
+E   <frozen importlib._bootstrap>:1050: in _gcd_import
+E       ???
+E   <frozen importlib._bootstrap>:1027: in _find_and_load
+E       ???
+E   <frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+E       ???
+E   <frozen importlib._bootstrap>:688: in _load_unlocked
+E       ???
+E   /usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:159: in exec_module
+E       source_stat, co = _rewrite_test(fn, self.config)
+E   /usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:359: in _rewrite_test
+E       tree = ast.parse(source, filename=strfn)
+E   /usr/local/lib/python3.10/ast.py:50: in parse
+E       return compile(source, filename, mode, flags,
+E   E     File "/output/coverup-tests/tmp_test_y7upm6d7.py", line 5
+E   E       input_string = ' unprettified string ,, like this one,will be"prettified" .it\\' s awesome! '
+E   E                                                                                                   ^
+E   E   SyntaxError: unterminated string literal (detected at line 5)
+
+---- 2024-09-05T14:55:36 string_utils/manipulation.py:300-321 ----
+Test failed:
+
+cls = <class '_pytest.runner.CallInfo'>
+func = <function call_runtest_hook.<locals>.<lambda> at 0x7f9eb2f55240>
+when = 'teardown'
+reraise = (<class '_pytest.outcomes.Exit'>, <class 'KeyboardInterrupt'>)
+
+    @classmethod
+    def from_call(
+        cls,
+        func: "Callable[[], TResult]",
+        when: "Literal['collect', 'setup', 'call', 'teardown']",
+        reraise: Optional[
+            Union[Type[BaseException], Tuple[Type[BaseException], ...]]
+        ] = None,
+    ) -> "CallInfo[TResult]":
+        """Call func, wrapping the result in a CallInfo.
+    
+        :param func:
+            The function to call. Called without arguments.
+        :param when:
+            The phase in which the function is called.
+        :param reraise:
+            Exception or exceptions that shall propagate if raised by the
+            function, instead of being wrapped in the CallInfo.
+        """
+        excinfo = None
+        start = timing.time()
+        precise_start = timing.perf_counter()
+        try:
+>           result: Optional[TResult] = func()
+
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:338: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:259: in <lambda>
+    lambda: ihook(item=item, **kwds), when=when, reraise=reraise
+/usr/local/lib/python3.10/site-packages/pluggy/_hooks.py:265: in __call__
+    return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
+/usr/local/lib/python3.10/site-packages/pluggy/_manager.py:80: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:179: in pytest_runtest_teardown
+    item.session._setupstate.teardown_exact(nextitem)
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:529: in teardown_exact
+    raise exc
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:522: in teardown_exact
+    fin()
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:667: in <lambda>
+    subrequest.node.addfinalizer(lambda: fixturedef.finish(request=subrequest))
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:1019: in finish
+    raise exc
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:1012: in finish
+    func()
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:899: in _teardown_yield_fixture
+    next(it)
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:50: in monkeypatch
+    mpatch.undo()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_pytest.monkeypatch.MonkeyPatch object at 0x7f9eb35cd930>
+
+    def undo(self) -> None:
+        """Undo previous changes.
+    
+        This call consumes the undo stack. Calling it a second time has no
+        effect unless you do more monkeypatching after the undo call.
+    
+        There is generally no need to call `undo()`, since it is
+        called automatically during tear-down.
+    
+        Note that the same `monkeypatch` fixture is used across a
+        single test function invocation. If `monkeypatch` is used both by
+        the test function itself and one of the test fixtures,
+        calling `undo()` will undo all of the changes made in
+        both functions.
+        """
+        for obj, name, value in reversed(self._setattr):
+            if value is not notset:
+>               setattr(obj, name, value)
+E               AttributeError: 're.Pattern' object attribute 'sub' is read-only
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:364: AttributeError
+=================================== FAILURES ===================================
+__________________ test_camel_case_to_snake_valid_input[1-5] ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f9eb35cd930>
+
+    def test_camel_case_to_snake_valid_input(monkeypatch):
+        # Mocking is_string and is_camel_case functions
+        monkeypatch.setattr('string_utils.manipulation.is_string', lambda x: True)
+        monkeypatch.setattr('string_utils.manipulation.is_camel_case', lambda x: True)
+>       monkeypatch.setattr('string_utils.manipulation.CAMEL_CASE_REPLACE_RE.sub', lambda func, s: 'this_is_a_camel_string_test')
+E       AttributeError: 're.Pattern' object attribute 'sub' is read-only
+
+coverup-tests/tmp_test_10pggojp.py:8: AttributeError
+
+---- 2024-09-05T14:55:36 string_utils/generation.py:88-140 ----
+Test failed:
+
+    def test_roman_range_overflow_backward():
+>       with pytest.raises(OverflowError):
+E       Failed: DID NOT RAISE <class 'OverflowError'>
+
+coverup-tests/tmp_test_1iys_9bj.py:45: Failed
+
+---- 2024-09-05T14:55:36 string_utils/manipulation.py:161-170 ----
+{
+  "id": "chatcmpl-A48BI2oX5N0dg9DNZbS1brjwPaGDM",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import __StringCompressor\nfrom string_utils.errors import InvalidInputError\n\ndef is_string(value):\n    return isinstance(value, str)\n\ndef test_require_valid_input_and_encoding_valid(monkeypatch):\n    def mock_is_string(value):\n        return isinstance(value, str)\n    \n    monkeypatch.setattr('string_utils.manipulation.is_string', mock_is_string)\n    \n    # Valid input and encoding\n    __StringCompressor.___StringCompressor__require_valid_input_and_encoding(\"test\", \"utf-8\")\n\ndef test_require_valid_input_and_encoding_invalid_input(monkeypatch):\n    def mock_is_string(value):\n        return isinstance(value, str)\n    \n    monkeypatch.setattr('string_utils.manipulation.is_string', mock_is_string)\n    \n    # Invalid input (not a string)\n    with pytest.raises(InvalidInputError):\n        __StringCompressor.__require_valid_input_and_encoding(123, \"utf-8\")\n\ndef test_require_valid_input_and_encoding_empty_input(monkeypatch):\n    def mock_is_string(value):\n        return isinstance(value, str)\n    \n    monkeypatch.setattr('string_utils.manipulation.is_string', mock_is_string)\n    \n    # Empty input string\n    with pytest.raises(ValueError, match='Input string cannot be empty'):\n        __StringCompressor.__require_valid_input_and_encoding(\"\", \"utf-8\")\n\ndef test_require_valid_input_and_encoding_invalid_encoding(monkeypatch):\n    def mock_is_string(value):\n        return isinstance(value, str)\n    \n    monkeypatch.setattr('string_utils.manipulation.is_string', mock_is_string)\n    \n    # Invalid encoding (not a string)\n    with pytest.raises(ValueError, match='Invalid encoding'):\n        __StringCompressor.__require_valid_input_and_encoding(\"test\", 123)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 371,
+    "prompt_tokens": 264,
+    "total_tokens": 635
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:37 string_utils/manipulation.py:462-497 ----
+{
+  "id": "chatcmpl-A48BIQaumX14RLMU3VJ9X2vcT1FbN",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom string_utils.manipulation import slugify, InvalidInputError\n\n# Mocking the dependencies\ndef mock_is_string(value):\n    return isinstance(value, str)\n\ndef mock_asciify(value):\n    return value.encode('ascii', 'ignore').decode('ascii')\n\n# Constants used in the slugify function\nNO_LETTERS_OR_NUMBERS_RE = re.compile(r'[^a-zA-Z0-9]')\nSPACES_RE = re.compile(r'\\s+')\n\n@pytest.fixture\ndef mock_dependencies(monkeypatch):\n    monkeypatch.setattr('string_utils.manipulation.is_string', mock_is_string)\n    monkeypatch.setattr('string_utils.manipulation.asciify', mock_asciify)\n\ndef test_slugify_valid_string(mock_dependencies):\n    assert slugify('Top 10 Reasons To Love Dogs!!!') == 'top-10-reasons-to-love-dogs'\n    assert slugify('M\u00f6nst\u00e9r M\u00e4gn\u00ebt') == 'monster-magnet'\n    assert slugify('Hello, World!', '_') == 'hello_world'\n    assert slugify('Python@3.9') == 'python-3-9'\n\ndef test_slugify_invalid_input(mock_dependencies):\n    with pytest.raises(InvalidInputError):\n        slugify(12345)\n    with pytest.raises(InvalidInputError):\n        slugify(None)\n\ndef test_slugify_edge_cases(mock_dependencies):\n    assert slugify('') == ''\n    assert slugify('   ') == ''\n    assert slugify('---') == ''\n    assert slugify('a' * 1000) == 'a' * 1000\n\ndef test_slugify_normalize_joins(mock_dependencies):\n    assert slugify('a  b  c', '_') == 'a_b_c'\n    assert slugify('a--b--c', '-') == 'a-b-c'\n    assert slugify('a__b__c', '_') == 'a_b_c'\n```\n",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 406,
+    "prompt_tokens": 495,
+    "total_tokens": 901
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:38 string_utils/manipulation.py:52-76 ----
+{
+  "id": "chatcmpl-A48BIRQ56IDJEjxcOydSvqyn2IfxS",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import __RomanNumbers\n\n@pytest.mark.parametrize(\"index, value, expected\", [\n    (0, 0, ''),  # Test for value 0\n    (0, 1, 'I'),  # Test for value 1\n    (0, 2, 'II'),  # Test for value 2\n    (0, 3, 'III'),  # Test for value 3\n    (0, 4, 'IV'),  # Test for value 4\n    (0, 5, 'V'),  # Test for value 5\n    (0, 6, 'VI'),  # Test for value 6\n    (0, 7, 'VII'),  # Test for value 7\n    (0, 8, 'VIII'),  # Test for value 8\n    (0, 9, 'IX'),  # Test for value 9\n    (1, 0, ''),  # Test for value 0 with different index\n    (1, 1, 'X'),  # Test for value 1 with different index\n    (1, 4, 'XL'),  # Test for value 4 with different index\n    (1, 5, 'L'),  # Test for value 5 with different index\n    (1, 9, 'XC'),  # Test for value 9 with different index\n])\ndef test_encode_digit(index, value, expected):\n    # Mock the __mappings attribute\n    __RomanNumbers.___mappings = [\n        {1: 'I', 5: 'V'},\n        {1: 'X', 5: 'L'},\n        {1: 'C', 5: 'D'},\n        {1: 'M'}\n    ]\n    \n    result = __RomanNumbers.__encode_digit(index, value)\n    assert result == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 410,
+    "prompt_tokens": 440,
+    "total_tokens": 850
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:38 string_utils/manipulation.py:161-170 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f4ba0b1ab30>
+
+    def test_require_valid_input_and_encoding_valid(monkeypatch):
+        def mock_is_string(value):
+            return isinstance(value, str)
+    
+        monkeypatch.setattr('string_utils.manipulation.is_string', mock_is_string)
+    
+        # Valid input and encoding
+>       __StringCompressor.___StringCompressor__require_valid_input_and_encoding("test", "utf-8")
+E       AttributeError: type object '__StringCompressor' has no attribute '___StringCompressor__require_valid_input_and_encoding'
+
+coverup-tests/tmp_test_2xha3gc3.py:15: AttributeError
+
+---- 2024-09-05T14:55:39 string_utils/manipulation.py:462-497 ----
+Test failed:
+
+mock_dependencies = None
+
+    def test_slugify_valid_string(mock_dependencies):
+        assert slugify('Top 10 Reasons To Love Dogs!!!') == 'top-10-reasons-to-love-dogs'
+>       assert slugify('Mönstér Mägnët') == 'monster-magnet'
+E       AssertionError: assert 'mnstr-mgnt' == 'monster-magnet'
+E         - monster-magnet
+E         ?  -   -   -  -
+E         + mnstr-mgnt
+
+coverup-tests/tmp_test_cxw4qshs.py:23: AssertionError
+
+---- 2024-09-05T14:55:39 string_utils/manipulation.py:52-76 ----
+Test failed:
+
+index = 0, value = 0, expected = ''
+
+    @pytest.mark.parametrize("index, value, expected", [
+        (0, 0, ''),  # Test for value 0
+        (0, 1, 'I'),  # Test for value 1
+        (0, 2, 'II'),  # Test for value 2
+        (0, 3, 'III'),  # Test for value 3
+        (0, 4, 'IV'),  # Test for value 4
+        (0, 5, 'V'),  # Test for value 5
+        (0, 6, 'VI'),  # Test for value 6
+        (0, 7, 'VII'),  # Test for value 7
+        (0, 8, 'VIII'),  # Test for value 8
+        (0, 9, 'IX'),  # Test for value 9
+        (1, 0, ''),  # Test for value 0 with different index
+        (1, 1, 'X'),  # Test for value 1 with different index
+        (1, 4, 'XL'),  # Test for value 4 with different index
+        (1, 5, 'L'),  # Test for value 5 with different index
+        (1, 9, 'XC'),  # Test for value 9 with different index
+    ])
+    def test_encode_digit(index, value, expected):
+        # Mock the __mappings attribute
+        __RomanNumbers.___mappings = [
+            {1: 'I', 5: 'V'},
+            {1: 'X', 5: 'L'},
+            {1: 'C', 5: 'D'},
+            {1: 'M'}
+        ]
+    
+>       result = __RomanNumbers.__encode_digit(index, value)
+E       AttributeError: type object '__RomanNumbers' has no attribute '__encode_digit'
+
+coverup-tests/tmp_test_deb2m8fx.py:30: AttributeError
+
+---- 2024-09-05T14:55:40 string_utils/manipulation.py:116-156 ----
+{
+  "id": "chatcmpl-A48BI5Q9gTVAC9duJr0fJmrEu2fbO",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom string_utils.manipulation import __RomanNumbers\n\ndef test_decode_valid_roman_numerals():\n    assert __RomanNumbers.decode('I') == 1\n    assert __RomanNumbers.decode('IV') == 4\n    assert __RomanNumbers.decode('IX') == 9\n    assert __RomanNumbers.decode('XII') == 12\n    assert __RomanNumbers.decode('XXI') == 21\n    assert __RomanNumbers.decode('XL') == 40\n    assert __RomanNumbers.decode('XC') == 90\n    assert __RomanNumbers.decode('C') == 100\n    assert __RomanNumbers.decode('CD') == 400\n    assert __RomanNumbers.decode('D') == 500\n    assert __RomanNumbers.decode('CM') == 900\n    assert __RomanNumbers.decode('M') == 1000\n    assert __RomanNumbers.decode('MMXXIII') == 2023\n\ndef test_decode_invalid_roman_numerals():\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode(' ')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('IIII')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('VV')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('LL')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('DD')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('MMMM')\n\ndef test_decode_non_roman_characters():\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('A')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('123')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('I2')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('XIV!')\n    with pytest.raises(ValueError):\n        __RomanNumbers.decode('XIV@')\n\n# Mocking the dependencies\n@pytest.fixture(autouse=True)\ndef mock_dependencies(monkeypatch):\n    def mock_is_full_string(input_string):\n        return bool(input_string and input_string.strip())\n\n    def mock_reverse(input_string):\n        return input_string[::-1]\n\n    def mock_index_for_sign(sign):\n        mapping = {'I': 0, 'V': 0, 'X': 1, 'L': 1, 'C': 2, 'D': 2, 'M': 3}\n        return mapping.get(sign, -1)\n\n    def mock_reversed_mappings():\n        return [\n            {'I': 1, 'V': 5},\n            {'X': 1, 'L': 5},\n            {'C': 1, 'D': 5},\n            {'M': 1}\n        ]\n\n    monkeypatch.setattr('string_utils.manipulation.is_full_string', mock_is_full_string)\n    monkeypatch.setattr('string_utils.manipulation.reverse', mock_reverse)\n    monkeypatch.setattr('string_utils.manipulation.__RomanNumbers.__index_for_sign', mock_index_for_sign)\n    monkeypatch.setattr('string_utils.manipulation.__RomanNumbers.__reversed_mappings', mock_reversed_mappings())\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 663,
+    "prompt_tokens": 589,
+    "total_tokens": 1252
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:41 string_utils/manipulation.py:116-156 ----
+Test failed:
+
+obj = <class 'string_utils.manipulation.__RomanNumbers'>
+name = '__index_for_sign', ann = 'string_utils.manipulation.__RomanNumbers'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+>           obj = getattr(obj, name)
+E           AttributeError: type object '__RomanNumbers' has no attribute '__index_for_sign'
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:83: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fa5d3c567d0>
+
+    @pytest.fixture(autouse=True)
+    def mock_dependencies(monkeypatch):
+        def mock_is_full_string(input_string):
+            return bool(input_string and input_string.strip())
+    
+        def mock_reverse(input_string):
+            return input_string[::-1]
+    
+        def mock_index_for_sign(sign):
+            mapping = {'I': 0, 'V': 0, 'X': 1, 'L': 1, 'C': 2, 'D': 2, 'M': 3}
+            return mapping.get(sign, -1)
+    
+        def mock_reversed_mappings():
+            return [
+                {'I': 1, 'V': 5},
+                {'X': 1, 'L': 5},
+                {'C': 1, 'D': 5},
+                {'M': 1}
+            ]
+    
+        monkeypatch.setattr('string_utils.manipulation.is_full_string', mock_is_full_string)
+        monkeypatch.setattr('string_utils.manipulation.reverse', mock_reverse)
+>       monkeypatch.setattr('string_utils.manipulation.__RomanNumbers.__index_for_sign', mock_index_for_sign)
+
+coverup-tests/tmp_test_agf2pk9h.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:99: in derive_importpath
+    annotated_getattr(target, attr, ann=module)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+obj = <class 'string_utils.manipulation.__RomanNumbers'>
+name = '__index_for_sign', ann = 'string_utils.manipulation.__RomanNumbers'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+            obj = getattr(obj, name)
+        except AttributeError as e:
+>           raise AttributeError(
+                "{!r} object at {} has no attribute {!r}".format(
+                    type(obj).__name__, ann, name
+                )
+            ) from e
+E           AttributeError: 'type' object at string_utils.manipulation.__RomanNumbers has no attribute '__index_for_sign'
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:85: AttributeError
+
+---- 2024-09-05T14:55:47 string_utils/manipulation.py:250-277 ----
+{
+  "id": "chatcmpl-A48BIT46zRIfu5ZJ9ikoQWiB1NZgv",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\n\n# Mocking the regex patterns and methods used in the __StringFormatter class\nURLS_RE = re.compile(r'https?://\\S+|www\\.\\S+')\nEMAILS_RE = re.compile(r'\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b')\nPRETTIFY_RE = {\n    'UPPERCASE_FIRST_LETTER': re.compile(r'(?<!\\w)([a-z])'),\n    'DUPLICATES': re.compile(r'\\b(\\w+)\\s+\\1\\b'),\n    'RIGHT_SPACE': re.compile(r'\\s+$'),\n    'LEFT_SPACE': re.compile(r'^\\s+'),\n    'SPACES_AROUND': re.compile(r'\\s+([.,!?;:])'),\n    'SPACES_INSIDE': re.compile(r'\\s{2,}'),\n    'UPPERCASE_AFTER_SIGN': re.compile(r'([.!?]\\s+)([a-z])'),\n    'SAXON_GENITIVE': re.compile(r\"(\\w)'s\")\n}\n\nclass __StringFormatter:\n    def __init__(self, input_string):\n        self.input_string = input_string\n\n    def __placeholder_key(self):\n        return f\"__PLACEHOLDER_{len(self.input_string)}__\"\n\n    def __uppercase_first_char(self, match):\n        return match.group(1).upper()\n\n    def __remove_duplicates(self, match):\n        return match.group(1)\n\n    def __ensure_right_space_only(self, match):\n        return ''\n\n    def __ensure_left_space_only(self, match):\n        return ''\n\n    def __ensure_spaces_around(self, match):\n        return match.group(1)\n\n    def __remove_internal_spaces(self, match):\n        return ' '\n\n    def __uppercase_first_letter_after_sign(self, match):\n        return match.group(1) + match.group(2).upper()\n\n    def __fix_saxon_genitive(self, match):\n        return match.group(1) + \"'s\"\n\n    def format(self) -> str:\n        placeholders = {}\n        out = self.input_string\n\n        placeholders.update({self.__placeholder_key(): m[0] for m in URLS_RE.findall(out)})\n        placeholders.update({self.__placeholder_key(): m for m in EMAILS_RE.findall(out)})\n\n        for p in placeholders:\n            out = out.replace(placeholders[p], p, 1)\n\n        out = PRETTIFY_RE['UPPERCASE_FIRST_LETTER'].sub(self.__uppercase_first_char, out)\n        out = PRETTIFY_RE['DUPLICATES'].sub(self.__remove_duplicates, out)\n        out = PRETTIFY_RE['RIGHT_SPACE'].sub(self.__ensure_right_space_only, out)\n        out = PRETTIFY_RE['LEFT_SPACE'].sub(self.__ensure_left_space_only, out)\n        out = PRETTIFY_RE['SPACES_AROUND'].sub(self.__ensure_spaces_around, out)\n        out = PRETTIFY_RE['SPACES_INSIDE'].sub(self.__remove_internal_spaces, out)\n        out = PRETTIFY_RE['UPPERCASE_AFTER_SIGN'].sub(self.__uppercase_first_letter_after_sign, out)\n        out = PRETTIFY_RE['SAXON_GENITIVE'].sub(self.__fix_saxon_genitive, out)\n        out = out.strip()\n\n        for p in placeholders:\n            out = out.replace(p, placeholders[p], 1)\n\n        return out\n\n@pytest.fixture\ndef formatter():\n    return __StringFormatter\n\ndef test_format_with_url(formatter):\n    input_string = \"Check this out: https://example.com\"\n    expected_output = \"Check this out: https://example.com\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_email(formatter):\n    input_string = \"Contact me at test@example.com\"\n    expected_output = \"Contact me at test@example.com\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_duplicates(formatter):\n    input_string = \"This is is a test\"\n    expected_output = \"This is a test\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_spaces(formatter):\n    input_string = \"  This is a test  \"\n    expected_output = \"This is a test\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_punctuation_spaces(formatter):\n    input_string = \"Hello , world !\"\n    expected_output = \"Hello, world!\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_internal_spaces(formatter):\n    input_string = \"This  is  a  test\"\n    expected_output = \"This is a test\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_uppercase_after_sign(formatter):\n    input_string = \"hello. world!\"\n    expected_output = \"Hello. World!\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n\ndef test_format_with_saxon_genitive(formatter):\n    input_string = \"John's book\"\n    expected_output = \"John's book\"\n    f = formatter(input_string)\n    assert f.format() == expected_output\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725548124,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 1111,
+    "prompt_tokens": 526,
+    "total_tokens": 1637
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:55:49 string_utils/manipulation.py:250-277 ----
+Test failed:
+
+formatter = <class 'tmp_test_i_j8zz0q.__StringFormatter'>
+
+    def test_format_with_url(formatter):
+        input_string = "Check this out: https://example.com"
+        expected_output = "Check this out: https://example.com"
+        f = formatter(input_string)
+>       assert f.format() == expected_output
+E       AssertionError: assert 'Check This O...//Example.Com' == 'Check this o...//example.com'
+E         - Check this out: https://example.com
+E         ?       ^    ^    ^       ^       ^
+E         + Check This Out: Https://Example.Com
+E         ?       ^    ^    ^       ^       ^
+
+coverup-tests/tmp_test_i_j8zz0q.py:82: AssertionError
+

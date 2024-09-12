@@ -1,0 +1,2110 @@
+---- 2024-09-05T14:17:42 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --max-attempts 3 --isolate-tests --prompt-family gpt-v2-ablated --install-missing-modules --write-requirements-to missing-modules.txt --repeat-tests 5 --source-dir ./apimd --tests-dir coverup-tests --save-coverage-to coverage --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json apimd/loader.py apimd/parser.py
+---- 2024-09-05T14:17:45 apimd/parser.py:451-492 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def class_api(self, root: str, name: str, bases: list[expr],\n                              body: list[stmt]) -> None:\n                    \"\"\"Create class API.\"\"\"\n                    r_bases = [self.resolve(root, d) for d in bases]\n                    if r_bases:\n                        self.doc[name] += table(\"Bases\", items=map(code, r_bases))\n                    is_enum = any(map(lambda s: s.startswith('enum.'), r_bases))\n                    mem = {}\n                    enums = []\n                    for node in walk_body(body):\n                        if isinstance(node, AnnAssign) and isinstance(node.target, Name):\n                            attr = node.target.id\n                            if is_enum:\n                                enums.append(attr)\n                            elif is_public_family(attr):\n                                mem[attr] = self.resolve(root, node.annotation)\n                        elif (\n                            isinstance(node, Assign)\n                            and len(node.targets) == 1\n                            and isinstance(node.targets[0], Name)\n                        ):\n                            attr = node.targets[0].id\n                            if is_enum:\n                                enums.append(attr)\n                            elif is_public_family(attr):\n                                if node.type_comment is None:\n                                    mem[attr] = const_type(node.value)\n                                else:\n                                    mem[attr] = node.type_comment\n                        elif isinstance(node, Delete):\n                            for d in node.targets:\n                                if not isinstance(d, Name):\n                                    continue\n                                attr = d.id\n                                mem.pop(attr, None)\n                                if attr in enums:\n                                    enums.remove(attr)\n                    if enums:\n                        self.doc[name] += table(\"Enums\", items=enums)\n                    elif mem:\n                        self.doc[name] += table('Members', 'Type', items=(\n                            (code(n), code(mem[n])) for n in sorted(mem)))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:381-416 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def api(self, root: str, node: _API, *, prefix: str = '') -> None:\n                    \"\"\"Create API doc for only functions and classes.\n                    Where `name` is the full name.\n                    \"\"\"\n                    level = '#' * (self.b_level + (2 if not prefix else 3))\n                    name = _m(root, prefix, node.name)\n                    self.level[name] = self.level[root]\n                    self.root[name] = root\n                    shirt_name = esc_underscore(_m(prefix, node.name))\n                    if isinstance(node, FunctionDef):\n                        self.doc[name] = f\"{level} {shirt_name}()\\n\\n\"\n                    elif isinstance(node, AsyncFunctionDef):\n                        self.doc[name] = f\"{level} async {shirt_name}()\\n\\n\"\n                    else:\n                        self.doc[name] = f\"{level} class {shirt_name}\\n\\n\"\n                    self.doc[name] += \"*Full name:* `{}`\"\n                    if self.link:\n                        self.doc[name] += \"\\n<a id=\\\"{}\\\"></a>\"\n                    self.doc[name] += '\\n\\n'\n                    decs = ['@' + self.resolve(root, d) for d in node.decorator_list]\n                    if decs:\n                        self.doc[name] += table(\"Decorators\", items=map(code, decs))\n                    if isinstance(node, (FunctionDef, AsyncFunctionDef)):\n                        self.func_api(root, name, node.args, node.returns,\n                                      has_self=bool(prefix) and '@staticmethod' not in decs,\n                                      cls_method='@classmethod' in decs)\n                    else:\n                        self.class_api(root, name, node.bases, node.body)\n                    doc = get_docstring(node)\n                    if doc is not None:\n                        self.docstring[name] = doctest(doc)\n                    if not isinstance(node, ClassDef):\n                        return\n                    for e in walk_body(node.body):\n                        if isinstance(e, (FunctionDef, AsyncFunctionDef, ClassDef)):\n                            self.api(root, e, prefix=node.name)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:341-379 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def globals(self, root: str, node: _G) -> None:\n                    \"\"\"Set up globals:\n            \n                    + Type alias\n                    + Constants\n                    + `__all__` filter\n                    \"\"\"\n                    if (\n                        isinstance(node, AnnAssign)\n                        and isinstance(node.target, Name)\n                        and node.value is not None\n                    ):\n                        left = node.target\n                        expression = unparse(node.value)\n                        ann = self.resolve(root, node.annotation)\n                    elif (\n                        isinstance(node, Assign)\n                        and len(node.targets) == 1\n                        and isinstance(node.targets[0], Name)\n                    ):\n                        left = node.targets[0]\n                        expression = unparse(node.value)\n                        if node.type_comment is None:\n                            ann = const_type(node.value)\n                        else:\n                            ann = node.type_comment\n                    else:\n                        return\n                    name = _m(root, left.id)\n                    self.alias[name] = expression\n                    if left.id.isupper():\n                        self.root[name] = root\n                        if self.const.get(name, ANY) == ANY:\n                            self.const[name] = ann\n                    if left.id != '__all__' or not isinstance(node.value, (Tuple, List)):\n                        return\n                    for e in node.value.elts:\n                        if isinstance(e, Constant) and isinstance(e.value, str):\n                            self.imp[root].add(_m(root, e.value))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/loader.py:79-106 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/loader.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def loader(root: str, pwd: str, link: bool, level: int, toc: bool) -> str:\n                \"\"\"Package searching algorithm.\"\"\"\n                p = Parser.new(link, level, toc)\n                for name, path in walk_packages(root, pwd):\n                    # Load its source or stub\n                    pure_py = False\n                    for ext in [\".py\", \".pyi\"]:\n                        path_ext = path + ext\n                        if not isfile(path_ext):\n                            continue\n                        logger.debug(f\"{name} <= {path_ext}\")\n                        p.parse(name, _read(path_ext))\n                        if ext == \".py\":\n                            pure_py = True\n                    if pure_py:\n                        continue\n                    logger.debug(f\"loading extension module for fully documented:\")\n                    # Try to load module here\n                    for ext in EXTENSION_SUFFIXES:\n                        path_ext = path + ext\n                        if not isfile(path_ext):\n                            continue\n                        logger.debug(f\"{name} <= {path_ext}\")\n                        if _load_module(name, path_ext, p):\n                            break\n                    else:\n                        logger.warning(f\"no module for {name} in this platform\")\n                return p.compile()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:418-449 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def func_api(self, root: str, name: str, node: arguments,\n                             returns: Optional[expr], *,\n                             has_self: bool, cls_method: bool) -> None:\n                    \"\"\"Create function API.\"\"\"\n                    args = []\n                    default: list[Optional[expr]] = []\n                    if node.posonlyargs:\n                        args.extend(node.posonlyargs)\n                        args.append(arg('/', None))\n                        default.extend([None] * len(node.posonlyargs))\n                    args.extend(node.args)\n                    default.extend([None] * (len(node.args) - len(node.defaults)))\n                    default.extend(node.defaults)\n                    if node.vararg is not None:\n                        args.append(arg('*' + node.vararg.arg, node.vararg.annotation))\n                    elif node.kwonlyargs:\n                        args.append(arg('*', None))\n                    default.append(None)\n                    args.extend(node.kwonlyargs)\n                    default.extend([None] * (len(node.kwonlyargs) - len(node.kw_defaults)))\n                    default.extend(node.kw_defaults)\n                    if node.kwarg is not None:\n                        args.append(arg('**' + node.kwarg.arg, node.kwarg.annotation))\n                        default.append(None)\n                    args.append(arg('return', returns))\n                    default.append(None)\n                    ann = map(code, self.func_ann(root, args, has_self=has_self,\n                                                  cls_method=cls_method))\n                    has_default = all(d is None for d in default)\n                    self.doc[name] += table(\n                        *(a.arg for a in args),\n                        items=[ann] if has_default else [ann, _defaults(default)])\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:303-324 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def parse(self, root: str, script: str) -> None:\n                    \"\"\"Main parser of the entire module.\"\"\"\n                    self.doc[root] = '#' * self.b_level + \"# Module `{}`\"\n                    if self.link:\n                        self.doc[root] += \"\\n<a id=\\\"{}\\\"></a>\"\n                    self.doc[root] += '\\n\\n'\n                    self.level[root] = root.count('.')\n                    self.imp[root] = set()\n                    self.root[root] = root\n                    root_node = parse(script, type_comments=True)\n                    for node in walk_body(root_node.body):\n                        # \"Execute\" assignments\n                        if isinstance(node, (Import, ImportFrom)):\n                            self.imports(root, node)\n                        elif isinstance(node, (Assign, AnnAssign)):\n                            self.globals(root, node)\n                    doc = get_docstring(root_node)\n                    if doc is not None:\n                        self.docstring[root] = doctest(doc)\n                    for node in walk_body(root_node.body):\n                        if isinstance(node, (FunctionDef, AsyncFunctionDef, ClassDef)):\n                            self.api(root, node)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:580-603 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def compile(self) -> str:\n                    \"\"\"Compile documentation.\"\"\"\n                    self.__find_alias()\n                    toc = ['**Table of contents:**']\n                    docs = []\n                    for name in sorted(self.doc, key=self.__names_cmp):\n                        if not self.is_public(name):\n                            continue\n                        link = name.lower().replace('.', '-')\n                        doc = self.doc[name].format(name, link)\n                        if name in self.imp:\n                            doc += self.__get_const(name)\n                        if name in self.docstring:\n                            doc += self.docstring[name]\n                        elif is_magic(name):\n                            continue\n                        else:\n                            logger.warning(f\"Missing documentation for {name}\")\n                        level = name.removeprefix(self.root[name]).count('.')\n                        toc.append(\" \" * 4 * level + f\"+ [{code(name)}](#{link})\")\n                        docs.append(doc.rstrip())\n                    if self.toc:\n                        return '\\n'.join(toc) + '\\n\\n' + \"\\n\\n\".join(docs) + '\\n'\n                    return \"\\n\\n\".join(docs) + '\\n'\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/loader.py:109-145 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/loader.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def gen_api(\n                root_names: dict[str, str],\n                pwd: Optional[str] = None,\n                *,\n                prefix: str = 'docs',\n                link: bool = True,\n                level: int = 1,\n                toc: bool = False,\n                dry: bool = False\n            ) -> Sequence[str]:\n                \"\"\"Generate API. All rules are listed in the readme.\n            \n                The path `pwd` is the current path that provided to `pkgutil`,\n                which allows the \"site-packages\" directory to be used.\n                \"\"\"\n                if pwd is not None:\n                    sys_path.append(pwd)\n                if not isdir(prefix):\n                    logger.info(f\"Create directory: {prefix}\")\n                    mkdir(prefix)\n                docs = []\n                for title, name in root_names.items():\n                    logger.info(f\"Load root: {name} ({title})\")\n                    doc = loader(name, _site_path(name), link, level, toc)\n                    if not doc.strip():\n                        logger.warning(f\"'{name}' can not be found\")\n                        continue\n                    doc = '#' * level + f\" {title} API\\n\\n\" + doc\n                    path = join(prefix, f\"{name.replace('_', '-')}-api.md\")\n                    logger.info(f\"Write file: {path}\")\n                    if dry:\n                        logger.info('=' * 12)\n                        logger.info(doc)\n                    else:\n                        _write(path, doc)\n                    docs.append(doc)\n                return docs\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:236-257 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Resolver(NodeTransformer):\n                def visit_Subscript(self, node: Subscript) -> AST:\n                    \"\"\"Implementation of PEP585 and PEP604.\"\"\"\n                    if not isinstance(node.value, Name):\n                        return node\n                    name = node.value.id\n                    idf = self.alias.get(_m(self.root, name), name)\n                    if idf == 'typing.Union':\n                        if not isinstance(node.slice, Tuple):\n                            return node.slice\n                        b = node.slice.elts[0]\n                        for e in node.slice.elts[1:]:\n                            b = BinOp(b, BitOr(), e)\n                        return b\n                    elif idf == 'typing.Optional':\n                        return BinOp(node.slice, BitOr(), Constant(None))\n                    elif idf in PEP585:\n                        logger.warning(f\"{node.lineno}:{node.col_offset}: \"\n                                       f\"find deprecated name {idf}, \"\n                                       f\"recommended to use {PEP585[idf]}\")\n                        return Subscript(Name(PEP585[idf], Load), node.slice, node.ctx)\n                    else:\n                        return node\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:161-179 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _e_type(*elements: Sequence[Optional[expr]]) -> str:\n                \"\"\"Get element type if type is constants.\"\"\"\n                if not elements:\n                    return \"\"\n                ts = []\n                for element in elements:\n                    if not element:\n                        return \"\"\n                    t = \"\"\n                    for e in element:\n                        if not isinstance(e, Constant):\n                            return \"\"\n                        nw_t = _type_name(e.value)\n                        if t and t != nw_t:\n                            t = \"Any\"\n                            break\n                        t = nw_t\n                    ts.append(t)\n                return '[' + \", \".join(ts) + ']'\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:109-127 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def doctest(doc: str) -> str:\n                \"\"\"Wrap doctest as markdown Python code.\"\"\"\n                keep = False\n                docs = []\n                lines = doc.splitlines()\n                for i, line in enumerate(lines):\n                    signed = line.startswith(\">>> \")\n                    if signed:\n                        if not keep:\n                            docs.append(\"```python\")\n                            keep = True\n                    elif keep:\n                        docs.append(\"```\")\n                        keep = False\n                    docs.append(line)\n                    if signed and i == len(lines) - 1:\n                        docs.append(\"```\")\n                        keep = False\n                return '\\n'.join(docs)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:494-511 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def func_ann(self, root: str, args: Sequence[arg], *,\n                             has_self: bool, cls_method: bool) -> Iterator[str]:\n                    \"\"\"Function annotation table.\"\"\"\n                    self_ty = \"\"\n                    for i, a in enumerate(args):\n                        if has_self and i == 0:\n                            if a.annotation is not None:\n                                self_ty = self.resolve(root, a.annotation)\n                                if cls_method:\n                                    self_ty = (self_ty.removeprefix('type[')\n                                               .removesuffix(']'))\n                            yield 'type[Self]' if cls_method else 'Self'\n                        elif a.arg == '*':\n                            yield \"\"\n                        elif a.annotation is not None:\n                            yield self.resolve(root, a.annotation, self_ty)\n                        else:\n                            yield ANY\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:532-548 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def __find_alias(self):\n                    \"\"\"Alias substitution.\"\"\"\n                    for n, a in self.alias.items():\n                        if a not in self.doc or not self.__is_immediate_family(n, a):\n                            continue\n                        for ch in list(self.doc):\n                            if not ch.startswith(a):\n                                continue\n                            nw = n + ch.removeprefix(a)\n                            self.doc[nw] = self.doc.pop(ch)\n                            self.docstring[nw] = self.docstring.pop(ch, \"\")\n                            name = ch.removeprefix(self.root.pop(ch))\n                            self.root[nw] = nw.removesuffix(name)\n                            self.level.pop(ch)\n                            self.level[nw] = self.root[nw].count('.')\n                            if ch in self.const:\n                                self.const[nw] = self.const.pop(ch)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/loader.py:44-60 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/loader.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def walk_packages(name: str, path: str) -> Iterator[tuple[str, str]]:\n                \"\"\"Walk packages without import them.\"\"\"\n                path = abspath(path) + sep\n                valid = (path + name, path + name + PEP561_SUFFIX)\n                for root, _, fs in walk(path):\n                    for f in fs:\n                        if not f.endswith(('.py', '.pyi')):\n                            continue\n                        f_path = parent(join(root, f))\n                        if not f_path.startswith(valid):\n                            continue\n                        name = (f_path\n                                .removeprefix(path)\n                                .replace(PEP561_SUFFIX, \"\")\n                                .replace(sep, '.')\n                                .removesuffix('.__init__'))\n                        yield name, f_path\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:182-195 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def const_type(node: expr) -> str:\n                \"\"\"Constant type inference.\"\"\"\n                if isinstance(node, Constant):\n                    return _type_name(node.value)\n                elif isinstance(node, (Tuple, List, Set)):\n                    return _type_name(node).lower() + _e_type(node.elts)\n                elif isinstance(node, Dict):\n                    return 'dict' + _e_type(node.keys, node.values)\n                elif isinstance(node, Call) and isinstance(node.func, (Name, Attribute)):\n                    func = unparse(node.func)\n                    if func in chain({'bool', 'int', 'float', 'complex', 'str'},\n                                     PEP585.keys(), PEP585.values()):\n                        return func\n                return ANY\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:326-339 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def imports(self, root: str, node: _I) -> None:\n                    \"\"\"Save import names.\"\"\"\n                    if isinstance(node, Import):\n                        for a in node.names:\n                            name = a.name if a.asname is None else a.asname\n                            self.alias[_m(root, name)] = a.name\n                    elif node.module is not None:\n                        if node.level:\n                            m = parent(root, level=node.level - 1)\n                        else:\n                            m = ''\n                        for a in node.names:\n                            name = a.name if a.asname is None else a.asname\n                            self.alias[_m(root, name)] = _m(m, node.module, a.name)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:219-234 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Resolver(NodeTransformer):\n                def visit_Name(self, node: Name) -> AST:\n                    \"\"\"Replace global names with its expression recursively.\"\"\"\n                    if node.id == self.self_ty:\n                        return Name(\"Self\", Load())\n                    name = _m(self.root, node.id)\n                    if name in self.alias and name not in self.alias[name]:\n                        e = cast(Expr, parse(self.alias[name]).body[0])\n                        # Support `TypeVar`\n                        if isinstance(e.value, Call) and isinstance(e.value.func, Name):\n                            func_name = e.value.func.id\n                            idf = self.alias.get(_m(self.root, func_name), func_name)\n                            if idf == 'typing.TypeVar':\n                                return node\n                        return self.visit(e.value)\n                    else:\n                        return node\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:74-87 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def walk_body(body: Sequence[stmt]) -> Iterator[stmt]:\n                \"\"\"Traverse around body and its simple definition scope.\"\"\"\n                for node in body:\n                    if isinstance(node, If):\n                        yield from walk_body(node.body)\n                        yield from walk_body(node.orelse)\n                    elif isinstance(node, Try):\n                        yield from walk_body(node.body)\n                        for h in node.handlers:\n                            yield from walk_body(h.body)\n                        yield from walk_body(node.orelse)\n                        yield from walk_body(node.finalbody)\n                    else:\n                        yield node\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:550-562 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def is_public(self, s: str) -> bool:\n                    \"\"\"Check the name is public style or listed in `__all__`.\"\"\"\n                    if s in self.imp:\n                        for ch in chain(self.doc.keys(), self.const.keys()):\n                            if ch.startswith(s + '.') and is_public_family(ch):\n                                break\n                        else:\n                            return False\n                    all_l = self.imp[self.root[s]]\n                    if all_l:\n                        return s == self.root[s] or bool({s, parent(s)} & all_l)\n                    else:\n                        return is_public_family(s)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:564-574 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def __get_const(self, name: str) -> str:\n                    \"\"\"Get constants table.\"\"\"\n                    const = []\n                    for c in self.const:\n                        if self.root[c] == name and self.is_public(c):\n                            ch = c.removeprefix(name + '.')\n                            const.append((code(ch), code(self.const[c])))\n                    if const:\n                        return table('Constants', 'Type', items=const)\n                    else:\n                        return \"\"\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/loader.py:63-76 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/loader.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _load_module(name: str, path: str, p: Parser) -> bool:\n                \"\"\"Load module directly.\"\"\"\n                # Load root first to avoid import error\n                try:\n                    __import__(parent(name))\n                except ImportError:\n                    return False\n                s = spec_from_file_location(name, path)\n                if s is not None and isinstance(s.loader, Loader):\n                    m = module_from_spec(s)\n                    s.loader.exec_module(m)\n                    p.load_docstring(name, m)\n                    return True\n                return False\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:518-526 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def load_docstring(self, root: str, m: ModuleType) -> None:\n                    \"\"\"Load docstring from the module.\"\"\"\n                    for name in self.doc:\n                        if not name.startswith(root):\n                            continue\n                        attr = name.removeprefix(root + '.')\n                        doc = getdoc(_attr(m, attr))\n                        if doc is not None:\n                            self.docstring[name] = doctest(doc)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:36-43 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _attr(obj: object, attr: str) -> object:\n                \"\"\"Nest `getattr` function.\"\"\"\n                n = obj\n                for p in attr.split('.'):\n                    n = getattr(n, p, None)\n                    if n is None:\n                        return None\n                return n\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:90-98 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def code(doc: str) -> str:\n                \"\"\"Escape Markdown charters from inline code.\"\"\"\n                doc = doc.replace('|', '&#124;')\n                if '&' in doc:\n                    return f\"<code>{doc}</code>\"\n                elif doc:\n                    return f\"`{doc}`\"\n                else:\n                    return \" \"\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:208-217 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Resolver(NodeTransformer):\n                def visit_Constant(self, node: Constant) -> AST:\n                    \"\"\"Check string is a name.\"\"\"\n                    if not isinstance(node.value, str):\n                        return node\n                    try:\n                        e = cast(Expr, parse(node.value).body[0])\n                    except SyntaxError:\n                        return node\n                    else:\n                        return self.visit(e.value)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:259-266 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Resolver(NodeTransformer):\n                def visit_Attribute(self, node: Attribute) -> AST:\n                    \"\"\"Remove `typing.*` prefix of annotation.\"\"\"\n                    if not isinstance(node.value, Name):\n                        return node\n                    if node.value.id == 'typing':\n                        return Name(node.attr, Load())\n                    else:\n                        return node\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/loader.py:36-41 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/loader.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _site_path(name: str) -> str:\n                \"\"\"Get the path in site-packages if exist.\"\"\"\n                s = find_spec(name)\n                if s is None or s.submodule_search_locations is None:\n                    return \"\"\n                return dirname(s.submodule_search_locations[0])\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:299-301 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def __post_init__(self):\n                    if self.toc:\n                        self.link = True\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:141-153 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def table(*titles: str, items: Iterable[Union[str, Iterable[str]]]) -> str:\n                \"\"\"Create multi-column table with the titles.\n            \n                Usage:\n                >>> table('a', 'b', [['c', 'd'], ['e', 'f']])\n                | a | b |\n                |:---:|:---:|\n                | c | d |\n                | e | f |\n                \"\"\"\n                return '\\n'.join([_table_cell(titles), _table_split(titles),\n                                  '\\n'.join(_table_cell([n] if isinstance(n, str) else n)\n                                            for n in items)]) + '\\n\\n'\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:135-138 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _table_split(args: Iterable[str]) -> str:\n                \"\"\"The split line of the table.\"\"\"\n                return '|' + '|'.join(\":\" + '-' * (len(a) if len(a) > 3 else 3) + \":\"\n                                      for a in args) + '|'\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:513-516 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def resolve(self, root: str, node: expr, self_ty: str = \"\") -> str:\n                    \"\"\"Search and resolve global names in annotation.\"\"\"\n                    r = Resolver(root, self.alias, self_ty)\n                    return unparse(r.generic_visit(r.visit(node)))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:51-53 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def parent(name: str, *, level: int = 1) -> str:\n                \"\"\"Get parent name with level.\"\"\"\n                return name.rsplit('.', maxsplit=level)[0]\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:156-158 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _type_name(obj: object) -> str:\n                \"\"\"Get type name.\"\"\"\n                return type(obj).__qualname__\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:294-297 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                @classmethod\n                def new(cls: type[_Self], link: bool, level: int, toc: bool) -> _Self:\n                    \"\"\"Create a parser by options.\"\"\"\n                    return cls(link, level, toc)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:528-530 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def __is_immediate_family(self, n1: str, n2: str) -> bool:\n                    \"\"\"Check the name is immediate family.\"\"\"\n                    return n2.startswith(n1.removesuffix(n2.removeprefix(self.root[n2])))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:45 apimd/parser.py:576-578 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from apimd/parser.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @dataclass\n            class Parser:\n                def __names_cmp(self, s: str) -> tuple[int, str, bool]:\n                    \"\"\"Name comparison function.\"\"\"\n                    return self.level[s], s.lower(), not s.islower()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T14:17:47 apimd/parser.py:299-301 ----
+{
+  "id": "chatcmpl-A47aswiDVN4VnI8znelQC4Z0XMZ9E",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    toc: bool = False\n    link: bool = False\n\n    def __post_init__(self):\n        if self.toc:\n            self.link = True\n\ndef test_parser_toc_true():\n    parser = Parser(toc=True)\n    assert parser.link is True\n\ndef test_parser_toc_false():\n    parser = Parser(toc=False)\n    assert parser.link is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 98,
+    "prompt_tokens": 208,
+    "total_tokens": 306
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:47 apimd/parser.py:90-98 ----
+{
+  "id": "chatcmpl-A47asSYTpZlPznJdzufGnzP3bucsp",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom apimd.parser import code\n\ndef test_code_with_pipe():\n    assert code(\"example|text\") == \"<code>example&#124;text</code>\"\n\ndef test_code_with_ampersand():\n    assert code(\"example&text\") == \"<code>example&text</code>\"\n\ndef test_code_with_text():\n    assert code(\"example text\") == \"`example text`\"\n\ndef test_code_with_empty_string():\n    assert code(\"\") == \" \"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 100,
+    "prompt_tokens": 246,
+    "total_tokens": 346
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:48 apimd/parser.py:294-297 ----
+{
+  "id": "chatcmpl-A47asLJrCMo95D2VOF1sGt4th2Uaz",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    link: bool\n    level: int\n    toc: bool\n\n    @classmethod\n    def new(cls, link: bool, level: int, toc: bool):\n        \"\"\"Create a parser by options.\"\"\"\n        return cls(link, level, toc)\n\ndef test_parser_new():\n    parser = Parser.new(link=True, level=1, toc=False)\n    assert isinstance(parser, Parser)\n    assert parser.link is True\n    assert parser.level == 1\n    assert parser.toc is False\n\n    parser = Parser.new(link=False, level=2, toc=True)\n    assert isinstance(parser, Parser)\n    assert parser.link is False\n    assert parser.level == 2\n    assert parser.toc is True\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 168,
+    "prompt_tokens": 234,
+    "total_tokens": 402
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:48 apimd/parser.py:51-53 ----
+{
+  "id": "chatcmpl-A47aswhz3aCesrCelvM7KjPt1UgaF",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom apimd.parser import parent\n\ndef test_parent_single_level():\n    assert parent(\"a.b.c\") == \"a.b\"\n    assert parent(\"a.b.c\", level=1) == \"a.b\"\n\ndef test_parent_multiple_levels():\n    assert parent(\"a.b.c.d\", level=2) == \"a.b\"\n    assert parent(\"a.b.c.d.e\", level=3) == \"a.b\"\n\ndef test_parent_no_split():\n    assert parent(\"a\", level=1) == \"\"\n    assert parent(\"a\", level=2) == \"\"\n\ndef test_parent_edge_cases():\n    assert parent(\"\", level=1) == \"\"\n    assert parent(\"a.b.c\", level=0) == \"a.b.c\"\n    assert parent(\"a.b.c\", level=10) == \"\"\n\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 171,
+    "prompt_tokens": 218,
+    "total_tokens": 389
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:48 apimd/parser.py:36-43 ----
+{
+  "id": "chatcmpl-A47asWKMcU7wDb0OMNmVNK8BybZRE",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom apimd.parser import _attr\n\nclass Dummy:\n    def __init__(self):\n        self.a = 'value'\n        self.b = DummyNested()\n\nclass DummyNested:\n    def __init__(self):\n        self.c = 'nested_value'\n\n@pytest.fixture\ndef dummy_obj():\n    return Dummy()\n\ndef test_attr_single_level(dummy_obj):\n    assert _attr(dummy_obj, 'a') == 'value'\n\ndef test_attr_nested_level(dummy_obj):\n    assert _attr(dummy_obj, 'b.c') == 'nested_value'\n\ndef test_attr_non_existent_attr(dummy_obj):\n    assert _attr(dummy_obj, 'd') is None\n\ndef test_attr_partial_non_existent_attr(dummy_obj):\n    assert _attr(dummy_obj, 'b.d') is None\n\ndef test_attr_empty_string(dummy_obj):\n    assert _attr(dummy_obj, '') == dummy_obj\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 183,
+    "prompt_tokens": 240,
+    "total_tokens": 423
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:48 apimd/parser.py:528-530 ----
+{
+  "id": "chatcmpl-A47askYHO5gsF9ctYIETtUmtvD4UH",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    root: dict\n\n    def __is_immediate_family(self, n1: str, n2: str) -> bool:\n        \"\"\"Check the name is immediate family.\"\"\"\n        return n2.startswith(n1.removesuffix(n2.removeprefix(self.root[n2])))\n\n@pytest.fixture\ndef parser():\n    return Parser(root={'child': 'parent', 'sibling': 'parent', 'parent': ''})\n\ndef test_is_immediate_family_true(parser):\n    assert parser._Parser__is_immediate_family('parent', 'parentchild') == True\n\ndef test_is_immediate_family_false(parser):\n    assert parser._Parser__is_immediate_family('parent', 'siblingchild') == False\n\ndef test_is_immediate_family_edge_case(parser):\n    assert parser._Parser__is_immediate_family('parent', 'parent') == True\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 194,
+    "prompt_tokens": 241,
+    "total_tokens": 435
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:48 apimd/parser.py:135-138 ----
+{
+  "id": "chatcmpl-A47asW4fsOMbrQQ30SMd3JOuaWn0v",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom apimd.parser import _table_split\n\ndef test_table_split_with_varied_lengths():\n    args = [\"short\", \"longer\", \"tiny\", \"adequate\"]\n    result = _table_split(args)\n    expected = \"|:-----:|:------:|:---:|:-------:|\"\n    assert result == expected\n\ndef test_table_split_with_short_lengths():\n    args = [\"a\", \"ab\", \"abc\"]\n    result = _table_split(args)\n    expected = \"|:---:|:---:|:---:|\"\n    assert result == expected\n\ndef test_table_split_with_empty_args():\n    args = []\n    result = _table_split(args)\n    expected = \"||\"\n    assert result == expected\n\ndef test_table_split_with_single_arg():\n    args = [\"single\"]\n    result = _table_split(args)\n    expected = \"|:------:|\"\n    assert result == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 197,
+    "prompt_tokens": 241,
+    "total_tokens": 438
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:49 apimd/parser.py:576-578 ----
+{
+  "id": "chatcmpl-A47aseU3krZfJRqU0rKvaSaDORXEA",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    level: dict\n\n    def __names_cmp(self, s: str) -> tuple[int, str, bool]:\n        \"\"\"Name comparison function.\"\"\"\n        return self.level[s], s.lower(), not s.islower()\n\n@pytest.fixture\ndef parser():\n    return Parser(level={'a': 1, 'B': 2, 'c': 3})\n\ndef test_names_cmp_lowercase(parser):\n    result = parser._Parser__names_cmp('a')\n    assert result == (1, 'a', False)\n\ndef test_names_cmp_uppercase(parser):\n    result = parser._Parser__names_cmp('B')\n    assert result == (2, 'b', True)\n\ndef test_names_cmp_mixedcase(parser):\n    result = parser._Parser__names_cmp('c')\n    assert result == (3, 'c', False)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 189,
+    "prompt_tokens": 227,
+    "total_tokens": 416
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:49 apimd/parser.py:74-87 ----
+{
+  "id": "chatcmpl-A47asa0ECL8xQwOoW3Gchw2rN1NJy",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom typing import List\nfrom ast import If, Try, stmt\n\nfrom apimd.parser import walk_body\n\ndef test_walk_body_if(monkeypatch):\n    if_node = MagicMock(spec=If)\n    if_node.body = [MagicMock(spec=stmt)]\n    if_node.orelse = [MagicMock(spec=stmt)]\n    \n    body = [if_node]\n    \n    result = list(walk_body(body))\n    \n    assert result == if_node.body + if_node.orelse\n\ndef test_walk_body_try(monkeypatch):\n    try_node = MagicMock(spec=Try)\n    try_node.body = [MagicMock(spec=stmt)]\n    handler = MagicMock()\n    handler.body = [MagicMock(spec=stmt)]\n    try_node.handlers = [handler]\n    try_node.orelse = [MagicMock(spec=stmt)]\n    try_node.finalbody = [MagicMock(spec=stmt)]\n    \n    body = [try_node]\n    \n    result = list(walk_body(body))\n    \n    assert result == try_node.body + handler.body + try_node.orelse + try_node.finalbody\n\ndef test_walk_body_other(monkeypatch):\n    other_node = MagicMock(spec=stmt)\n    \n    body = [other_node]\n    \n    result = list(walk_body(body))\n    \n    assert result == [other_node]\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 284,
+    "prompt_tokens": 292,
+    "total_tokens": 576
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:49 apimd/parser.py:208-217 ----
+{
+  "id": "chatcmpl-A47asJvB7vR0rhffdozwfHH9t4Wmy",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch\nfrom ast import parse, Expr, Constant, NodeTransformer, AST\nfrom typing import cast\n\nclass Resolver(NodeTransformer):\n    def visit_Constant(self, node: Constant) -> AST:\n        \"\"\"Check string is a name.\"\"\"\n        if not isinstance(node.value, str):\n            return node\n        try:\n            e = cast(Expr, parse(node.value).body[0])\n        except SyntaxError:\n            return node\n        else:\n            return self.visit(e.value)\n\n@pytest.fixture\ndef resolver():\n    return Resolver()\n\ndef test_visit_constant_with_non_string(resolver):\n    node = Constant(value=123)\n    result = resolver.visit_Constant(node)\n    assert result is node\n\ndef test_visit_constant_with_invalid_syntax(resolver):\n    node = Constant(value=\"invalid syntax @\")\n    result = resolver.visit_Constant(node)\n    assert result is node\n\ndef test_visit_constant_with_valid_syntax(resolver):\n    node = Constant(value=\"42\")\n    result = resolver.visit_Constant(node)\n    assert isinstance(result, Constant)\n    assert result.value == 42\n\ndef test_visit_constant_with_valid_name(resolver):\n    node = Constant(value=\"x\")\n    with patch('builtins.parse', return_value=parse(\"x\")):\n        result = resolver.visit_Constant(node)\n        assert isinstance(result, Expr)\n        assert result.value.id == \"x\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 289,
+    "prompt_tokens": 257,
+    "total_tokens": 546
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:49 apimd/parser.py:259-266 ----
+{
+  "id": "chatcmpl-A47as2HQF3PPT4OLcT4xDo4cdBkTx",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom ast import Attribute, Name, Load, NodeTransformer, parse, fix_missing_locations\n\nclass Resolver(NodeTransformer):\n    def visit_Attribute(self, node: Attribute) -> AST:\n        \"\"\"Remove `typing.*` prefix of annotation.\"\"\"\n        if not isinstance(node.value, Name):\n            return node\n        if node.value.id == 'typing':\n            return Name(node.attr, Load())\n        else:\n            return node\n\n@pytest.fixture\ndef resolver():\n    return Resolver()\n\ndef test_visit_attribute_typing(resolver):\n    node = Attribute(value=Name(id='typing', ctx=Load()), attr='List', ctx=Load())\n    result = resolver.visit_Attribute(node)\n    assert isinstance(result, Name)\n    assert result.id == 'List'\n    assert isinstance(result.ctx, Load)\n\ndef test_visit_attribute_non_typing(resolver):\n    node = Attribute(value=Name(id='not_typing', ctx=Load()), attr='List', ctx=Load())\n    result = resolver.visit_Attribute(node)\n    assert result is node\n\ndef test_visit_attribute_non_name_value(resolver):\n    node = Attribute(value=Attribute(value=Name(id='typing', ctx=Load()), attr='List', ctx=Load()), attr='List', ctx=Load())\n    result = resolver.visit_Attribute(node)\n    assert result is node\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 275,
+    "prompt_tokens": 247,
+    "total_tokens": 522
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:49 apimd/parser.py:156-158 ----
+{
+  "id": "chatcmpl-A47asUQFE0eG5wW2B7i0goTvsFyqA",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom apimd.parser import _type_name\n\ndef test_type_name_with_builtin_type():\n    assert _type_name(42) == 'int'\n    assert _type_name(3.14) == 'float'\n    assert _type_name(\"hello\") == 'str'\n    assert _type_name([]) == 'list'\n    assert _type_name({}) == 'dict'\n    assert _type_name(set()) == 'set'\n    assert _type_name(()) == 'tuple'\n\ndef test_type_name_with_custom_class():\n    class MyClass:\n        pass\n\n    instance = MyClass()\n    assert _type_name(instance) == 'MyClass'\n\ndef test_type_name_with_nested_class():\n    class OuterClass:\n        class InnerClass:\n            pass\n\n    instance = OuterClass.InnerClass()\n    assert _type_name(instance) == 'OuterClass.InnerClass'\n\ndef test_type_name_with_function():\n    def my_function():\n        pass\n\n    assert _type_name(my_function) == 'function'\n\ndef test_type_name_with_lambda():\n    my_lambda = lambda x: x\n    assert _type_name(my_lambda) == 'function'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 238,
+    "prompt_tokens": 205,
+    "total_tokens": 443
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:49 apimd/parser.py:299-301 ----
+..........                                                               [100%]
+
+---- 2024-09-05T14:17:49 apimd/parser.py:299-301 ----
+Test doesn't improve coverage
+---- 2024-09-05T14:17:50 apimd/parser.py:294-297 ----
+.....                                                                    [100%]
+
+---- 2024-09-05T14:17:50 apimd/parser.py:294-297 ----
+Test doesn't improve coverage
+---- 2024-09-05T14:17:50 apimd/parser.py:90-98 ----
+....................                                                     [100%]
+
+---- 2024-09-05T14:17:50 apimd/parser.py:90-98 ----
+Saved as /output/coverup-tests/test_coverup_10.py
+
+---- 2024-09-05T14:17:50 apimd/parser.py:219-234 ----
+{
+  "id": "chatcmpl-A47asqchsG5JaKxb9c65ykIfx5aGY",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\nfrom ast import parse, Expr, Call, Name, Load\nfrom apimd.parser import Resolver\n\n@pytest.fixture\ndef resolver():\n    resolver = Resolver()\n    resolver.self_ty = \"self_type\"\n    resolver.root = \"root\"\n    resolver.alias = {\n        \"alias1\": \"Expr1\",\n        \"alias2\": \"Expr2\",\n        \"alias3\": \"typing.TypeVar('T')\"\n    }\n    return resolver\n\ndef test_visit_name_self_type(resolver):\n    node = Name(id=\"self_type\", ctx=Load())\n    result = resolver.visit_Name(node)\n    assert isinstance(result, Name)\n    assert result.id == \"Self\"\n\ndef test_visit_name_in_alias_not_in_alias_value(resolver):\n    node = Name(id=\"alias1\", ctx=Load())\n    with patch('apimd.parser.parse', return_value=parse(\"Expr1\")):\n        result = resolver.visit_Name(node)\n    assert isinstance(result, Expr)\n\ndef test_visit_name_in_alias_in_alias_value(resolver):\n    node = Name(id=\"alias3\", ctx=Load())\n    with patch('apimd.parser.parse', return_value=parse(\"typing.TypeVar('T')\")):\n        result = resolver.visit_Name(node)\n    assert result == node\n\ndef test_visit_name_not_in_alias(resolver):\n    node = Name(id=\"unknown\", ctx=Load())\n    result = resolver.visit_Name(node)\n    assert result == node\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 304,
+    "prompt_tokens": 344,
+    "total_tokens": 648
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:50 apimd/parser.py:51-53 ----
+Test failed:
+
+    def test_parent_no_split():
+>       assert parent("a", level=1) == ""
+E       AssertionError: assert 'a' == ''
+E         + a
+
+coverup-tests/tmp_test_r7_i77fw.py:14: AssertionError
+
+---- 2024-09-05T14:17:50 apimd/parser.py:528-530 ----
+Test failed:
+
+parser = Parser(root={'child': 'parent', 'sibling': 'parent', 'parent': ''})
+
+    def test_is_immediate_family_true(parser):
+>       assert parser._Parser__is_immediate_family('parent', 'parentchild') == True
+
+coverup-tests/tmp_test_ne2ph1fp.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Parser(root={'child': 'parent', 'sibling': 'parent', 'parent': ''})
+n1 = 'parent', n2 = 'parentchild'
+
+    def __is_immediate_family(self, n1: str, n2: str) -> bool:
+        """Check the name is immediate family."""
+>       return n2.startswith(n1.removesuffix(n2.removeprefix(self.root[n2])))
+E       KeyError: 'parentchild'
+
+coverup-tests/tmp_test_ne2ph1fp.py:10: KeyError
+
+---- 2024-09-05T14:17:50 apimd/parser.py:141-153 ----
+{
+  "id": "chatcmpl-A47asPPdhsmjgPdyO80oRAfOuEGhW",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom typing import Iterable, Union\n\n# Assuming the functions _table_cell and _table_split are defined in apimd.parser\nfrom apimd.parser import table\n\ndef test_table_with_strings():\n    result = table('a', 'b', ['c', 'd'])\n    expected = '| a | b |\\n|:---:|:---:|\\n| c |\\n| d |\\n\\n'\n    assert result == expected\n\ndef test_table_with_iterables():\n    result = table('a', 'b', [['c', 'd'], ['e', 'f']])\n    expected = '| a | b |\\n|:---:|:---:|\\n| c | d |\\n| e | f |\\n\\n'\n    assert result == expected\n\ndef test_table_with_mixed_items():\n    result = table('a', 'b', ['c', ['d', 'e']])\n    expected = '| a | b |\\n|:---:|:---:|\\n| c |\\n| d | e |\\n\\n'\n    assert result == expected\n\ndef test_table_empty_titles():\n    result = table('', '', [['c', 'd'], ['e', 'f']])\n    expected = '|  |  |\\n|:---:|:---:|\\n| c | d |\\n| e | f |\\n\\n'\n    assert result == expected\n\ndef test_table_empty_items():\n    result = table('a', 'b', [])\n    expected = '| a | b |\\n|:---:|:---:|\\n\\n'\n    assert result == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 338,
+    "prompt_tokens": 317,
+    "total_tokens": 655
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:50 apimd/parser.py:135-138 ----
+Test failed:
+
+    def test_table_split_with_varied_lengths():
+        args = ["short", "longer", "tiny", "adequate"]
+        result = _table_split(args)
+        expected = "|:-----:|:------:|:---:|:-------:|"
+>       assert result == expected
+E       AssertionError: assert '|:-----:|:--...:|:--------:|' == '|:-----:|:--...-:|:-------:|'
+E         - |:-----:|:------:|:---:|:-------:|
+E         + |:-----:|:------:|:----:|:--------:|
+E         ?                       +          +
+
+coverup-tests/tmp_test_gnldbztn.py:8: AssertionError
+
+---- 2024-09-05T14:17:50 apimd/loader.py:36-41 ----
+{
+  "id": "chatcmpl-A47asUVxfnsjJiw3PO4d42axAM51T",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch\nfrom apimd.loader import _site_path\n\ndef test_site_path_exists(monkeypatch):\n    mock_spec = patch('apimd.loader.find_spec')\n    mock_find_spec = mock_spec.start()\n    mock_find_spec.return_value = type('MockSpec', (object,), {'submodule_search_locations': ['/mock/path']})()\n    \n    result = _site_path('mock_module')\n    assert result == '/mock/path'\n    \n    mock_spec.stop()\n\ndef test_site_path_no_spec(monkeypatch):\n    mock_spec = patch('apimd.loader.find_spec')\n    mock_find_spec = mock_spec.start()\n    mock_find_spec.return_value = None\n    \n    result = _site_path('mock_module')\n    assert result == ''\n    \n    mock_spec.stop()\n\ndef test_site_path_no_submodule_search_locations(monkeypatch):\n    mock_spec = patch('apimd.loader.find_spec')\n    mock_find_spec = mock_spec.start()\n    mock_find_spec.return_value = type('MockSpec', (object,), {'submodule_search_locations': None})()\n    \n    result = _site_path('mock_module')\n    assert result == ''\n    \n    mock_spec.stop()\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_992d1ea92d",
+  "usage": {
+    "completion_tokens": 245,
+    "prompt_tokens": 239,
+    "total_tokens": 484
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:51 apimd/parser.py:36-43 ----
+Test failed:
+
+dummy_obj = <tmp_test_zjm0a1uv.Dummy object at 0x7ff436737250>
+
+    def test_attr_empty_string(dummy_obj):
+>       assert _attr(dummy_obj, '') == dummy_obj
+E       AssertionError: assert None == <tmp_test_zjm0a1uv.Dummy object at 0x7ff436737250>
+E        +  where None = _attr(<tmp_test_zjm0a1uv.Dummy object at 0x7ff436737250>, '')
+
+coverup-tests/tmp_test_zjm0a1uv.py:31: AssertionError
+
+---- 2024-09-05T14:17:51 apimd/parser.py:576-578 ----
+...............                                                          [100%]
+
+---- 2024-09-05T14:17:51 apimd/parser.py:576-578 ----
+Test doesn't improve coverage
+---- 2024-09-05T14:17:51 apimd/parser.py:513-516 ----
+{
+  "id": "chatcmpl-A47as4gKmRYI3eWJczwm5QHrtiiy6",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom apimd.parser import Parser\nfrom some_module import Resolver, unparse  # Assuming these are imported from somewhere\n\n@pytest.fixture\ndef mock_resolver(monkeypatch):\n    mock_resolver_instance = MagicMock()\n    mock_resolver_class = MagicMock(return_value=mock_resolver_instance)\n    monkeypatch.setattr('apimd.parser.Resolver', mock_resolver_class)\n    return mock_resolver_instance\n\n@pytest.fixture\ndef mock_unparse(monkeypatch):\n    mock_unparse_function = MagicMock(return_value=\"mocked_unparse_result\")\n    monkeypatch.setattr('apimd.parser.unparse', mock_unparse_function)\n    return mock_unparse_function\n\ndef test_resolve(mock_resolver, mock_unparse):\n    parser = Parser()\n    root = \"root\"\n    node = MagicMock()\n    self_ty = \"self_ty\"\n\n    result = parser.resolve(root, node, self_ty)\n\n    mock_resolver.assert_called_once_with(root, parser.alias, self_ty)\n    mock_resolver.generic_visit.assert_called_once_with(mock_resolver.visit(node))\n    mock_unparse.assert_called_once_with(mock_resolver.generic_visit(mock_resolver.visit(node)))\n    assert result == \"mocked_unparse_result\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 261,
+    "prompt_tokens": 243,
+    "total_tokens": 504
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:51 apimd/parser.py:513-516 ----
+Missing modules some_module
+---- 2024-09-05T14:17:52 apimd/parser.py:513-516 ----
+Unable to install module some_module:
+ERROR: Could not find a version that satisfies the requirement some_module (from versions: none)
+ERROR: No matching distribution found for some_module
+WARNING: You are using pip version 21.2.4; however, version 24.2 is available.
+You should consider upgrading via the '/usr/local/bin/python -m pip install --upgrade pip' command.
+
+---- 2024-09-05T14:17:52 apimd/parser.py:518-526 ----
+{
+  "id": "chatcmpl-A47asGkG2rRkHKjMsQXSBdHQNiqNH",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom types import ModuleType\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    doc: dict\n    docstring: dict\n\n    def load_docstring(self, root: str, m: ModuleType) -> None:\n        \"\"\"Load docstring from the module.\"\"\"\n        for name in self.doc:\n            if not name.startswith(root):\n                continue\n            attr = name.removeprefix(root + '.')\n            doc = getdoc(_attr(m, attr))\n            if doc is not None:\n                self.docstring[name] = doctest(doc)\n\ndef getdoc(obj):\n    \"\"\"Mock getdoc function.\"\"\"\n    return obj.__doc__\n\ndef _attr(module, attr):\n    \"\"\"Mock _attr function.\"\"\"\n    return getattr(module, attr)\n\nclass MockModule:\n    \"\"\"Mock module for testing.\"\"\"\n    def __init__(self):\n        self.test_attr = self.TestClass()\n\n    class TestClass:\n        \"\"\"Test docstring.\"\"\"\n        pass\n\n@pytest.fixture\ndef mock_module():\n    return MockModule()\n\ndef test_load_docstring_full_coverage(mock_module):\n    parser = Parser(doc={'root.test_attr': None}, docstring={})\n    parser.load_docstring('root', mock_module)\n    assert 'root.test_attr' in parser.docstring\n    assert parser.docstring['root.test_attr'] == 'Test docstring.'\n\ndef test_load_docstring_no_match(mock_module):\n    parser = Parser(doc={'other.test_attr': None}, docstring={})\n    parser.load_docstring('root', mock_module)\n    assert 'other.test_attr' not in parser.docstring\n\ndef test_load_docstring_no_doc(mock_module, monkeypatch):\n    def mock_getdoc(obj):\n        return None\n\n    monkeypatch.setattr('apimd.parser.getdoc', mock_getdoc)\n    parser = Parser(doc={'root.test_attr': None}, docstring={})\n    parser.load_docstring('root', mock_module)\n    assert 'root.test_attr' not in parser.docstring\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 411,
+    "prompt_tokens": 274,
+    "total_tokens": 685
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:52 apimd/parser.py:161-179 ----
+{
+  "id": "chatcmpl-A47asHXhvR2y1rcFS6QGoeRa399t4",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom typing import Optional, Sequence\nfrom unittest.mock import patch\n\n# Assuming the following classes and functions are defined in apimd/parser.py\nclass Constant:\n    def __init__(self, value):\n        self.value = value\n\ndef _type_name(value):\n    return type(value).__name__\n\n# The function to be tested\ndef _e_type(*elements: Sequence[Optional[Constant]]) -> str:\n    \"\"\"Get element type if type is constants.\"\"\"\n    if not elements:\n        return \"\"\n    ts = []\n    for element in elements:\n        if not element:\n            return \"\"\n        t = \"\"\n        for e in element:\n            if not isinstance(e, Constant):\n                return \"\"\n            nw_t = _type_name(e.value)\n            if t and t != nw_t:\n                t = \"Any\"\n                break\n            t = nw_t\n        ts.append(t)\n    return '[' + \", \".join(ts) + ']'\n\n# Test cases\ndef test_e_type_no_elements():\n    assert _e_type() == \"\"\n\ndef test_e_type_empty_element():\n    assert _e_type([]) == \"\"\n\ndef test_e_type_none_element():\n    assert _e_type([None]) == \"\"\n\ndef test_e_type_mixed_elements():\n    assert _e_type([Constant(1), Constant(2)], [Constant(\"a\"), Constant(\"b\")]) == \"[int, str]\"\n\ndef test_e_type_different_types_in_same_element():\n    assert _e_type([Constant(1), Constant(\"a\")]) == \"\"\n\ndef test_e_type_single_type_elements():\n    assert _e_type([Constant(1), Constant(2)], [Constant(3), Constant(4)]) == \"[int, int]\"\n\ndef test_e_type_any_type():\n    assert _e_type([Constant(1), Constant(2)], [Constant(3), Constant(\"a\")]) == \"[int, Any]\"\n\ndef test_e_type_non_constant_element():\n    class NonConstant:\n        pass\n    assert _e_type([NonConstant()]) == \"\"\n\ndef test_e_type_mixed_none_and_constants():\n    assert _e_type([Constant(1), None], [Constant(2)]) == \"\"\n\ndef test_e_type_single_element():\n    assert _e_type([Constant(1)]) == \"[int]\"\n\ndef test_e_type_empty_inner_sequence():\n    assert _e_type([]) == \"\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 488,
+    "prompt_tokens": 304,
+    "total_tokens": 792
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:52 apimd/parser.py:182-195 ----
+{
+  "id": "chatcmpl-A47asQqhtknZITM5so8SPaJFGCcQ1",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom ast import Constant, Tuple, List, Set, Dict, Call, Name, Attribute, expr\nfrom apimd.parser import const_type\n\ndef test_const_type_constant():\n    node = Constant(value=42)\n    assert const_type(node) == 'int'\n\ndef test_const_type_tuple(monkeypatch):\n    node = Tuple(elts=[Constant(value=1), Constant(value=2)])\n    monkeypatch.setattr('apimd.parser._type_name', lambda x: 'tuple')\n    monkeypatch.setattr('apimd.parser._e_type', lambda x: 'int')\n    assert const_type(node) == 'tupleint'\n\ndef test_const_type_list(monkeypatch):\n    node = List(elts=[Constant(value=1), Constant(value=2)])\n    monkeypatch.setattr('apimd.parser._type_name', lambda x: 'list')\n    monkeypatch.setattr('apimd.parser._e_type', lambda x: 'int')\n    assert const_type(node) == 'listint'\n\ndef test_const_type_set(monkeypatch):\n    node = Set(elts=[Constant(value=1), Constant(value=2)])\n    monkeypatch.setattr('apimd.parser._type_name', lambda x: 'set')\n    monkeypatch.setattr('apimd.parser._e_type', lambda x: 'int')\n    assert const_type(node) == 'setint'\n\ndef test_const_type_dict(monkeypatch):\n    node = Dict(keys=[Constant(value=1)], values=[Constant(value='a')])\n    monkeypatch.setattr('apimd.parser._e_type', lambda x, y: 'intstr')\n    assert const_type(node) == 'dictintstr'\n\ndef test_const_type_call_name(monkeypatch):\n    node = Call(func=Name(id='int', ctx=None), args=[], keywords=[])\n    monkeypatch.setattr('apimd.parser.unparse', lambda x: 'int')\n    assert const_type(node) == 'int'\n\ndef test_const_type_call_attribute(monkeypatch):\n    node = Call(func=Attribute(value=Name(id='math', ctx=None), attr='sqrt', ctx=None), args=[], keywords=[])\n    monkeypatch.setattr('apimd.parser.unparse', lambda x: 'math.sqrt')\n    assert const_type(node) == 'Any'\n\ndef test_const_type_default():\n    node = expr()\n    assert const_type(node) == 'Any'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 493,
+    "prompt_tokens": 326,
+    "total_tokens": 819
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:52 apimd/parser.py:74-87 ----
+...............                                                          [100%]
+
+---- 2024-09-05T14:17:52 apimd/parser.py:74-87 ----
+Saved as /output/coverup-tests/test_coverup_11.py
+
+---- 2024-09-05T14:17:52 apimd/parser.py:141-153 ----
+Test failed:
+
+    def test_table_with_strings():
+>       result = table('a', 'b', ['c', 'd'])
+E       TypeError: table() missing 1 required keyword-only argument: 'items'
+
+coverup-tests/tmp_test_qscseedk.py:8: TypeError
+
+---- 2024-09-05T14:17:52 apimd/parser.py:259-266 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module
+    exec(co, module.__dict__)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_56qaf43a.py:4: in <module>
+    class Resolver(NodeTransformer):
+coverup-tests/tmp_test_56qaf43a.py:5: in Resolver
+    def visit_Attribute(self, node: Attribute) -> AST:
+E   NameError: name 'AST' is not defined
+
+---- 2024-09-05T14:17:52 apimd/parser.py:208-217 ----
+Test failed:
+
+resolver = <tmp_test_e7btl6f0.Resolver object at 0x7fc313742ec0>
+
+    def test_visit_constant_with_valid_name(resolver):
+        node = Constant(value="x")
+>       with patch('builtins.parse', return_value=parse("x")):
+
+coverup-tests/tmp_test_e7btl6f0.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7fc3125df610>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'builtins' (built-in)> does not have the attribute 'parse'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-09-05T14:17:52 apimd/parser.py:156-158 ----
+Test failed:
+
+    def test_type_name_with_custom_class():
+        class MyClass:
+            pass
+    
+        instance = MyClass()
+>       assert _type_name(instance) == 'MyClass'
+E       AssertionError: assert 'test_type_na...cals>.MyClass' == 'MyClass'
+E         - MyClass
+E         + test_type_name_with_custom_class.<locals>.MyClass
+
+coverup-tests/tmp_test_s15wkj4w.py:19: AssertionError
+
+---- 2024-09-05T14:17:52 apimd/parser.py:219-234 ----
+Test failed:
+
+    @pytest.fixture
+    def resolver():
+>       resolver = Resolver()
+E       TypeError: Resolver.__init__() missing 2 required positional arguments: 'root' and 'alias'
+
+coverup-tests/tmp_test_a58ib00t.py:8: TypeError
+
+---- 2024-09-05T14:17:52 apimd/parser.py:109-127 ----
+{
+  "id": "chatcmpl-A47asMt0OQrTkdSGi3JHsX5cvO2Lr",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom apimd.parser import doctest\n\ndef test_doctest_with_code():\n    doc = \"This is a test.\\n>>> print('Hello, world!')\\nThis is the end.\"\n    expected = \"This is a test.\\n```python\\n>>> print('Hello, world!')\\n```\\nThis is the end.\"\n    result = doctest(doc)\n    assert result == expected\n\ndef test_doctest_without_code():\n    doc = \"This is a test.\\nThis is the end.\"\n    expected = \"This is a test.\\nThis is the end.\"\n    result = doctest(doc)\n    assert result == expected\n\ndef test_doctest_with_multiple_code_blocks():\n    doc = \"This is a test.\\n>>> print('Hello, world!')\\nThis is the middle.\\n>>> print('Goodbye, world!')\\nThis is the end.\"\n    expected = \"This is a test.\\n```python\\n>>> print('Hello, world!')\\n```\\nThis is the middle.\\n```python\\n>>> print('Goodbye, world!')\\n```\\nThis is the end.\"\n    result = doctest(doc)\n    assert result == expected\n\ndef test_doctest_code_at_end():\n    doc = \"This is a test.\\n>>> print('Hello, world!')\"\n    expected = \"This is a test.\\n```python\\n>>> print('Hello, world!')\\n```\"\n    result = doctest(doc)\n    assert result == expected\n\ndef test_doctest_code_at_start():\n    doc = \">>> print('Hello, world!')\\nThis is a test.\"\n    expected = \"```python\\n>>> print('Hello, world!')\\n```\\nThis is a test.\"\n    result = doctest(doc)\n    assert result == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 394,
+    "prompt_tokens": 307,
+    "total_tokens": 701
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:52 apimd/loader.py:36-41 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fe8de06d2a0>
+
+    def test_site_path_exists(monkeypatch):
+        mock_spec = patch('apimd.loader.find_spec')
+        mock_find_spec = mock_spec.start()
+        mock_find_spec.return_value = type('MockSpec', (object,), {'submodule_search_locations': ['/mock/path']})()
+    
+        result = _site_path('mock_module')
+>       assert result == '/mock/path'
+E       AssertionError: assert '/mock' == '/mock/path'
+E         - /mock/path
+E         + /mock
+
+coverup-tests/tmp_test_2s9d5cov.py:11: AssertionError
+
+---- 2024-09-05T14:17:53 apimd/parser.py:550-562 ----
+{
+  "id": "chatcmpl-A47asK4i55gysAPbnQERWp6fEkUpR",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom dataclasses import dataclass\nfrom itertools import chain\n\n# Assuming the is_public_family and parent functions are defined somewhere\ndef is_public_family(name):\n    # Placeholder implementation\n    return not name.startswith('_')\n\ndef parent(name):\n    # Placeholder implementation\n    return '.'.join(name.split('.')[:-1])\n\n@dataclass\nclass Parser:\n    imp: dict\n    doc: dict\n    const: dict\n    root: dict\n\n    def is_public(self, s: str) -> bool:\n        \"\"\"Check the name is public style or listed in `__all__`.\"\"\"\n        if s in self.imp:\n            for ch in chain(self.doc.keys(), self.const.keys()):\n                if ch.startswith(s + '.') and is_public_family(ch):\n                    break\n            else:\n                return False\n        all_l = self.imp[self.root[s]]\n        if all_l:\n            return s == self.root[s] or bool({s, parent(s)} & all_l)\n        else:\n            return is_public_family(s)\n\n@pytest.fixture\ndef parser():\n    return Parser(\n        imp={'module': ['public_func', 'public_var'], 'module2': []},\n        doc={'module.public_func': 'docstring'},\n        const={'module.public_var': 'constant'},\n        root={'public_func': 'module', 'public_var': 'module', 'private_func': 'module2'}\n    )\n\ndef test_is_public_in_imp_with_public_family(parser):\n    assert parser.is_public('public_func') is True\n\ndef test_is_public_in_imp_without_public_family(parser):\n    assert parser.is_public('private_func') is False\n\ndef test_is_public_not_in_imp_with_all_l(parser):\n    parser.imp['module2'] = ['public_func']\n    parser.root['public_func'] = 'module2'\n    assert parser.is_public('public_func') is True\n\ndef test_is_public_not_in_imp_without_all_l(parser):\n    parser.imp['module2'] = []\n    parser.root['public_func'] = 'module2'\n    assert parser.is_public('public_func') is True\n\ndef test_is_public_with_empty_all_l(parser):\n    parser.imp['module'] = []\n    assert parser.is_public('public_func') is True\n\ndef test_is_public_with_non_empty_all_l(parser):\n    parser.imp['module'] = ['public_func']\n    assert parser.is_public('public_func') is True\n\ndef test_is_public_with_non_public_family(parser):\n    parser.imp['module'] = ['_private_func']\n    parser.root['_private_func'] = 'module'\n    assert parser.is_public('_private_func') is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 545,
+    "prompt_tokens": 306,
+    "total_tokens": 851
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:53 apimd/parser.py:494-511 ----
+{
+  "id": "chatcmpl-A47asURkTzOC263jYcQ2OmleKpkpl",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom typing import Iterator, Sequence\nfrom dataclasses import dataclass\n\n@dataclass\nclass Arg:\n    arg: str\n    annotation: str\n\n@dataclass\nclass Parser:\n    def resolve(self, root: str, annotation: str, self_ty: str = \"\") -> str:\n        return f\"resolved({root}, {annotation}, {self_ty})\"\n\n    def func_ann(self, root: str, args: Sequence[Arg], *,\n                 has_self: bool, cls_method: bool) -> Iterator[str]:\n        \"\"\"Function annotation table.\"\"\"\n        self_ty = \"\"\n        for i, a in enumerate(args):\n            if has_self and i == 0:\n                if a.annotation is not None:\n                    self_ty = self.resolve(root, a.annotation)\n                    if cls_method:\n                        self_ty = (self_ty.removeprefix('type[')\n                                   .removesuffix(']'))\n                yield 'type[Self]' if cls_method else 'Self'\n            elif a.arg == '*':\n                yield \"\"\n            elif a.annotation is not None:\n                yield self.resolve(root, a.annotation, self_ty)\n            else:\n                yield \"ANY\"\n\n@pytest.fixture\ndef parser():\n    return Parser()\n\ndef test_func_ann_with_self_and_cls_method(parser):\n    args = [Arg(arg='self', annotation='SomeType')]\n    result = list(parser.func_ann('root', args, has_self=True, cls_method=True))\n    assert result == ['type[Self]']\n\ndef test_func_ann_with_self_no_cls_method(parser):\n    args = [Arg(arg='self', annotation='SomeType')]\n    result = list(parser.func_ann('root', args, has_self=True, cls_method=False))\n    assert result == ['Self']\n\ndef test_func_ann_with_star_arg(parser):\n    args = [Arg(arg='*', annotation=None)]\n    result = list(parser.func_ann('root', args, has_self=False, cls_method=False))\n    assert result == [\"\"]\n\ndef test_func_ann_with_annotation(parser):\n    args = [Arg(arg='arg1', annotation='SomeType')]\n    result = list(parser.func_ann('root', args, has_self=False, cls_method=False))\n    assert result == ['resolved(root, SomeType, )']\n\ndef test_func_ann_without_annotation(parser):\n    args = [Arg(arg='arg1', annotation=None)]\n    result = list(parser.func_ann('root', args, has_self=False, cls_method=False))\n    assert result == ['ANY']\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 517,
+    "prompt_tokens": 347,
+    "total_tokens": 864
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:54 apimd/parser.py:564-574 ----
+{
+  "id": "chatcmpl-A47asiX3LjjV6rVX3lYATwVl9vjfN",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    const: dict\n    root: dict\n\n    def __get_const(self, name: str) -> str:\n        \"\"\"Get constants table.\"\"\"\n        const = []\n        for c in self.const:\n            if self.root[c] == name and self.is_public(c):\n                ch = c.removeprefix(name + '.')\n                const.append((code(ch), code(self.const[c])))\n        if const:\n            return table('Constants', 'Type', items=const)\n        else:\n            return \"\"\n\n    def is_public(self, c):\n        # Placeholder for the actual implementation of is_public\n        return True\n\ndef code(value):\n    # Placeholder for the actual implementation of code\n    return value\n\ndef table(title, type_, items):\n    # Placeholder for the actual implementation of table\n    return f\"{title} {type_} {items}\"\n\n@pytest.fixture\ndef parser():\n    return Parser(const={}, root={})\n\ndef test_get_const_empty(parser):\n    assert parser._Parser__get_const(\"test\") == \"\"\n\ndef test_get_const_with_matching_const(monkeypatch):\n    const = {'test.const1': 'value1', 'test.const2': 'value2'}\n    root = {'test.const1': 'test', 'test.const2': 'test'}\n    parser = Parser(const=const, root=root)\n\n    def mock_is_public(c):\n        return True\n\n    monkeypatch.setattr(parser, 'is_public', mock_is_public)\n    monkeypatch.setattr('apimd.parser.code', lambda x: x)\n    monkeypatch.setattr('apimd.parser.table', lambda title, type_, items: f\"{title} {type_} {items}\")\n\n    result = parser._Parser__get_const(\"test\")\n    assert result == \"Constants Type [('const1', 'value1'), ('const2', 'value2')]\"\n\ndef test_get_const_with_no_matching_const(monkeypatch):\n    const = {'test.const1': 'value1', 'test.const2': 'value2'}\n    root = {'test.const1': 'other', 'test.const2': 'other'}\n    parser = Parser(const=const, root=root)\n\n    def mock_is_public(c):\n        return True\n\n    monkeypatch.setattr(parser, 'is_public', mock_is_public)\n    monkeypatch.setattr('apimd.parser.code', lambda x: x)\n    monkeypatch.setattr('apimd.parser.table', lambda title, type_, items: f\"{title} {type_} {items}\")\n\n    result = parser._Parser__get_const(\"test\")\n    assert result == \"\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 555,
+    "prompt_tokens": 280,
+    "total_tokens": 835
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:54 apimd/parser.py:518-526 ----
+Test failed:
+
+mock_module = <tmp_test_bbgs_zd9.MockModule object at 0x7f43ec84d030>
+
+    def test_load_docstring_full_coverage(mock_module):
+        parser = Parser(doc={'root.test_attr': None}, docstring={})
+>       parser.load_docstring('root', mock_module)
+
+coverup-tests/tmp_test_bbgs_zd9.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Parser(doc={'root.test_attr': None}, docstring={}), root = 'root'
+m = <tmp_test_bbgs_zd9.MockModule object at 0x7f43ec84d030>
+
+    def load_docstring(self, root: str, m: ModuleType) -> None:
+        """Load docstring from the module."""
+        for name in self.doc:
+            if not name.startswith(root):
+                continue
+            attr = name.removeprefix(root + '.')
+            doc = getdoc(_attr(m, attr))
+            if doc is not None:
+>               self.docstring[name] = doctest(doc)
+E               NameError: name 'doctest' is not defined
+
+coverup-tests/tmp_test_bbgs_zd9.py:18: NameError
+
+---- 2024-09-05T14:17:54 apimd/parser.py:109-127 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:159: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:359: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+/usr/local/lib/python3.10/ast.py:50: in parse
+    return compile(source, filename, mode, flags,
+E     File "/output/coverup-tests/tmp_test_htv_ks0x.py", line 7
+E       expected = "This is a test.\n
+E                  ^
+E   SyntaxError: unterminated string literal (detected at line 7)
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:610: in _importtestmodule
+    raise self.CollectError(
+E   _pytest.nodes.Collector.CollectError: /usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+E       mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+E   /usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+E       importlib.import_module(module_name)
+E   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+E       return _bootstrap._gcd_import(name[level:], package, level)
+E   <frozen importlib._bootstrap>:1050: in _gcd_import
+E       ???
+E   <frozen importlib._bootstrap>:1027: in _find_and_load
+E       ???
+E   <frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+E       ???
+E   <frozen importlib._bootstrap>:688: in _load_unlocked
+E       ???
+E   /usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:159: in exec_module
+E       source_stat, co = _rewrite_test(fn, self.config)
+E   /usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:359: in _rewrite_test
+E       tree = ast.parse(source, filename=strfn)
+E   /usr/local/lib/python3.10/ast.py:50: in parse
+E       return compile(source, filename, mode, flags,
+E   E     File "/output/coverup-tests/tmp_test_htv_ks0x.py", line 7
+E   E       expected = "This is a test.\n
+E   E                  ^
+E   E   SyntaxError: unterminated string literal (detected at line 7)
+
+---- 2024-09-05T14:17:54 apimd/parser.py:161-179 ----
+Test failed:
+
+    def test_e_type_different_types_in_same_element():
+>       assert _e_type([Constant(1), Constant("a")]) == ""
+E       AssertionError: assert '[Any]' == ''
+E         + [Any]
+
+coverup-tests/tmp_test_h6el248q.py:48: AssertionError
+
+---- 2024-09-05T14:17:55 apimd/parser.py:341-379 ----
+{
+  "id": "chatcmpl-A47asJHM4y6TdKo2JZKaGWSizjssN",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom apimd.parser import Parser\nfrom dataclasses import dataclass\nfrom ast import AnnAssign, Assign, Name, Constant, Tuple, List\n\n@dataclass\nclass MockNode:\n    target: Name = None\n    value: any = None\n    annotation: any = None\n    targets: list = None\n    type_comment: str = None\n\ndef test_globals_annassign(monkeypatch):\n    parser = Parser()\n    parser.alias = {}\n    parser.root = {}\n    parser.const = {}\n    parser.imp = {}\n\n    node = MockNode(\n        target=Name(id='TEST'),\n        value=Constant(value=42),\n        annotation=Name(id='int')\n    )\n\n    def mock_unparse(value):\n        return str(value.value)\n\n    def mock_resolve(root, annotation):\n        return annotation.id\n\n    monkeypatch.setattr('apimd.parser.unparse', mock_unparse)\n    monkeypatch.setattr(parser, 'resolve', mock_resolve)\n\n    parser.globals('root', node)\n\n    assert parser.alias['_m(root, TEST)'] == '42'\n    assert parser.root['_m(root, TEST)'] == 'root'\n    assert parser.const['_m(root, TEST)'] == 'int'\n\ndef test_globals_assign(monkeypatch):\n    parser = Parser()\n    parser.alias = {}\n    parser.root = {}\n    parser.const = {}\n    parser.imp = {}\n\n    node = MockNode(\n        targets=[Name(id='TEST')],\n        value=Constant(value=42),\n        type_comment=None\n    )\n\n    def mock_unparse(value):\n        return str(value.value)\n\n    def mock_const_type(value):\n        return 'int'\n\n    monkeypatch.setattr('apimd.parser.unparse', mock_unparse)\n    monkeypatch.setattr('apimd.parser.const_type', mock_const_type)\n\n    parser.globals('root', node)\n\n    assert parser.alias['_m(root, TEST)'] == '42'\n    assert parser.root['_m(root, TEST)'] == 'root'\n    assert parser.const['_m(root, TEST)'] == 'int'\n\ndef test_globals_assign_with_type_comment(monkeypatch):\n    parser = Parser()\n    parser.alias = {}\n    parser.root = {}\n    parser.const = {}\n    parser.imp = {}\n\n    node = MockNode(\n        targets=[Name(id='TEST')],\n        value=Constant(value=42),\n        type_comment='int'\n    )\n\n    def mock_unparse(value):\n        return str(value.value)\n\n    monkeypatch.setattr('apimd.parser.unparse', mock_unparse)\n\n    parser.globals('root', node)\n\n    assert parser.alias['_m(root, TEST)'] == '42'\n    assert parser.root['_m(root, TEST)'] == 'root'\n    assert parser.const['_m(root, TEST)'] == 'int'\n\ndef test_globals_all(monkeypatch):\n    parser = Parser()\n    parser.alias = {}\n    parser.root = {}\n    parser.const = {}\n    parser.imp = {'root': set()}\n\n    node = MockNode(\n        targets=[Name(id='__all__')],\n        value=Tuple(elts=[Constant(value='TEST')])\n    )\n\n    def mock_unparse(value):\n        return str(value.value)\n\n    monkeypatch.setattr('apimd.parser.unparse', mock_unparse)\n\n    parser.globals('root', node)\n\n    assert '_m(root, TEST)' in parser.imp['root']\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 707,
+    "prompt_tokens": 475,
+    "total_tokens": 1182
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:55 apimd/parser.py:550-562 ----
+Test failed:
+
+parser = Parser(imp={'module': ['public_func', 'public_var'], 'module2': []}, doc={'module.public_func': 'docstring'}, const={'module.public_var': 'constant'}, root={'public_func': 'module', 'public_var': 'module', 'private_func': 'module2'})
+
+    def test_is_public_in_imp_with_public_family(parser):
+>       assert parser.is_public('public_func') is True
+
+coverup-tests/tmp_test_j8jebujg.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Parser(imp={'module': ['public_func', 'public_var'], 'module2': []}, doc={'module.public_func': 'docstring'}, const={'module.public_var': 'constant'}, root={'public_func': 'module', 'public_var': 'module', 'private_func': 'module2'})
+s = 'public_func'
+
+    def is_public(self, s: str) -> bool:
+        """Check the name is public style or listed in `__all__`."""
+        if s in self.imp:
+            for ch in chain(self.doc.keys(), self.const.keys()):
+                if ch.startswith(s + '.') and is_public_family(ch):
+                    break
+            else:
+                return False
+        all_l = self.imp[self.root[s]]
+        if all_l:
+>           return s == self.root[s] or bool({s, parent(s)} & all_l)
+E           TypeError: unsupported operand type(s) for &: 'set' and 'list'
+
+coverup-tests/tmp_test_j8jebujg.py:32: TypeError
+
+---- 2024-09-05T14:17:55 apimd/parser.py:532-548 ----
+{
+  "id": "chatcmpl-A47as6Iir4SUHlcOk1xgp45pNVrdS",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom dataclasses import dataclass\n\n@dataclass\nclass Parser:\n    alias: dict\n    doc: dict\n    docstring: dict\n    root: dict\n    level: dict\n    const: dict\n\n    def __is_immediate_family(self, n, a):\n        # Dummy implementation for testing purposes\n        return True\n\n    def __find_alias(self):\n        \"\"\"Alias substitution.\"\"\"\n        for n, a in self.alias.items():\n            if a not in self.doc or not self.__is_immediate_family(n, a):\n                continue\n            for ch in list(self.doc):\n                if not ch.startswith(a):\n                    continue\n                nw = n + ch.removeprefix(a)\n                self.doc[nw] = self.doc.pop(ch)\n                self.docstring[nw] = self.docstring.pop(ch, \"\")\n                name = ch.removeprefix(self.root.pop(ch))\n                self.root[nw] = nw.removesuffix(name)\n                self.level.pop(ch)\n                self.level[nw] = self.root[nw].count('.')\n                if ch in self.const:\n                    self.const[nw] = self.const.pop(ch)\n\n@pytest.fixture\ndef parser():\n    return Parser(\n        alias={'alias1': 'a1', 'alias2': 'a2'},\n        doc={'a1.child': 'doc1', 'a2.child': 'doc2'},\n        docstring={'a1.child': 'docstring1', 'a2.child': 'docstring2'},\n        root={'a1.child': 'a1', 'a2.child': 'a2'},\n        level={'a1.child': 1, 'a2.child': 1},\n        const={'a1.child': 'const1'}\n    )\n\ndef test_find_alias(parser):\n    parser.__find_alias()\n    \n    # Assertions to verify postconditions\n    assert 'alias1.child' in parser.doc\n    assert 'alias2.child' in parser.doc\n    assert parser.doc['alias1.child'] == 'doc1'\n    assert parser.doc['alias2.child'] == 'doc2'\n    assert parser.docstring['alias1.child'] == 'docstring1'\n    assert parser.docstring['alias2.child'] == 'docstring2'\n    assert parser.root['alias1.child'] == 'alias1'\n    assert parser.root['alias2.child'] == 'alias2'\n    assert parser.level['alias1.child'] == 1\n    assert parser.level['alias2.child'] == 1\n    assert parser.const['alias1.child'] == 'const1'\n    assert 'a1.child' not in parser.doc\n    assert 'a2.child' not in parser.doc\n    assert 'a1.child' not in parser.docstring\n    assert 'a2.child' not in parser.docstring\n    assert 'a1.child' not in parser.root\n    assert 'a2.child' not in parser.root\n    assert 'a1.child' not in parser.level\n    assert 'a2.child' not in parser.level\n    assert 'a1.child' not in parser.const\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 646,
+    "prompt_tokens": 355,
+    "total_tokens": 1001
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:55 apimd/parser.py:182-195 ----
+........................................                                 [100%]
+
+---- 2024-09-05T14:17:55 apimd/parser.py:182-195 ----
+Saved as /output/coverup-tests/test_coverup_12.py
+
+---- 2024-09-05T14:17:56 apimd/parser.py:494-511 ----
+.........................                                                [100%]
+
+---- 2024-09-05T14:17:56 apimd/parser.py:494-511 ----
+Test doesn't improve coverage
+---- 2024-09-05T14:17:56 apimd/parser.py:326-339 ----
+{
+  "id": "chatcmpl-A47asp2Km8kPx1P7p5sToOORLJMAx",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom dataclasses import dataclass\nfrom typing import Any, Dict\n\n@dataclass\nclass Import:\n    names: list\n\n@dataclass\nclass ImportFrom:\n    module: str\n    names: list\n    level: int\n\n@dataclass\nclass Alias:\n    name: str\n    asname: str = None\n\ndef _m(*args):\n    return '.'.join(args)\n\ndef parent(root, level):\n    return root.rsplit('.', level)[0]\n\n@dataclass\nclass Parser:\n    alias: Dict[str, str] = None\n\n    def __post_init__(self):\n        if self.alias is None:\n            self.alias = {}\n\n    def imports(self, root: str, node: Any) -> None:\n        \"\"\"Save import names.\"\"\"\n        if isinstance(node, Import):\n            for a in node.names:\n                name = a.name if a.asname is None else a.asname\n                self.alias[_m(root, name)] = a.name\n        elif node.module is not None:\n            if node.level:\n                m = parent(root, level=node.level - 1)\n            else:\n                m = ''\n            for a in node.names:\n                name = a.name if a.asname is None else a.asname\n                self.alias[_m(root, name)] = _m(m, node.module, a.name)\n\n@pytest.fixture\ndef parser():\n    return Parser()\n\ndef test_imports_with_import_node(parser):\n    root = 'root'\n    node = Import(names=[Alias(name='module1'), Alias(name='module2', asname='mod2')])\n    parser.imports(root, node)\n    assert parser.alias == {'root.module1': 'module1', 'root.mod2': 'module2'}\n\ndef test_imports_with_importfrom_node_level_0(parser):\n    root = 'root'\n    node = ImportFrom(module='module', names=[Alias(name='submodule1'), Alias(name='submodule2', asname='sub2')], level=0)\n    parser.imports(root, node)\n    assert parser.alias == {'root.submodule1': 'module.submodule1', 'root.sub2': 'module.submodule2'}\n\ndef test_imports_with_importfrom_node_level_1(parser):\n    root = 'root.sub'\n    node = ImportFrom(module='module', names=[Alias(name='submodule1'), Alias(name='submodule2', asname='sub2')], level=1)\n    parser.imports(root, node)\n    assert parser.alias == {'root.sub.submodule1': 'root.module.submodule1', 'root.sub.sub2': 'root.module.submodule2'}\n\ndef test_imports_with_importfrom_node_level_2(parser):\n    root = 'root.sub.subsub'\n    node = ImportFrom(module='module', names=[Alias(name='submodule1'), Alias(name='submodule2', asname='sub2')], level=2)\n    parser.imports(root, node)\n    assert parser.alias == {'root.sub.subsub.submodule1': 'root.module.submodule1', 'root.sub.subsub.sub2': 'root.module.submodule2'}\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 657,
+    "prompt_tokens": 330,
+    "total_tokens": 987
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:56 apimd/loader.py:63-76 ----
+{
+  "id": "chatcmpl-A47asDDEOAoA1pwkCJW3PNVaPmSMn",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nfrom apimd.loader import _load_module\nfrom importlib.util import spec_from_file_location, module_from_spec\nfrom importlib.abc import Loader\n\n@pytest.fixture\ndef mock_parser():\n    return MagicMock()\n\n@pytest.fixture\ndef mock_spec():\n    mock_spec = MagicMock()\n    mock_spec.loader = MagicMock(spec=Loader)\n    return mock_spec\n\n@pytest.fixture\ndef mock_module():\n    return MagicMock()\n\ndef test_load_module_success(monkeypatch, mock_parser, mock_spec, mock_module):\n    monkeypatch.setattr('apimd.loader.parent', lambda name: 'parent_module')\n    monkeypatch.setattr('apimd.loader.__import__', lambda name: None)\n    monkeypatch.setattr('apimd.loader.spec_from_file_location', lambda name, path: mock_spec)\n    monkeypatch.setattr('apimd.loader.module_from_spec', lambda spec: mock_module)\n    \n    result = _load_module('test_module', 'test_path', mock_parser)\n    \n    assert result is True\n    mock_spec.loader.exec_module.assert_called_once_with(mock_module)\n    mock_parser.load_docstring.assert_called_once_with('test_module', mock_module)\n\ndef test_load_module_import_error(monkeypatch, mock_parser):\n    monkeypatch.setattr('apimd.loader.parent', lambda name: 'parent_module')\n    monkeypatch.setattr('apimd.loader.__import__', lambda name: (_ for _ in ()).throw(ImportError))\n    \n    result = _load_module('test_module', 'test_path', mock_parser)\n    \n    assert result is False\n\ndef test_load_module_spec_none(monkeypatch, mock_parser):\n    monkeypatch.setattr('apimd.loader.parent', lambda name: 'parent_module')\n    monkeypatch.setattr('apimd.loader.__import__', lambda name: None)\n    monkeypatch.setattr('apimd.loader.spec_from_file_location', lambda name, path: None)\n    \n    result = _load_module('test_module', 'test_path', mock_parser)\n    \n    assert result is False\n\ndef test_load_module_loader_not_instance(monkeypatch, mock_parser):\n    mock_spec = MagicMock()\n    mock_spec.loader = None\n    \n    monkeypatch.setattr('apimd.loader.parent', lambda name: 'parent_module')\n    monkeypatch.setattr('apimd.loader.__import__', lambda name: None)\n    monkeypatch.setattr('apimd.loader.spec_from_file_location', lambda name, path: mock_spec)\n    \n    result = _load_module('test_module', 'test_path', mock_parser)\n    \n    assert result is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_992d1ea92d",
+  "usage": {
+    "completion_tokens": 540,
+    "prompt_tokens": 291,
+    "total_tokens": 831
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:56 apimd/parser.py:532-548 ----
+Test failed:
+
+parser = Parser(alias={'alias1': 'a1', 'alias2': 'a2'}, doc={'a1.child': 'doc1', 'a2.child': 'doc2'}, docstring={'a1.child': 'd...ring2'}, root={'a1.child': 'a1', 'a2.child': 'a2'}, level={'a1.child': 1, 'a2.child': 1}, const={'a1.child': 'const1'})
+
+    def test_find_alias(parser):
+>       parser.__find_alias()
+E       AttributeError: 'Parser' object has no attribute '__find_alias'
+
+coverup-tests/tmp_test_hnaakwne.py:47: AttributeError
+
+---- 2024-09-05T14:17:56 apimd/parser.py:341-379 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f738663eb90>
+
+    def test_globals_annassign(monkeypatch):
+        parser = Parser()
+        parser.alias = {}
+        parser.root = {}
+        parser.const = {}
+        parser.imp = {}
+    
+        node = MockNode(
+            target=Name(id='TEST'),
+            value=Constant(value=42),
+            annotation=Name(id='int')
+        )
+    
+        def mock_unparse(value):
+            return str(value.value)
+    
+        def mock_resolve(root, annotation):
+            return annotation.id
+    
+        monkeypatch.setattr('apimd.parser.unparse', mock_unparse)
+        monkeypatch.setattr(parser, 'resolve', mock_resolve)
+    
+        parser.globals('root', node)
+    
+>       assert parser.alias['_m(root, TEST)'] == '42'
+E       KeyError: '_m(root, TEST)'
+
+coverup-tests/tmp_test_64j3rbne.py:39: KeyError
+
+---- 2024-09-05T14:17:57 apimd/parser.py:236-257 ----
+{
+  "id": "chatcmpl-A47as74fxNFEY44s7lvuIZEUNqTQz",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom ast import (\n    parse, NodeTransformer, Subscript, Name, Tuple, BinOp, BitOr, Constant, Load\n)\nimport logging\n\n# Assuming PEP585 and _m are defined somewhere in the module\nPEP585 = {\n    'typing.List': 'list',\n    'typing.Dict': 'dict',\n    # Add other mappings as needed\n}\n\ndef _m(root, name):\n    return f\"{root}.{name}\"\n\nclass Resolver(NodeTransformer):\n    def __init__(self, root, alias):\n        self.root = root\n        self.alias = alias\n\n    def visit_Subscript(self, node: Subscript) -> AST:\n        \"\"\"Implementation of PEP585 and PEP604.\"\"\"\n        if not isinstance(node.value, Name):\n            return node\n        name = node.value.id\n        idf = self.alias.get(_m(self.root, name), name)\n        if idf == 'typing.Union':\n            if not isinstance(node.slice, Tuple):\n                return node.slice\n            b = node.slice.elts[0]\n            for e in node.slice.elts[1:]:\n                b = BinOp(b, BitOr(), e)\n            return b\n        elif idf == 'typing.Optional':\n            return BinOp(node.slice, BitOr(), Constant(None))\n        elif idf in PEP585:\n            logging.warning(f\"{node.lineno}:{node.col_offset}: \"\n                            f\"find deprecated name {idf}, \"\n                            f\"recommended to use {PEP585[idf]}\")\n            return Subscript(Name(PEP585[idf], Load()), node.slice, node.ctx)\n        else:\n            return node\n\n@pytest.fixture\ndef resolver():\n    alias = {\n        'root.typing.Union': 'typing.Union',\n        'root.typing.Optional': 'typing.Optional',\n        'root.typing.List': 'typing.List'\n    }\n    return Resolver('root', alias)\n\ndef test_visit_subscript_union(resolver):\n    node = Subscript(\n        value=Name(id='Union', ctx=Load()),\n        slice=Tuple(elts=[Name(id='int', ctx=Load()), Name(id='str', ctx=Load())], ctx=Load()),\n        ctx=Load()\n    )\n    result = resolver.visit_Subscript(node)\n    assert isinstance(result, BinOp)\n    assert isinstance(result.left, Name)\n    assert isinstance(result.op, BitOr)\n    assert isinstance(result.right, Name)\n\ndef test_visit_subscript_optional(resolver):\n    node = Subscript(\n        value=Name(id='Optional', ctx=Load()),\n        slice=Name(id='int', ctx=Load()),\n        ctx=Load()\n    )\n    result = resolver.visit_Subscript(node)\n    assert isinstance(result, BinOp)\n    assert isinstance(result.left, Name)\n    assert isinstance(result.op, BitOr)\n    assert isinstance(result.right, Constant)\n    assert result.right.value is None\n\ndef test_visit_subscript_pep585(resolver, caplog):\n    node = Subscript(\n        value=Name(id='List', ctx=Load()),\n        slice=Name(id='int', ctx=Load()),\n        ctx=Load()\n    )\n    with caplog.at_level(logging.WARNING):\n        result = resolver.visit_Subscript(node)\n    assert isinstance(result, Subscript)\n    assert isinstance(result.value, Name)\n    assert result.value.id == 'list'\n    assert len(caplog.records) == 1\n    assert 'find deprecated name typing.List' in caplog.text\n\ndef test_visit_subscript_other(resolver):\n    node = Subscript(\n        value=Name(id='Other', ctx=Load()),\n        slice=Name(id='int', ctx=Load()),\n        ctx=Load()\n    )\n    result = resolver.visit_Subscript(node)\n    assert result == node\n\ndef test_visit_subscript_non_name_value(resolver):\n    node = Subscript(\n        value=Constant(value='not_a_name'),\n        slice=Name(id='int', ctx=Load()),\n        ctx=Load()\n    )\n    result = resolver.visit_Subscript(node)\n    assert result == node\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 852,
+    "prompt_tokens": 406,
+    "total_tokens": 1258
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:17:57 apimd/parser.py:564-574 ----
+...............                                                          [100%]
+
+---- 2024-09-05T14:17:57 apimd/parser.py:564-574 ----
+Test doesn't improve coverage
+---- 2024-09-05T14:17:58 apimd/parser.py:326-339 ----
+Test failed:
+
+parser = Parser(alias={'root.submodule1': '.module.submodule1', 'root.sub2': '.module.submodule2'})
+
+    def test_imports_with_importfrom_node_level_0(parser):
+        root = 'root'
+        node = ImportFrom(module='module', names=[Alias(name='submodule1'), Alias(name='submodule2', asname='sub2')], level=0)
+        parser.imports(root, node)
+>       assert parser.alias == {'root.submodule1': 'module.submodule1', 'root.sub2': 'module.submodule2'}
+E       AssertionError: assert {'root.sub2':...e.submodule1'} == {'root.sub2':...e.submodule1'}
+E         Differing items:
+E         {'root.sub2': '.module.submodule2'} != {'root.sub2': 'module.submodule2'}
+E         {'root.submodule1': '.module.submodule1'} != {'root.submodule1': 'module.submodule1'}
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_c_0cehhd.py:64: AssertionError
+
+---- 2024-09-05T14:17:58 apimd/loader.py:63-76 ----
+Test failed:
+
+obj = <module 'apimd.loader' from '/output/apimd/loader.py'>
+name = '__import__', ann = 'apimd.loader'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+>           obj = getattr(obj, name)
+E           AttributeError: module 'apimd.loader' has no attribute '__import__'
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:83: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f04e0d84fd0>
+mock_parser = <MagicMock id='139658928869136'>
+mock_spec = <MagicMock id='139658929096928'>
+mock_module = <MagicMock id='139658929750656'>
+
+    def test_load_module_success(monkeypatch, mock_parser, mock_spec, mock_module):
+        monkeypatch.setattr('apimd.loader.parent', lambda name: 'parent_module')
+>       monkeypatch.setattr('apimd.loader.__import__', lambda name: None)
+
+coverup-tests/tmp_test_t5nr90fq.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:99: in derive_importpath
+    annotated_getattr(target, attr, ann=module)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+obj = <module 'apimd.loader' from '/output/apimd/loader.py'>
+name = '__import__', ann = 'apimd.loader'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+            obj = getattr(obj, name)
+        except AttributeError as e:
+>           raise AttributeError(
+                "{!r} object at {} has no attribute {!r}".format(
+                    type(obj).__name__, ann, name
+                )
+            ) from e
+E           AttributeError: 'module' object at apimd.loader has no attribute '__import__'
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:85: AttributeError
+
+---- 2024-09-05T14:17:58 apimd/parser.py:236-257 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module
+    exec(co, module.__dict__)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_wx70fnz6.py:18: in <module>
+    class Resolver(NodeTransformer):
+coverup-tests/tmp_test_wx70fnz6.py:23: in Resolver
+    def visit_Subscript(self, node: Subscript) -> AST:
+E   NameError: name 'AST' is not defined
+
+---- 2024-09-05T14:18:00 apimd/parser.py:303-324 ----
+{
+  "id": "chatcmpl-A47as65PSMVMm8fynoWlw7D0A7tNE",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\nfrom dataclasses import dataclass\nfrom ast import parse, Import, ImportFrom, Assign, AnnAssign, FunctionDef, AsyncFunctionDef, ClassDef\n\n# Mock functions to avoid actual implementation dependencies\ndef mock_walk_body(body):\n    return body\n\ndef mock_get_docstring(node):\n    return \"Mock docstring\"\n\ndef mock_doctest(doc):\n    return f\"Doctested: {doc}\"\n\n@dataclass\nclass Parser:\n    doc: dict\n    b_level: int\n    link: bool\n    level: dict\n    imp: dict\n    root: dict\n    docstring: dict\n\n    def parse(self, root: str, script: str) -> None:\n        \"\"\"Main parser of the entire module.\"\"\"\n        self.doc[root] = '#' * self.b_level + f\"# Module `{root}`\"\n        if self.link:\n            self.doc[root] += f\"\\n<a id=\\\"{root}\\\"></a>\"\n        self.doc[root] += '\\n\\n'\n        self.level[root] = root.count('.')\n        self.imp[root] = set()\n        self.root[root] = root\n        root_node = parse(script, type_comments=True)\n        for node in mock_walk_body(root_node.body):\n            # \"Execute\" assignments\n            if isinstance(node, (Import, ImportFrom)):\n                self.imports(root, node)\n            elif isinstance(node, (Assign, AnnAssign)):\n                self.globals(root, node)\n        doc = mock_get_docstring(root_node)\n        if doc is not None:\n            self.docstring[root] = mock_doctest(doc)\n        for node in mock_walk_body(root_node.body):\n            if isinstance(node, (FunctionDef, AsyncFunctionDef, ClassDef)):\n                self.api(root, node)\n\n@pytest.fixture\ndef parser():\n    return Parser(doc={}, b_level=2, link=True, level={}, imp={}, root={}, docstring={})\n\ndef test_parse_with_imports_and_globals(parser, mocker):\n    script = \"\"\"\nimport os\nimport sys\nfrom math import sqrt\n\nx = 10\ny: int = 20\n\"\"\"\n    mocker.patch('apimd.parser.walk_body', side_effect=mock_walk_body)\n    mocker.patch('apimd.parser.get_docstring', side_effect=mock_get_docstring)\n    mocker.patch('apimd.parser.doctest', side_effect=mock_doctest)\n    parser.imports = MagicMock()\n    parser.globals = MagicMock()\n    parser.api = MagicMock()\n\n    parser.parse('root.module', script)\n\n    assert 'root.module' in parser.doc\n    assert parser.doc['root.module'].startswith('## # Module `root.module`')\n    assert '<a id=\"root.module\"></a>' in parser.doc['root.module']\n    assert parser.level['root.module'] == 1\n    assert parser.imp['root.module'] == set()\n    assert parser.root['root.module'] == 'root.module'\n    assert parser.docstring['root.module'] == 'Doctested: Mock docstring'\n    parser.imports.assert_called()\n    parser.globals.assert_called()\n    parser.api.assert_not_called()\n\ndef test_parse_with_functions_and_classes(parser, mocker):\n    script = \"\"\"\ndef foo():\n    pass\n\nclass Bar:\n    def baz(self):\n        pass\n\"\"\"\n    mocker.patch('apimd.parser.walk_body', side_effect=mock_walk_body)\n    mocker.patch('apimd.parser.get_docstring', side_effect=mock_get_docstring)\n    mocker.patch('apimd.parser.doctest', side_effect=mock_doctest)\n    parser.imports = MagicMock()\n    parser.globals = MagicMock()\n    parser.api = MagicMock()\n\n    parser.parse('root.module', script)\n\n    assert 'root.module' in parser.doc\n    assert parser.doc['root.module'].startswith('## # Module `root.module`')\n    assert '<a id=\"root.module\"></a>' in parser.doc['root.module']\n    assert parser.level['root.module'] == 1\n    assert parser.imp['root.module'] == set()\n    assert parser.root['root.module'] == 'root.module'\n    assert parser.docstring['root.module'] == 'Doctested: Mock docstring'\n    parser.imports.assert_not_called()\n    parser.globals.assert_not_called()\n    parser.api.assert_called()\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 905,
+    "prompt_tokens": 412,
+    "total_tokens": 1317
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:00 apimd/loader.py:79-106 ----
+{
+  "id": "chatcmpl-A47asUdXDR3WF7JNG9ueS2W3DU5yy",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nfrom apimd.loader import loader\nfrom apimd.parser import Parser\nfrom apimd.utils import walk_packages, _read, _load_module, EXTENSION_SUFFIXES\nimport os\n\n@pytest.fixture\ndef mock_parser(mocker):\n    mock_parser = mocker.patch('apimd.loader.Parser')\n    mock_parser_instance = mock_parser.new.return_value\n    mock_parser_instance.compile.return_value = \"compiled_output\"\n    return mock_parser_instance\n\n@pytest.fixture\ndef mock_walk_packages(mocker):\n    return mocker.patch('apimd.loader.walk_packages')\n\n@pytest.fixture\ndef mock_isfile(mocker):\n    return mocker.patch('apimd.loader.isfile')\n\n@pytest.fixture\ndef mock_read(mocker):\n    return mocker.patch('apimd.loader._read')\n\n@pytest.fixture\ndef mock_load_module(mocker):\n    return mocker.patch('apimd.loader._load_module')\n\ndef test_loader_pure_python(mock_parser, mock_walk_packages, mock_isfile, mock_read, mock_load_module):\n    mock_walk_packages.return_value = [(\"module1\", \"path/to/module1\")]\n    mock_isfile.side_effect = lambda x: x.endswith(\".py\")\n    mock_read.return_value = \"source code\"\n\n    result = loader(\"root\", \"pwd\", True, 1, True)\n\n    mock_parser.parse.assert_called_once_with(\"module1\", \"source code\")\n    assert result == \"compiled_output\"\n\ndef test_loader_extension_module(mock_parser, mock_walk_packages, mock_isfile, mock_read, mock_load_module):\n    mock_walk_packages.return_value = [(\"module2\", \"path/to/module2\")]\n    mock_isfile.side_effect = lambda x: x.endswith(\".so\")\n    mock_load_module.return_value = True\n\n    result = loader(\"root\", \"pwd\", True, 1, True)\n\n    mock_load_module.assert_called_once_with(\"module2\", \"path/to/module2.so\", mock_parser)\n    assert result == \"compiled_output\"\n\ndef test_loader_no_module(mock_parser, mock_walk_packages, mock_isfile, mock_read, mock_load_module):\n    mock_walk_packages.return_value = [(\"module3\", \"path/to/module3\")]\n    mock_isfile.return_value = False\n\n    result = loader(\"root\", \"pwd\", True, 1, True)\n\n    mock_parser.parse.assert_not_called()\n    mock_load_module.assert_not_called()\n    assert result == \"compiled_output\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_992d1ea92d",
+  "usage": {
+    "completion_tokens": 502,
+    "prompt_tokens": 421,
+    "total_tokens": 923
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:01 apimd/parser.py:381-416 ----
+{
+  "id": "chatcmpl-A47as7LDm4zPHQzN6zXBlz7n5A5cB",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import Mock\nfrom apimd.parser import Parser\nfrom apimd.utils import _m, esc_underscore, table, code, get_docstring, doctest, walk_body\nfrom ast import FunctionDef, AsyncFunctionDef, ClassDef\n\n@pytest.fixture\ndef parser():\n    return Parser()\n\n@pytest.fixture\ndef mock_node():\n    node = Mock(spec=FunctionDef)\n    node.name = 'test_function'\n    node.decorator_list = []\n    node.args = Mock()\n    node.returns = None\n    return node\n\ndef test_api_function_def(parser, mock_node, monkeypatch):\n    monkeypatch.setattr(parser, 'b_level', 1)\n    monkeypatch.setattr(parser, 'level', {})\n    monkeypatch.setattr(parser, 'root', {})\n    monkeypatch.setattr(parser, 'doc', {})\n    monkeypatch.setattr(parser, 'link', False)\n    monkeypatch.setattr(parser, 'resolve', lambda root, d: d)\n    monkeypatch.setattr(parser, 'func_api', Mock())\n    monkeypatch.setattr(parser, 'class_api', Mock())\n    monkeypatch.setattr(parser, 'docstring', {})\n\n    parser.api('root', mock_node)\n\n    name = _m('root', '', 'test_function')\n    assert parser.level[name] == parser.level['root']\n    assert parser.root[name] == 'root'\n    assert parser.doc[name] == \"## test_function()\\n\\n*Full name:* `{}`\\n\\n\"\n    parser.func_api.assert_called_once_with('root', name, mock_node.args, mock_node.returns, has_self=False, cls_method=False)\n    assert name not in parser.docstring\n\ndef test_api_async_function_def(parser, monkeypatch):\n    node = Mock(spec=AsyncFunctionDef)\n    node.name = 'test_async_function'\n    node.decorator_list = []\n    node.args = Mock()\n    node.returns = None\n\n    monkeypatch.setattr(parser, 'b_level', 1)\n    monkeypatch.setattr(parser, 'level', {})\n    monkeypatch.setattr(parser, 'root', {})\n    monkeypatch.setattr(parser, 'doc', {})\n    monkeypatch.setattr(parser, 'link', False)\n    monkeypatch.setattr(parser, 'resolve', lambda root, d: d)\n    monkeypatch.setattr(parser, 'func_api', Mock())\n    monkeypatch.setattr(parser, 'class_api', Mock())\n    monkeypatch.setattr(parser, 'docstring', {})\n\n    parser.api('root', node)\n\n    name = _m('root', '', 'test_async_function')\n    assert parser.level[name] == parser.level['root']\n    assert parser.root[name] == 'root'\n    assert parser.doc[name] == \"## async test_async_function()\\n\\n*Full name:* `{}`\\n\\n\"\n    parser.func_api.assert_called_once_with('root', name, node.args, node.returns, has_self=False, cls_method=False)\n    assert name not in parser.docstring\n\ndef test_api_class_def(parser, monkeypatch):\n    node = Mock(spec=ClassDef)\n    node.name = 'TestClass'\n    node.decorator_list = []\n    node.bases = []\n    node.body = []\n\n    monkeypatch.setattr(parser, 'b_level', 1)\n    monkeypatch.setattr(parser, 'level', {})\n    monkeypatch.setattr(parser, 'root', {})\n    monkeypatch.setattr(parser, 'doc', {})\n    monkeypatch.setattr(parser, 'link', False)\n    monkeypatch.setattr(parser, 'resolve', lambda root, d: d)\n    monkeypatch.setattr(parser, 'func_api', Mock())\n    monkeypatch.setattr(parser, 'class_api', Mock())\n    monkeypatch.setattr(parser, 'docstring', {})\n\n    parser.api('root', node)\n\n    name = _m('root', '', 'TestClass')\n    assert parser.level[name] == parser.level['root']\n    assert parser.root[name] == 'root'\n    assert parser.doc[name] == \"## class TestClass\\n\\n*Full name:* `{}`\\n\\n\"\n    parser.class_api.assert_called_once_with('root', name, node.bases, node.body)\n    assert name not in parser.docstring\n\ndef test_api_class_def_with_body(parser, monkeypatch):\n    func_node = Mock(spec=FunctionDef)\n    func_node.name = 'method'\n    func_node.decorator_list = []\n    func_node.args = Mock()\n    func_node.returns = None\n\n    class_node = Mock(spec=ClassDef)\n    class_node.name = 'TestClass'\n    class_node.decorator_list = []\n    class_node.bases = []\n    class_node.body = [func_node]\n\n    monkeypatch.setattr(parser, 'b_level', 1)\n    monkeypatch.setattr(parser, 'level', {})\n    monkeypatch.setattr(parser, 'root', {})\n    monkeypatch.setattr(parser, 'doc', {})\n    monkeypatch.setattr(parser, 'link', False)\n    monkeypatch.setattr(parser, 'resolve', lambda root, d: d)\n    monkeypatch.setattr(parser, 'func_api', Mock())\n    monkeypatch.setattr(parser, 'class_api', Mock())\n    monkeypatch.setattr(parser, 'docstring', {})\n\n    parser.api('root', class_node)\n\n    name = _m('root', '', 'TestClass')\n    assert parser.level[name] == parser.level['root']\n    assert parser.root[name] == 'root'\n    assert parser.doc[name] == \"## class TestClass\\n\\n*Full name:* `{}`\\n\\n\"\n    parser.class_api.assert_called_once_with('root', name, class_node.bases, class_node.body)\n    parser.api.assert_called_once_with('root', func_node, prefix='TestClass')\n    assert name not in parser.docstring\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 1208,
+    "prompt_tokens": 608,
+    "total_tokens": 1816
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:01 apimd/loader.py:44-60 ----
+{
+  "id": "chatcmpl-A47asU5SyMwJU3xcGxNfcsmxsLfxD",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom unittest.mock import patch, MagicMock\nfrom apimd.loader import walk_packages\n\n@pytest.fixture\ndef mock_walk(monkeypatch):\n    mock = MagicMock()\n    monkeypatch.setattr('apimd.loader.walk', mock)\n    return mock\n\n@pytest.fixture\ndef mock_abspath(monkeypatch):\n    mock = MagicMock(side_effect=lambda x: f\"/abs/{x}\")\n    monkeypatch.setattr('apimd.loader.abspath', mock)\n    return mock\n\n@pytest.fixture\ndef mock_join(monkeypatch):\n    mock = MagicMock(side_effect=lambda *args: \"/\".join(args))\n    monkeypatch.setattr('apimd.loader.join', mock)\n    return mock\n\n@pytest.fixture\ndef mock_parent(monkeypatch):\n    mock = MagicMock(side_effect=lambda x: os.path.dirname(x))\n    monkeypatch.setattr('apimd.loader.parent', mock)\n    return mock\n\ndef test_walk_packages(mock_walk, mock_abspath, mock_join, mock_parent):\n    mock_walk.return_value = [\n        (\"/abs/testpath\", [], [\"file1.py\", \"file2.pyi\", \"file3.txt\"]),\n        (\"/abs/testpath/subdir\", [], [\"file4.py\", \"file5.pyi\"])\n    ]\n    \n    PEP561_SUFFIX = \"-stubs\"\n    sep = os.sep\n\n    result = list(walk_packages(\"testname\", \"testpath\"))\n    \n    expected = [\n        (\"testname.file1\", \"/abs/testpath/file1\"),\n        (\"testname.file2\", \"/abs/testpath/file2\"),\n        (\"testname.subdir.file4\", \"/abs/testpath/subdir/file4\"),\n        (\"testname.subdir.file5\", \"/abs/testpath/subdir/file5\")\n    ]\n    \n    assert result == expected\n    mock_walk.assert_called_once_with(\"/abs/testpath\" + sep)\n    mock_abspath.assert_called_once_with(\"testpath\")\n    mock_join.assert_any_call(\"/abs/testpath\", \"file1.py\")\n    mock_join.assert_any_call(\"/abs/testpath\", \"file2.pyi\")\n    mock_join.assert_any_call(\"/abs/testpath\", \"file3.txt\")\n    mock_join.assert_any_call(\"/abs/testpath/subdir\", \"file4.py\")\n    mock_join.assert_any_call(\"/abs/testpath/subdir\", \"file5.pyi\")\n    mock_parent.assert_any_call(\"/abs/testpath/file1.py\")\n    mock_parent.assert_any_call(\"/abs/testpath/file2.pyi\")\n    mock_parent.assert_any_call(\"/abs/testpath/file3.txt\")\n    mock_parent.assert_any_call(\"/abs/testpath/subdir/file4.py\")\n    mock_parent.assert_any_call(\"/abs/testpath/subdir/file5.pyi\")\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_992d1ea92d",
+  "usage": {
+    "completion_tokens": 559,
+    "prompt_tokens": 338,
+    "total_tokens": 897
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:01 apimd/parser.py:303-324 ----
+Test failed:
+
+parser = Parser(doc={'root.module': '### Module `root.module`\n<a id="root.module"></a>\n\n'}, b_level=2, link=True, level={'ro...mp={'root.module': set()}, root={'root.module': 'root.module'}, docstring={'root.module': 'Doctested: Mock docstring'})
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7feb96733970>
+
+    def test_parse_with_imports_and_globals(parser, mocker):
+        script = """
+    import os
+    import sys
+    from math import sqrt
+    
+    x = 10
+    y: int = 20
+    """
+        mocker.patch('apimd.parser.walk_body', side_effect=mock_walk_body)
+        mocker.patch('apimd.parser.get_docstring', side_effect=mock_get_docstring)
+        mocker.patch('apimd.parser.doctest', side_effect=mock_doctest)
+        parser.imports = MagicMock()
+        parser.globals = MagicMock()
+        parser.api = MagicMock()
+    
+        parser.parse('root.module', script)
+    
+        assert 'root.module' in parser.doc
+>       assert parser.doc['root.module'].startswith('## # Module `root.module`')
+E       assert False
+E        +  where False = <built-in method startswith of str object at 0x7feb96500b20>('## # Module `root.module`')
+E        +    where <built-in method startswith of str object at 0x7feb96500b20> = '### Module `root.module`\n<a id="root.module"></a>\n\n'.startswith
+
+coverup-tests/tmp_test_40se7jwb.py:72: AssertionError
+
+---- 2024-09-05T14:18:02 apimd/loader.py:79-106 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module
+    exec(co, module.__dict__)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_yamhx9p0.py:5: in <module>
+    from apimd.utils import walk_packages, _read, _load_module, EXTENSION_SUFFIXES
+E   ModuleNotFoundError: No module named 'apimd.utils'
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:633: in _importtestmodule
+    raise self.CollectError(
+E   _pytest.nodes.Collector.CollectError: ImportError while importing test module '/output/coverup-tests/tmp_test_yamhx9p0.py'.
+E   Hint: make sure your test modules/packages have valid Python names.
+E   Traceback:
+E   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+E       return _bootstrap._gcd_import(name[level:], package, level)
+E   /usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+E       exec(obj, g)
+E   coverup-tests/tmp_test_yamhx9p0.py:5: in <module>
+E       from apimd.utils import walk_packages, _read, _load_module, EXTENSION_SUFFIXES
+E   E   ModuleNotFoundError: No module named 'apimd.utils'
+
+---- 2024-09-05T14:18:02 apimd/parser.py:580-603 ----
+{
+  "id": "chatcmpl-A47asa0U2RkNpJ9ayrXxDmuCDL3HB",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\nfrom dataclasses import dataclass\n\n# Mocking the logger to avoid actual logging during tests\nimport logging\nlogger = logging.getLogger('apimd.parser')\nlogger.addHandler(logging.NullHandler())\n\n# Assuming the is_magic and code functions are defined somewhere in the module\ndef is_magic(name):\n    return name.startswith('__') and name.endswith('__')\n\ndef code(name):\n    return f\"`{name}`\"\n\n@dataclass\nclass Parser:\n    doc: dict\n    imp: dict\n    docstring: dict\n    root: dict\n    toc: bool\n\n    def __find_alias(self):\n        pass\n\n    def __names_cmp(self, name):\n        return name\n\n    def __get_const(self, name):\n        return f\"const_{name}\"\n\n    def is_public(self, name):\n        return not name.startswith('_')\n\n    def compile(self) -> str:\n        \"\"\"Compile documentation.\"\"\"\n        self.__find_alias()\n        toc = ['**Table of contents:**']\n        docs = []\n        for name in sorted(self.doc, key=self.__names_cmp):\n            if not self.is_public(name):\n                continue\n            link = name.lower().replace('.', '-')\n            doc = self.doc[name].format(name, link)\n            if name in self.imp:\n                doc += self.__get_const(name)\n            if name in self.docstring:\n                doc += self.docstring[name]\n            elif is_magic(name):\n                continue\n            else:\n                logger.warning(f\"Missing documentation for {name}\")\n            level = name.removeprefix(self.root[name]).count('.')\n            toc.append(\" \" * 4 * level + f\"+ [{code(name)}](#{link})\")\n            docs.append(doc.rstrip())\n        if self.toc:\n            return '\\n'.join(toc) + '\\n\\n' + \"\\n\\n\".join(docs) + '\\n'\n        return \"\\n\\n\".join(docs) + '\\n'\n\n@pytest.fixture\ndef parser():\n    return Parser(\n        doc={\n            'public_func': 'Documentation for {0} with link {1}',\n            'private_func': 'Documentation for {0} with link {1}',\n            '__magic__': 'Documentation for {0} with link {1}',\n            'undocumented_func': 'Documentation for {0} with link {1}'\n        },\n        imp={\n            'public_func': 'imported'\n        },\n        docstring={\n            'public_func': 'Docstring for public_func',\n            '__magic__': 'Docstring for __magic__'\n        },\n        root={\n            'public_func': 'public_func',\n            'private_func': 'private_func',\n            '__magic__': '__magic__',\n            'undocumented_func': 'undocumented_func'\n        },\n        toc=True\n    )\n\ndef test_compile_with_toc(parser, mocker):\n    mocker.patch('apimd.parser.logger')\n    result = parser.compile()\n    expected_toc = (\n        \"**Table of contents:**\\n\"\n        \"+ [`public_func`](#public-func)\\n\"\n        \"+ [`__magic__`](#__magic__)\\n\"\n    )\n    expected_docs = (\n        \"Documentation for public_func with link public-funcconst_public_funcDocstring for public_func\\n\\n\"\n        \"Documentation for __magic__ with link __magic__Docstring for __magic__\\n\"\n    )\n    assert result == expected_toc + '\\n' + expected_docs\n\ndef test_compile_without_toc(parser, mocker):\n    parser.toc = False\n    mocker.patch('apimd.parser.logger')\n    result = parser.compile()\n    expected_docs = (\n        \"Documentation for public_func with link public-funcconst_public_funcDocstring for public_func\\n\\n\"\n        \"Documentation for __magic__ with link __magic__Docstring for __magic__\\n\"\n    )\n    assert result == expected_docs\n\ndef test_compile_missing_docstring(parser, mocker):\n    parser.docstring.pop('public_func')\n    mocker.patch('apimd.parser.logger')\n    result = parser.compile()\n    expected_toc = (\n        \"**Table of contents:**\\n\"\n        \"+ [`public_func`](#public-func)\\n\"\n        \"+ [`__magic__`](#__magic__)\\n\"\n    )\n    expected_docs = (\n        \"Documentation for public_func with link public-funcconst_public_func\\n\\n\"\n        \"Documentation for __magic__ with link __magic__Docstring for __magic__\\n\"\n    )\n    assert result == expected_toc + '\\n' + expected_docs\n    logger.warning.assert_called_once_with(\"Missing documentation for public_func\")\n\ndef test_compile_private_function(parser, mocker):\n    parser.doc['private_func'] = 'Documentation for {0} with link {1}'\n    parser.root['private_func'] = 'private_func'\n    mocker.patch('apimd.parser.logger')\n    result = parser.compile()\n    expected_toc = (\n        \"**Table of contents:**\\n\"\n        \"+ [`public_func`](#public-func)\\n\"\n        \"+ [`__magic__`](#__magic__)\\n\"\n    )\n    expected_docs = (\n        \"Documentation for public_func with link public-funcconst_public_funcDocstring for public_func\\n\\n\"\n        \"Documentation for __magic__ with link __magic__Docstring for __magic__\\n\"\n    )\n    assert result == expected_toc + '\\n' + expected_docs\n    assert 'private_func' not in result\n\ndef test_compile_magic_function(parser, mocker):\n    parser.doc['__magic__'] = 'Documentation for {0} with link {1}'\n    parser.root['__magic__'] = '__magic__'\n    mocker.patch('apimd.parser.logger')\n    result = parser.compile()\n    expected_toc = (\n        \"**Table of contents:**\\n\"\n        \"+ [`public_func`](#public-func)\\n\"\n        \"+ [`__magic__`](#__magic__)\\n\"\n    )\n    expected_docs = (\n        \"Documentation for public_func with link public-funcconst_public_funcDocstring for public_func\\n\\n\"\n        \"Documentation for __magic__ with link __magic__Docstring for __magic__\\n\"\n    )\n    assert result == expected_toc + '\\n' + expected_docs\n    assert '__magic__' in result\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 1314,
+    "prompt_tokens": 413,
+    "total_tokens": 1727
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:02 apimd/parser.py:451-492 ----
+{
+  "id": "chatcmpl-A47asDk8FKs6buRcC3k6PpfTZxj7A",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom dataclasses import dataclass\nfrom typing import List\nfrom ast import AnnAssign, Assign, Delete, Name, expr, stmt\n\n# Mocking the external dependencies\ndef mock_resolve(root, d):\n    return f\"resolved_{d}\"\n\ndef mock_table(title, items):\n    return f\"{title}: {list(items)}\"\n\ndef mock_code(item):\n    return f\"code_{item}\"\n\ndef mock_is_public_family(attr):\n    return not attr.startswith('_')\n\ndef mock_const_type(value):\n    return f\"type_{value}\"\n\ndef mock_walk_body(body):\n    for node in body:\n        yield node\n\n@dataclass\nclass Parser:\n    doc: dict\n\n    def resolve(self, root, d):\n        return mock_resolve(root, d)\n\n    def class_api(self, root: str, name: str, bases: List[expr], body: List[stmt]) -> None:\n        \"\"\"Create class API.\"\"\"\n        r_bases = [self.resolve(root, d) for d in bases]\n        if r_bases:\n            self.doc[name] += mock_table(\"Bases\", items=map(mock_code, r_bases))\n        is_enum = any(map(lambda s: s.startswith('enum.'), r_bases))\n        mem = {}\n        enums = []\n        for node in mock_walk_body(body):\n            if isinstance(node, AnnAssign) and isinstance(node.target, Name):\n                attr = node.target.id\n                if is_enum:\n                    enums.append(attr)\n                elif mock_is_public_family(attr):\n                    mem[attr] = self.resolve(root, node.annotation)\n            elif (\n                isinstance(node, Assign)\n                and len(node.targets) == 1\n                and isinstance(node.targets[0], Name)\n            ):\n                attr = node.targets[0].id\n                if is_enum:\n                    enums.append(attr)\n                elif mock_is_public_family(attr):\n                    if node.type_comment is None:\n                        mem[attr] = mock_const_type(node.value)\n                    else:\n                        mem[attr] = node.type_comment\n            elif isinstance(node, Delete):\n                for d in node.targets:\n                    if not isinstance(d, Name):\n                        continue\n                    attr = d.id\n                    mem.pop(attr, None)\n                    if attr in enums:\n                        enums.remove(attr)\n        if enums:\n            self.doc[name] += mock_table(\"Enums\", items=enums)\n        elif mem:\n            self.doc[name] += mock_table('Members', 'Type', items=(\n                (mock_code(n), mock_code(mem[n])) for n in sorted(mem)))\n\n@pytest.fixture\ndef parser():\n    return Parser(doc=MagicMock(default_factory=lambda: \"\"))\n\ndef test_class_api_with_bases(parser):\n    parser.class_api(\"root\", \"TestClass\", [\"base1\", \"base2\"], [])\n    assert \"Bases\" in parser.doc[\"TestClass\"]\n\ndef test_class_api_with_enum(parser):\n    body = [\n        AnnAssign(target=Name(id=\"enum_attr\", ctx=None), annotation=None, value=None, simple=1)\n    ]\n    parser.class_api(\"root\", \"TestClass\", [\"enum.Enum\"], body)\n    assert \"Enums\" in parser.doc[\"TestClass\"]\n\ndef test_class_api_with_members(parser):\n    body = [\n        AnnAssign(target=Name(id=\"public_attr\", ctx=None), annotation=None, value=None, simple=1),\n        Assign(targets=[Name(id=\"public_assign\", ctx=None)], value=None, type_comment=None)\n    ]\n    parser.class_api(\"root\", \"TestClass\", [], body)\n    assert \"Members\" in parser.doc[\"TestClass\"]\n\ndef test_class_api_with_delete(parser):\n    body = [\n        AnnAssign(target=Name(id=\"public_attr\", ctx=None), annotation=None, value=None, simple=1),\n        Delete(targets=[Name(id=\"public_attr\", ctx=None)])\n    ]\n    parser.class_api(\"root\", \"TestClass\", [], body)\n    assert \"Members\" not in parser.doc[\"TestClass\"]\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 822,
+    "prompt_tokens": 542,
+    "total_tokens": 1364
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:03 apimd/parser.py:381-416 ----
+Test failed:
+
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path
+    importlib.import_module(module_name)
+/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1050: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1027: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:688: in _load_unlocked
+    ???
+/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module
+    exec(co, module.__dict__)
+/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+    exec(obj, g)
+coverup-tests/tmp_test_qdxf_ik7.py:4: in <module>
+    from apimd.utils import _m, esc_underscore, table, code, get_docstring, doctest, walk_body
+E   ModuleNotFoundError: No module named 'apimd.utils'
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked
+    self.session.items = list(collect_items(module))
+/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items
+    for it in collector.collect():
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect
+    self._inject_setup_module_fixture()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj
+    self._obj = obj = self._getobj()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj
+    return self._importtestmodule()
+/usr/local/lib/python3.10/site-packages/_pytest/python.py:633: in _importtestmodule
+    raise self.CollectError(
+E   _pytest.nodes.Collector.CollectError: ImportError while importing test module '/output/coverup-tests/tmp_test_qdxf_ik7.py'.
+E   Hint: make sure your test modules/packages have valid Python names.
+E   Traceback:
+E   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module
+E       return _bootstrap._gcd_import(name[level:], package, level)
+E   /usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper
+E       exec(obj, g)
+E   coverup-tests/tmp_test_qdxf_ik7.py:4: in <module>
+E       from apimd.utils import _m, esc_underscore, table, code, get_docstring, doctest, walk_body
+E   E   ModuleNotFoundError: No module named 'apimd.utils'
+
+---- 2024-09-05T14:18:03 apimd/loader.py:44-60 ----
+Test failed:
+
+mock_walk = <MagicMock id='139945608391232'>
+mock_abspath = <MagicMock id='139945608640400'>
+mock_join = <MagicMock id='139945628373040'>
+mock_parent = <MagicMock id='139945608731744'>
+
+    def test_walk_packages(mock_walk, mock_abspath, mock_join, mock_parent):
+        mock_walk.return_value = [
+            ("/abs/testpath", [], ["file1.py", "file2.pyi", "file3.txt"]),
+            ("/abs/testpath/subdir", [], ["file4.py", "file5.pyi"])
+        ]
+    
+        PEP561_SUFFIX = "-stubs"
+        sep = os.sep
+    
+        result = list(walk_packages("testname", "testpath"))
+    
+        expected = [
+            ("testname.file1", "/abs/testpath/file1"),
+            ("testname.file2", "/abs/testpath/file2"),
+            ("testname.subdir.file4", "/abs/testpath/subdir/file4"),
+            ("testname.subdir.file5", "/abs/testpath/subdir/file5")
+        ]
+    
+>       assert result == expected
+E       AssertionError: assert [] == [('testname.f...ubdir/file5')]
+E         Right contains 4 more items, first extra item: ('testname.file1', '/abs/testpath/file1')
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_g1f7mqxd.py:48: AssertionError
+
+---- 2024-09-05T14:18:03 apimd/parser.py:418-449 ----
+{
+  "id": "chatcmpl-A47asIr7gLdmplcVW9mdN9ZYIWPSo",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\nfrom dataclasses import dataclass\nfrom typing import Optional\nfrom ast import arguments, arg, expr\n\n@dataclass\nclass Parser:\n    doc: dict\n\n    def func_api(self, root: str, name: str, node: arguments,\n                 returns: Optional[expr], *,\n                 has_self: bool, cls_method: bool) -> None:\n        \"\"\"Create function API.\"\"\"\n        args = []\n        default: list[Optional[expr]] = []\n        if node.posonlyargs:\n            args.extend(node.posonlyargs)\n            args.append(arg('/', None))\n            default.extend([None] * len(node.posonlyargs))\n        args.extend(node.args)\n        default.extend([None] * (len(node.args) - len(node.defaults)))\n        default.extend(node.defaults)\n        if node.vararg is not None:\n            args.append(arg('*' + node.vararg.arg, node.vararg.annotation))\n        elif node.kwonlyargs:\n            args.append(arg('*', None))\n        default.append(None)\n        args.extend(node.kwonlyargs)\n        default.extend([None] * (len(node.kwonlyargs) - len(node.kw_defaults)))\n        default.extend(node.kw_defaults)\n        if node.kwarg is not None:\n            args.append(arg('**' + node.kwarg.arg, node.kwarg.annotation))\n            default.append(None)\n        args.append(arg('return', returns))\n        default.append(None)\n        ann = map(code, self.func_ann(root, args, has_self=has_self,\n                                      cls_method=cls_method))\n        has_default = all(d is None for d in default)\n        self.doc[name] += table(\n            *(a.arg for a in args),\n            items=[ann] if has_default else [ann, _defaults(default)])\n\ndef code(x):\n    return x\n\ndef table(*args, items):\n    return f\"Table: {args}, Items: {items}\"\n\ndef _defaults(defaults):\n    return f\"Defaults: {defaults}\"\n\n@pytest.fixture\ndef mock_func_ann(monkeypatch):\n    mock = MagicMock(return_value=[\"mocked_annotation\"])\n    monkeypatch.setattr(Parser, \"func_ann\", mock)\n    return mock\n\n@pytest.fixture\ndef parser():\n    return Parser(doc={\"test_func\": \"\"})\n\ndef test_func_api_full_coverage(parser, mock_func_ann):\n    node = arguments(\n        posonlyargs=[arg(arg='posonly1', annotation=None)],\n        args=[arg(arg='arg1', annotation=None)],\n        vararg=arg(arg='vararg1', annotation=None),\n        kwonlyargs=[arg(arg='kwonly1', annotation=None)],\n        kw_defaults=[None],\n        kwarg=arg(arg='kwarg1', annotation=None),\n        defaults=[None]\n    )\n    parser.func_api(\"root\", \"test_func\", node, None, has_self=True, cls_method=False)\n    assert parser.doc[\"test_func\"] == \"Table: ('posonly1', '/', 'arg1', '*vararg1', 'kwonly1', '**kwarg1', 'return'), Items: [<map object at 0x7f8b8c0b0d60>]\"\n\ndef test_func_api_no_posonlyargs(parser, mock_func_ann):\n    node = arguments(\n        posonlyargs=[],\n        args=[arg(arg='arg1', annotation=None)],\n        vararg=None,\n        kwonlyargs=[arg(arg='kwonly1', annotation=None)],\n        kw_defaults=[None],\n        kwarg=None,\n        defaults=[None]\n    )\n    parser.func_api(\"root\", \"test_func\", node, None, has_self=True, cls_method=False)\n    assert parser.doc[\"test_func\"] == \"Table: ('arg1', '*', 'kwonly1', 'return'), Items: [<map object at 0x7f8b8c0b0d60>, Defaults: [None, None, None, None]]\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 815,
+    "prompt_tokens": 512,
+    "total_tokens": 1327
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:04 apimd/parser.py:580-603 ----
+Test failed:
+
+parser = Parser(doc={'public_func': 'Documentation for {0} with link {1}', 'private_func': 'Documentation for {0} with link {1}...c_func', 'private_func': 'private_func', '__magic__': '__magic__', 'undocumented_func': 'undocumented_func'}, toc=True)
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7fa8a6ff7ac0>
+
+    def test_compile_with_toc(parser, mocker):
+        mocker.patch('apimd.parser.logger')
+        result = parser.compile()
+        expected_toc = (
+            "**Table of contents:**\n"
+            "+ [`public_func`](#public-func)\n"
+            "+ [`__magic__`](#__magic__)\n"
+        )
+        expected_docs = (
+            "Documentation for public_func with link public-funcconst_public_funcDocstring for public_func\n\n"
+            "Documentation for __magic__ with link __magic__Docstring for __magic__\n"
+        )
+>       assert result == expected_toc + '\n' + expected_docs
+E       AssertionError: assert '**Table of c...mented_func\n' == '**Table of c...r __magic__\n'
+E           **Table of contents:**
+E         + + [`private_func`](#private_func)
+E         - + [`public_func`](#public-func)
+E         ?                          ^
+E         + + [`public_func`](#public_func)
+E         ?                          ^
+E         - + [`__magic__`](#__magic__)...
+E         
+E         ...Full output truncated (10 lines hidden), use '-vv' to show
+
+coverup-tests/tmp_test_d7c47bfl.py:99: AssertionError
+----------------------------- Captured stderr call -----------------------------
+[33mMissing documentation for private_func[0m
+[33mMissing documentation for undocumented_func[0m
+------------------------------ Captured log call -------------------------------
+WARNING  apimd.parser:tmp_test_d7c47bfl.py:54 Missing documentation for private_func
+WARNING  apimd.parser:tmp_test_d7c47bfl.py:54 Missing documentation for undocumented_func
+
+---- 2024-09-05T14:18:04 apimd/parser.py:451-492 ----
+Test failed:
+
+parser = Parser(doc=<MagicMock id='139942643323648'>)
+
+    def test_class_api_with_bases(parser):
+        parser.class_api("root", "TestClass", ["base1", "base2"], [])
+>       assert "Bases" in parser.doc["TestClass"]
+E       AssertionError: assert 'Bases' in <MagicMock name='mock.__getitem__()' id='139942645414640'>
+
+coverup-tests/tmp_test_3tx6hpwg.py:82: AssertionError
+
+---- 2024-09-05T14:18:05 apimd/loader.py:109-145 ----
+{
+  "id": "chatcmpl-A47asdkEcGjoJRiyIbJIr1A93Nlgm",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, mock_open, MagicMock\nimport os\nimport sys\n\n# Assuming the function gen_api is imported from apimd.loader\nfrom apimd.loader import gen_api\n\n@pytest.fixture\ndef mock_sys_path(monkeypatch):\n    original_sys_path = sys.path.copy()\n    monkeypatch.setattr(sys, 'path', original_sys_path)\n    yield\n    sys.path = original_sys_path\n\n@pytest.fixture\ndef mock_logger(monkeypatch):\n    mock_logger = MagicMock()\n    monkeypatch.setattr('apimd.loader.logger', mock_logger)\n    return mock_logger\n\n@pytest.fixture\ndef mock_loader(monkeypatch):\n    mock_loader = MagicMock(return_value=\"mocked_doc\")\n    monkeypatch.setattr('apimd.loader.loader', mock_loader)\n    return mock_loader\n\n@pytest.fixture\ndef mock_isdir(monkeypatch):\n    mock_isdir = MagicMock(return_value=False)\n    monkeypatch.setattr('apimd.loader.isdir', mock_isdir)\n    return mock_isdir\n\n@pytest.fixture\ndef mock_mkdir(monkeypatch):\n    mock_mkdir = MagicMock()\n    monkeypatch.setattr('apimd.loader.mkdir', mock_mkdir)\n    return mock_mkdir\n\n@pytest.fixture\ndef mock_write(monkeypatch):\n    mock_write = MagicMock()\n    monkeypatch.setattr('apimd.loader._write', mock_write)\n    return mock_write\n\ndef test_gen_api_with_pwd(mock_sys_path, mock_logger, mock_loader, mock_isdir, mock_mkdir, mock_write):\n    root_names = {'Title': 'name'}\n    pwd = '/some/path'\n    docs = gen_api(root_names, pwd=pwd)\n    \n    assert pwd in sys.path\n    mock_isdir.assert_called_once_with('docs')\n    mock_mkdir.assert_called_once_with('docs')\n    mock_loader.assert_called_once_with('name', '/some/path/name', True, 1, False)\n    mock_write.assert_called_once()\n    assert len(docs) == 1\n    assert docs[0].startswith('# Title API\\n\\nmocked_doc')\n\ndef test_gen_api_without_pwd(mock_sys_path, mock_logger, mock_loader, mock_isdir, mock_mkdir, mock_write):\n    root_names = {'Title': 'name'}\n    docs = gen_api(root_names)\n    \n    assert '/some/path' not in sys.path\n    mock_isdir.assert_called_once_with('docs')\n    mock_mkdir.assert_called_once_with('docs')\n    mock_loader.assert_called_once_with('name', '/some/path/name', True, 1, False)\n    mock_write.assert_called_once()\n    assert len(docs) == 1\n    assert docs[0].startswith('# Title API\\n\\nmocked_doc')\n\ndef test_gen_api_dry_run(mock_sys_path, mock_logger, mock_loader, mock_isdir, mock_mkdir, mock_write):\n    root_names = {'Title': 'name'}\n    docs = gen_api(root_names, dry=True)\n    \n    mock_isdir.assert_called_once_with('docs')\n    mock_mkdir.assert_called_once_with('docs')\n    mock_loader.assert_called_once_with('name', '/some/path/name', True, 1, False)\n    mock_write.assert_not_called()\n    mock_logger.info.assert_any_call('=' * 12)\n    assert len(docs) == 1\n    assert docs[0].startswith('# Title API\\n\\nmocked_doc')\n\ndef test_gen_api_empty_doc(mock_sys_path, mock_logger, mock_loader, mock_isdir, mock_mkdir, mock_write):\n    mock_loader.return_value = \"\"\n    root_names = {'Title': 'name'}\n    docs = gen_api(root_names)\n    \n    mock_isdir.assert_called_once_with('docs')\n    mock_mkdir.assert_called_once_with('docs')\n    mock_loader.assert_called_once_with('name', '/some/path/name', True, 1, False)\n    mock_write.assert_not_called()\n    mock_logger.warning.assert_called_once_with(\"'name' can not be found\")\n    assert len(docs) == 0\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725545866,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_992d1ea92d",
+  "usage": {
+    "completion_tokens": 833,
+    "prompt_tokens": 483,
+    "total_tokens": 1316
+  },
+  "service_tier": null
+}
+---- 2024-09-05T14:18:05 apimd/parser.py:418-449 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fdb903b2140>
+
+    @pytest.fixture
+    def mock_func_ann(monkeypatch):
+        mock = MagicMock(return_value=["mocked_annotation"])
+>       monkeypatch.setattr(Parser, "func_ann", mock)
+E       AttributeError: <class 'tmp_test_x7c7cul2.Parser'> has no attribute 'func_ann'
+
+coverup-tests/tmp_test_x7c7cul2.py:56: AttributeError
+
+---- 2024-09-05T14:18:06 apimd/loader.py:109-145 ----
+Test failed:
+
+mock_sys_path = None, mock_logger = <MagicMock id='139625972625760'>
+mock_loader = <MagicMock id='139625985684240'>
+mock_isdir = <MagicMock id='139625965592704'>
+mock_mkdir = <MagicMock id='139625989658112'>
+mock_write = <MagicMock id='139625965227408'>
+
+    def test_gen_api_with_pwd(mock_sys_path, mock_logger, mock_loader, mock_isdir, mock_mkdir, mock_write):
+        root_names = {'Title': 'name'}
+        pwd = '/some/path'
+        docs = gen_api(root_names, pwd=pwd)
+    
+>       assert pwd in sys.path
+E       AssertionError: assert '/some/path' in ['/output/coverup-tests', '/output', '/output', '/usr/local/lib/python310.zip', '/usr/local/lib/python3.10', '/usr/local/lib/python3.10/lib-dynload', ...]
+E        +  where ['/output/coverup-tests', '/output', '/output', '/usr/local/lib/python310.zip', '/usr/local/lib/python3.10', '/usr/local/lib/python3.10/lib-dynload', ...] = sys.path
+
+coverup-tests/tmp_test_3015fhvm.py:51: AssertionError
+

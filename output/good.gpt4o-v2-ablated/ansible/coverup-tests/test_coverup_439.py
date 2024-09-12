@@ -1,0 +1,56 @@
+# file: lib/ansible/modules/rpm_key.py:239-250
+# asked: {"lines": [239, 240, 241, 242, 243, 244, 245, 247, 250], "branches": []}
+# gained: {"lines": [239, 240, 241, 242, 243, 244, 245, 247, 250], "branches": []}
+
+import pytest
+from ansible.module_utils.basic import AnsibleModule
+from ansible.modules.rpm_key import main
+
+@pytest.fixture
+def mock_ansible_module(mocker):
+    mock_module = mocker.patch('ansible.modules.rpm_key.AnsibleModule', autospec=True)
+    return mock_module
+
+@pytest.fixture
+def mock_rpm_key(mocker):
+    return mocker.patch('ansible.modules.rpm_key.RpmKey', autospec=True)
+
+def test_main_present_state(mock_ansible_module, mock_rpm_key):
+    mock_ansible_module.return_value.params = {
+        'state': 'present',
+        'key': 'some_key',
+        'fingerprint': 'some_fingerprint',
+        'validate_certs': True
+    }
+    main()
+    mock_rpm_key.assert_called_once_with(mock_ansible_module.return_value)
+
+def test_main_absent_state(mock_ansible_module, mock_rpm_key):
+    mock_ansible_module.return_value.params = {
+        'state': 'absent',
+        'key': 'some_key',
+        'fingerprint': 'some_fingerprint',
+        'validate_certs': True
+    }
+    main()
+    mock_rpm_key.assert_called_once_with(mock_ansible_module.return_value)
+
+def test_main_no_fingerprint(mock_ansible_module, mock_rpm_key):
+    mock_ansible_module.return_value.params = {
+        'state': 'present',
+        'key': 'some_key',
+        'fingerprint': None,
+        'validate_certs': True
+    }
+    main()
+    mock_rpm_key.assert_called_once_with(mock_ansible_module.return_value)
+
+def test_main_validate_certs_false(mock_ansible_module, mock_rpm_key):
+    mock_ansible_module.return_value.params = {
+        'state': 'present',
+        'key': 'some_key',
+        'fingerprint': 'some_fingerprint',
+        'validate_certs': False
+    }
+    main()
+    mock_rpm_key.assert_called_once_with(mock_ansible_module.return_value)

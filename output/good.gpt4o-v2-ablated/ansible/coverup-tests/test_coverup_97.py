@@ -1,0 +1,18 @@
+# file: lib/ansible/playbook/block.py:95-103
+# asked: {"lines": [95, 96, 97, 98, 99, 100, 101, 102, 103], "branches": [[98, 99], [98, 103], [99, 100], [99, 103], [100, 99], [100, 101]]}
+# gained: {"lines": [95, 96, 97, 98, 99, 100, 101, 102, 103], "branches": [[98, 99], [98, 103], [99, 100], [99, 103], [100, 99], [100, 101]]}
+
+import pytest
+from ansible.playbook.block import Block
+
+@pytest.mark.parametrize("ds, expected", [
+    ({"block": []}, True),
+    ({"rescue": []}, True),
+    ({"always": []}, True),
+    ({"not_a_block": []}, False),
+    ([], False),
+    ("not_a_dict", False),
+    (None, False),
+])
+def test_is_block(ds, expected):
+    assert Block.is_block(ds) == expected

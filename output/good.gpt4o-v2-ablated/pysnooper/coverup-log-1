@@ -1,0 +1,1919 @@
+---- 2024-09-05T11:44:39 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --max-attempts 3 --isolate-tests --prompt-family gpt-v2-ablated --install-missing-modules --write-requirements-to missing-modules.txt --repeat-tests 5 --source-dir ./pysnooper --tests-dir coverup-tests --save-coverage-to coverage --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-1 --checkpoint coverup-ckpt.json pysnooper/pycompat.py pysnooper/tracer.py pysnooper/utils.py pysnooper/variables.py
+---- 2024-09-05T11:44:40 pysnooper/tracer.py:339-498 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def trace(self, frame, event, arg):\n            \n                    ### Checking whether we should trace this line: #######################\n                    #                                                                     #\n                    # We should trace this line either if it's in the decorated function,\n                    # or the user asked to go a few levels deeper and we're within that\n                    # number of levels deeper.\n            \n                    if not (frame.f_code in self.target_codes or frame in self.target_frames):\n                        if self.depth == 1:\n                            # We did the most common and quickest check above, because the\n                            # trace function runs so incredibly often, therefore it's\n                            # crucial to hyper-optimize it for the common case.\n                            return None\n                        elif self._is_internal_frame(frame):\n                            return None\n                        else:\n                            _frame_candidate = frame\n                            for i in range(1, self.depth):\n                                _frame_candidate = _frame_candidate.f_back\n                                if _frame_candidate is None:\n                                    return None\n                                elif _frame_candidate.f_code in self.target_codes or _frame_candidate in self.target_frames:\n                                    break\n                            else:\n                                return None\n            \n                    if event == 'call':\n                        thread_global.depth += 1\n                    indent = ' ' * 4 * thread_global.depth\n            \n                    #                                                                     #\n                    ### Finished checking whether we should trace this line. ##############\n            \n                    ### Making timestamp: #################################################\n                    #                                                                     #\n                    if self.normalize:\n                        timestamp = ' ' * 15\n                    elif self.relative_time:\n                        try:\n                            start_time = self.start_times[frame]\n                        except KeyError:\n                            start_time = self.start_times[frame] = \\\n                                                             datetime_module.datetime.now()\n                        duration = datetime_module.datetime.now() - start_time\n                        timestamp = pycompat.timedelta_format(duration)\n                    else:\n                        timestamp = pycompat.time_isoformat(\n                            datetime_module.datetime.now().time(),\n                            timespec='microseconds'\n                        )\n                    #                                                                     #\n                    ### Finished making timestamp. ########################################\n            \n                    line_no = frame.f_lineno\n                    source_path, source = get_path_and_source_from_frame(frame)\n                    source_path = source_path if not self.normalize else os.path.basename(source_path)\n                    if self.last_source_path != source_path:\n                        self.write(u'{indent}Source path:... {source_path}'.\n                                   format(**locals()))\n                        self.last_source_path = source_path\n                    source_line = source[line_no - 1]\n                    thread_info = \"\"\n                    if self.thread_info:\n                        if self.normalize:\n                            raise NotImplementedError(\"normalize is not supported with \"\n                                                      \"thread_info\")\n                        current_thread = threading.current_thread()\n                        thread_info = \"{ident}-{name} \".format(\n                            ident=current_thread.ident, name=current_thread.getName())\n                    thread_info = self.set_thread_info_padding(thread_info)\n            \n                    ### Reporting newish and modified variables: ##########################\n                    #                                                                     #\n                    old_local_reprs = self.frame_to_local_reprs.get(frame, {})\n                    self.frame_to_local_reprs[frame] = local_reprs = \\\n                                                   get_local_reprs(frame,\n                                                                   watch=self.watch, custom_repr=self.custom_repr,\n                                                                   max_length=self.max_variable_length,\n                                                                   normalize=self.normalize,\n                                                                   )\n            \n                    newish_string = ('Starting var:.. ' if event == 'call' else\n                                                                        'New var:....... ')\n            \n                    for name, value_repr in local_reprs.items():\n                        if name not in old_local_reprs:\n                            self.write('{indent}{newish_string}{name} = {value_repr}'.format(\n                                                                                   **locals()))\n                        elif old_local_reprs[name] != value_repr:\n                            self.write('{indent}Modified var:.. {name} = {value_repr}'.format(\n                                                                               **locals()))\n            \n                    #                                                                     #\n                    ### Finished newish and modified variables. ###########################\n            \n            \n                    ### Dealing with misplaced function definition: #######################\n                    #                                                                     #\n                    if event == 'call' and source_line.lstrip().startswith('@'):\n                        # If a function decorator is found, skip lines until an actual\n                        # function definition is found.\n                        for candidate_line_no in itertools.count(line_no):\n                            try:\n                                candidate_source_line = source[candidate_line_no - 1]\n                            except IndexError:\n                                # End of source file reached without finding a function\n                                # definition. Fall back to original source line.\n                                break\n            \n                            if candidate_source_line.lstrip().startswith('def'):\n                                # Found the def line!\n                                line_no = candidate_line_no\n                                source_line = candidate_source_line\n                                break\n                    #                                                                     #\n                    ### Finished dealing with misplaced function definition. ##############\n            \n                    # If a call ends due to an exception, we still get a 'return' event\n                    # with arg = None. This seems to be the only way to tell the difference\n                    # https://stackoverflow.com/a/12800909/2482744\n                    code_byte = frame.f_code.co_code[frame.f_lasti]\n                    if not isinstance(code_byte, int):\n                        code_byte = ord(code_byte)\n                    ended_by_exception = (\n                            event == 'return'\n                            and arg is None\n                            and (opcode.opname[code_byte]\n                                 not in ('RETURN_VALUE', 'YIELD_VALUE'))\n                    )\n            \n                    if ended_by_exception:\n                        self.write('{indent}Call ended by exception'.\n                                   format(**locals()))\n                    else:\n                        self.write(u'{indent}{timestamp} {thread_info}{event:9} '\n                                   u'{line_no:4} {source_line}'.format(**locals()))\n            \n                    if event == 'return':\n                        self.frame_to_local_reprs.pop(frame, None)\n                        self.start_times.pop(frame, None)\n                        thread_global.depth -= 1\n            \n                        if not ended_by_exception:\n                            return_value_repr = utils.get_shortish_repr(arg,\n                                                                        custom_repr=self.custom_repr,\n                                                                        max_length=self.max_variable_length,\n                                                                        normalize=self.normalize,\n                                                                        )\n                            self.write('{indent}Return value:.. {return_value_repr}'.\n                                       format(**locals()))\n            \n                    if event == 'exception':\n                        exception = '\\n'.join(traceback.format_exception_only(*arg[:2])).strip()\n                        if self.max_variable_length:\n                            exception = utils.truncate(exception, self.max_variable_length)\n                        self.write('{indent}Exception:..... {exception}'.\n                                   format(**locals()))\n            \n                    return self.trace\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:49-108 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def get_path_and_source_from_frame(frame):\n                globs = frame.f_globals or {}\n                module_name = globs.get('__name__')\n                file_name = frame.f_code.co_filename\n                cache_key = (module_name, file_name)\n                try:\n                    return source_and_path_cache[cache_key]\n                except KeyError:\n                    pass\n                loader = globs.get('__loader__')\n            \n                source = None\n                if hasattr(loader, 'get_source'):\n                    try:\n                        source = loader.get_source(module_name)\n                    except ImportError:\n                        pass\n                    if source is not None:\n                        source = source.splitlines()\n                if source is None:\n                    ipython_filename_match = ipython_filename_pattern.match(file_name)\n                    if ipython_filename_match:\n                        entry_number = int(ipython_filename_match.group(1))\n                        try:\n                            import IPython\n                            ipython_shell = IPython.get_ipython()\n                            ((_, _, source_chunk),) = ipython_shell.history_manager. \\\n                                              get_range(0, entry_number, entry_number + 1)\n                            source = source_chunk.splitlines()\n                        except Exception:\n                            pass\n                    else:\n                        try:\n                            with open(file_name, 'rb') as fp:\n                                source = fp.read().splitlines()\n                        except utils.file_reading_errors:\n                            pass\n                if not source:\n                    # We used to check `if source is None` but I found a rare bug where it\n                    # was empty, but not `None`, so now we check `if not source`.\n                    source = UnavailableSource()\n            \n                # If we just read the source from a file, or if the loader did not\n                # apply tokenize.detect_encoding to decode the source into a\n                # string, then we should do that ourselves.\n                if isinstance(source[0], bytes):\n                    encoding = 'utf-8'\n                    for line in source[:2]:\n                        # File coding may be specified. Match pattern from PEP-263\n                        # (https://www.python.org/dev/peps/pep-0263/)\n                        match = re.search(br'coding[:=]\\s*([-\\w.]+)', line)\n                        if match:\n                            encoding = match.group(1).decode('ascii')\n                            break\n                    source = [pycompat.text_type(sline, encoding, 'replace') for sline in\n                              source]\n            \n                result = (file_name, source)\n                source_and_path_cache[cache_key] = result\n                return result\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:257-287 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def _wrap_function(self, function):\n                    self.target_codes.add(function.__code__)\n            \n                    @functools.wraps(function)\n                    def simple_wrapper(*args, **kwargs):\n                        with self:\n                            return function(*args, **kwargs)\n            \n                    @functools.wraps(function)\n                    def generator_wrapper(*args, **kwargs):\n                        gen = function(*args, **kwargs)\n                        method, incoming = gen.send, None\n                        while True:\n                            with self:\n                                try:\n                                    outgoing = method(incoming)\n                                except StopIteration:\n                                    return\n                            try:\n                                method, incoming = gen.send, (yield outgoing)\n                            except Exception as e:\n                                method, incoming = gen.throw, e\n            \n                    if pycompat.iscoroutinefunction(function):\n                        raise NotImplementedError\n                    if pycompat.isasyncgenfunction(function):\n                        raise NotImplementedError\n                    elif inspect.isgeneratorfunction(function):\n                        return generator_wrapper\n                    else:\n                        return simple_wrapper\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:53-83 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class CommonVariable(BaseVariable):\n                def _items(self, main_value, normalize=False):\n                    result = [(self.source, utils.get_shortish_repr(main_value, normalize=normalize))]\n                    for key in self._safe_keys(main_value):\n                        try:\n                            if key in self.exclude:\n                                continue\n                            value = self._get_value(main_value, key)\n                        except Exception:\n                            continue\n                        result.append((\n                            '{}{}'.format(self.unambiguous_source, self._format_key(key)),\n                            utils.get_shortish_repr(value)\n                        ))\n                    return result\n            \n                def _safe_keys(self, main_value):\n                    try:\n                        for key in self._keys(main_value):\n                            yield key\n                    except Exception:\n                        pass\n            \n                def _keys(self, main_value):\n                    return ()\n            \n                def _format_key(self, key):\n                    raise NotImplementedError\n            \n                def _get_value(self, main_value, key):\n                    raise NotImplementedError\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:206-235 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def __init__(self, output=None, watch=(), watch_explode=(), depth=1,\n                             prefix='', overwrite=False, thread_info=False, custom_repr=(),\n                             max_variable_length=100, normalize=False, relative_time=False):\n                    self._write = get_write_function(output, overwrite)\n            \n                    self.watch = [\n                        v if isinstance(v, BaseVariable) else CommonVariable(v)\n                        for v in utils.ensure_tuple(watch)\n                     ] + [\n                         v if isinstance(v, BaseVariable) else Exploding(v)\n                         for v in utils.ensure_tuple(watch_explode)\n                    ]\n                    self.frame_to_local_reprs = {}\n                    self.start_times = {}\n                    self.depth = depth\n                    self.prefix = prefix\n                    self.thread_info = thread_info\n                    self.thread_info_padding = 0\n                    assert self.depth >= 1\n                    self.target_codes = set()\n                    self.target_frames = set()\n                    self.thread_local = threading.local()\n                    if len(custom_repr) == 2 and not all(isinstance(x,\n                                  pycompat.collections_abc.Iterable) for x in custom_repr):\n                        custom_repr = (custom_repr,)\n                    self.custom_repr = custom_repr\n                    self.last_source_path = None\n                    self.max_variable_length = max_variable_length\n                    self.normalize = normalize\n                    self.relative_time = relative_time\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:20-50 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class BaseVariable(pycompat.ABC):\n                def __init__(self, source, exclude=()):\n                    self.source = source\n                    self.exclude = utils.ensure_tuple(exclude)\n                    self.code = compile(source, '<variable>', 'eval')\n                    if needs_parentheses(source):\n                        self.unambiguous_source = '({})'.format(source)\n                    else:\n                        self.unambiguous_source = source\n            \n                def items(self, frame, normalize=False):\n                    try:\n                        main_value = eval(self.code, frame.f_globals or {}, frame.f_locals)\n                    except Exception:\n                        return ()\n                    return self._items(main_value, normalize)\n            \n                @abc.abstractmethod\n                def _items(self, key, normalize=False):\n                    raise NotImplementedError\n            \n                @property\n                def _fingerprint(self):\n                    return (type(self), self.source, self.exclude)\n            \n                def __hash__(self):\n                    return hash(self._fingerprint)\n            \n                def __eq__(self, other):\n                    return (isinstance(other, BaseVariable) and\n                                                   self._fingerprint == other._fingerprint)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:111-133 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def get_write_function(output, overwrite):\n                is_path = isinstance(output, (pycompat.PathLike, str))\n                if overwrite and not is_path:\n                    raise Exception('`overwrite=True` can only be used when writing '\n                                    'content to file.')\n                if output is None:\n                    def write(s):\n                        stderr = sys.stderr\n                        try:\n                            stderr.write(s)\n                        except UnicodeEncodeError:\n                            # God damn Python 2\n                            stderr.write(utils.shitcode(s))\n                elif is_path:\n                    return FileWriter(output, overwrite).write\n                elif callable(output):\n                    write = output\n                else:\n                    assert isinstance(output, utils.WritableStream)\n            \n                    def write(s):\n                        output.write(s)\n                return write\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:10-20 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _check_methods(C, *methods):\n                mro = C.__mro__\n                for method in methods:\n                    for B in mro:\n                        if method in B.__dict__:\n                            if B.__dict__[method] is None:\n                                return NotImplemented\n                            break\n                    else:\n                        return NotImplemented\n                return True\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:293-307 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def __enter__(self):\n                    if DISABLED:\n                        return\n                    thread_global.__dict__.setdefault('depth', -1)\n                    calling_frame = inspect.currentframe().f_back\n                    if not self._is_internal_frame(calling_frame):\n                        calling_frame.f_trace = self.trace\n                        self.target_frames.add(calling_frame)\n            \n                    stack = self.thread_local.__dict__.setdefault(\n                        'original_trace_functions', []\n                    )\n                    stack.append(sys.gettrace())\n                    self.start_times[calling_frame] = datetime_module.datetime.now()\n                    sys.settrace(self.trace)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:67-78 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def get_shortish_repr(item, custom_repr=(), max_length=None, normalize=False):\n                repr_function = get_repr_function(item, custom_repr)\n                try:\n                    r = repr_function(item)\n                except Exception:\n                    r = 'REPR FAILED'\n                r = r.replace('\\r', '').replace('\\n', '')\n                if normalize:\n                    r = normalize_repr(r)\n                if max_length:\n                    r = truncate(r, max_length)\n                return r\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:309-326 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def __exit__(self, exc_type, exc_value, exc_traceback):\n                    if DISABLED:\n                        return\n                    stack = self.thread_local.original_trace_functions\n                    sys.settrace(stack.pop())\n                    calling_frame = inspect.currentframe().f_back\n                    self.target_frames.discard(calling_frame)\n                    self.frame_to_local_reprs.pop(calling_frame, None)\n            \n                    ### Writing elapsed time: #############################################\n                    #                                                                     #\n                    start_time = self.start_times.pop(calling_frame)\n                    duration = datetime_module.datetime.now() - start_time\n                    elapsed_time_string = pycompat.timedelta_format(duration)\n                    indent = ' ' * 4 * (thread_global.depth + 1)\n                    self.write(\n                        '{indent}Elapsed time: {elapsed_time_string}'.format(**locals())\n                    )\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:25-38 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def get_local_reprs(frame, watch=(), custom_repr=(), max_length=None, normalize=False):\n                code = frame.f_code\n                vars_order = (code.co_varnames + code.co_cellvars + code.co_freevars +\n                              tuple(frame.f_locals.keys()))\n            \n                result_items = [(key, utils.get_shortish_repr(value, custom_repr,\n                                                              max_length, normalize))\n                                for key, value in frame.f_locals.items()]\n                result_items.sort(key=lambda key_value: vars_order.index(key_value[0]))\n                result = collections.OrderedDict(result_items)\n            \n                for variable in watch:\n                    result.update(sorted(variable.items(frame, normalize)))\n                return result\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:50-56 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def get_repr_function(item, custom_repr):\n                for condition, action in custom_repr:\n                    if isinstance(condition, type):\n                        condition = lambda x, y=condition: isinstance(x, y)\n                    if condition(item):\n                        return action\n                return repr\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:246-255 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def _wrap_class(self, cls):\n                    for attr_name, attr in cls.__dict__.items():\n                        # Coroutines are functions, but snooping them is not supported\n                        # at the moment\n                        if pycompat.iscoroutinefunction(attr):\n                            continue\n            \n                        if inspect.isfunction(attr):\n                            setattr(cls, attr_name, self._wrap_function(attr))\n                    return cls\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:124-133 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Exploding(BaseVariable):\n                def _items(self, main_value, normalize=False):\n                    if isinstance(main_value, Mapping):\n                        cls = Keys\n                    elif isinstance(main_value, Sequence):\n                        cls = Indices\n                    else:\n                        cls = Attrs\n            \n                    return cls(self.source, self.exclude)._items(main_value, normalize)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/pycompat.py:28-43 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/pycompat.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n                class PathLike(ABC):\n                    \"\"\"Abstract base class for implementing the file system path protocol.\"\"\"\n            \n                    @abc.abstractmethod\n                    def __fspath__(self):\n                        \"\"\"Return the file system path representation of the object.\"\"\"\n                        raise NotImplementedError\n            \n                    @classmethod\n                    def __subclasshook__(cls, subclass):\n                        return (\n                            hasattr(subclass, '__fspath__') or\n                            # Make a concession for older `pathlib` versions:g\n                            (hasattr(subclass, 'open') and\n                             'path' in subclass.__name__.lower())\n                        )\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:23-32 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class WritableStream(ABC):\n                @abc.abstractmethod\n                def write(self, s):\n                    pass\n            \n                @classmethod\n                def __subclasshook__(cls, C):\n                    if cls is WritableStream:\n                        return _check_methods(C, 'write')\n                    return NotImplemented\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/pycompat.py:75-83 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/pycompat.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n                def time_isoformat(time, timespec='microseconds'):\n                    assert isinstance(time, datetime_module.time)\n                    if timespec != 'microseconds':\n                        raise NotImplementedError\n                    result = '{:02d}:{:02d}:{:02d}.{:06d}'.format(\n                        time.hour, time.minute, time.second, time.microsecond\n                    )\n                    assert len(result) == 15\n                    return result\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:237-244 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def __call__(self, function_or_class):\n                    if DISABLED:\n                        return function_or_class\n            \n                    if inspect.isclass(function_or_class):\n                        return self._wrap_class(function_or_class)\n                    else:\n                        return self._wrap_function(function_or_class)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:86-97 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Attrs(CommonVariable):\n                def _keys(self, main_value):\n                    return itertools.chain(\n                        getattr(main_value, '__dict__', ()),\n                        getattr(main_value, '__slots__', ())\n                    )\n            \n                def _format_key(self, key):\n                    return '.' + key\n            \n                def _get_value(self, main_value, key):\n                    return getattr(main_value, key)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:111-121 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Indices(Keys):\n                _slice = slice(None)\n            \n                def _keys(self, main_value):\n                    return range(len(main_value))[self._slice]\n            \n                def __getitem__(self, item):\n                    assert isinstance(item, slice)\n                    result = deepcopy(self)\n                    result._slice = item\n                    return result\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:136-145 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class FileWriter(object):\n                def __init__(self, path, overwrite):\n                    self.path = pycompat.text_type(path)\n                    self.overwrite = overwrite\n            \n                def write(self, s):\n                    with open(self.path, 'w' if self.overwrite else 'a',\n                              encoding='utf-8') as output_file:\n                        output_file.write(s)\n                    self.overwrite = False\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:81-87 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def truncate(string, max_length):\n                if (max_length is None) or (len(string) <= max_length):\n                    return string\n                else:\n                    left = (max_length - 3) // 2\n                    right = max_length - 3 - left\n                    return u'{}...{}'.format(string[:left], string[-right:])\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/pycompat.py:90-97 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/pycompat.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def timedelta_parse(s):\n                hours, minutes, seconds, microseconds = map(\n                    int,\n                    s.replace('.', ':').split(':')\n                )\n                return datetime_module.timedelta(hours=hours, minutes=minutes,\n                                                 seconds=seconds,\n                                                 microseconds=microseconds)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:100-108 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Keys(CommonVariable):\n                def _keys(self, main_value):\n                    return main_value.keys()\n            \n                def _format_key(self, key):\n                    return '[{}]'.format(utils.get_shortish_repr(key))\n            \n                def _get_value(self, main_value, key):\n                    return main_value[key]\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:90-95 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def ensure_tuple(x):\n                if isinstance(x, collections_abc.Iterable) and \\\n                                                           not isinstance(x, string_types):\n                    return tuple(x)\n                else:\n                    return (x,)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:333-337 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def set_thread_info_padding(self, thread_info):\n                    current_thread_len = len(thread_info)\n                    self.thread_info_padding = max(self.thread_info_padding,\n                                                   current_thread_len)\n                    return thread_info.ljust(self.thread_info_padding)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/pycompat.py:17-22 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/pycompat.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n                class ABC(object):\n                    \"\"\"Helper class that provides a standard way to create an ABC using\n                    inheritance.\n                    \"\"\"\n                    __metaclass__ = abc.ABCMeta\n                    __slots__ = ()\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/variables.py:13-17 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/variables.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def needs_parentheses(source):\n                def code(s):\n                    return compile(s, '<variable>', 'eval').co_code\n            \n                return code('{}.x'.format(source)) != code('({}).x'.format(source))\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/pycompat.py:86-88 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/pycompat.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def timedelta_format(timedelta):\n                time = (datetime_module.datetime.min + timedelta).time()\n                return time_isoformat(time, timespec='microseconds')\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:44-47 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def shitcode(s):\n                return ''.join(\n                    (c if (0 < ord(c) < 256) else '?') for c in s\n                )\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:41-43 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class UnavailableSource(object):\n                def __getitem__(self, i):\n                    return u'SOURCE IS UNAVAILABLE'\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:289-291 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def write(self, s):\n                    s = u'{self.prefix}{s}\\n'.format(**locals())\n                    self._write(s)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/utils.py:62-64 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/utils.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def normalize_repr(item_repr):\n                \"\"\"Remove memory address (0x...) from a default python repr\"\"\"\n                return DEFAULT_REPR_RE.sub('', item_repr)\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:41 pysnooper/tracer.py:330-331 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from pysnooper/tracer.py, does not achieve full coverage.\nCreate new pytest test functions that execute all lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Tracer:\n                def _is_internal_frame(self, frame):\n                    return frame.f_code.co_filename == Tracer.__enter__.__code__.co_filename\n\n```\n"
+    }
+  ]
+}
+---- 2024-09-05T11:44:43 pysnooper/tracer.py:41-43 ----
+{
+  "id": "chatcmpl-A45CkkCDMPFLwG96OyEFoMNV2qOyh",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom pysnooper.tracer import UnavailableSource\n\ndef test_unavailable_source_getitem():\n    source = UnavailableSource()\n    assert source[0] == 'SOURCE IS UNAVAILABLE'\n    assert source[1] == 'SOURCE IS UNAVAILABLE'\n    assert source[-1] == 'SOURCE IS UNAVAILABLE'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 72,
+    "prompt_tokens": 206,
+    "total_tokens": 278
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/variables.py:13-17 ----
+{
+  "id": "chatcmpl-A45CjDBb6zXtqYgFgYGOTCKNNrY5M",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom pysnooper.variables import needs_parentheses\n\n@pytest.mark.parametrize(\"source, expected\", [\n    (\"a + b\", True),\n    (\"a\", False),\n    (\"a * b + c\", True),\n    (\"a * (b + c)\", False),\n    (\"(a + b)\", False),\n    (\"a + (b * c)\", False),\n    (\"(a + b) * c\", False),\n])\ndef test_needs_parentheses(source, expected):\n    assert needs_parentheses(source) == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 114,
+    "prompt_tokens": 227,
+    "total_tokens": 341
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/pycompat.py:17-22 ----
+{
+  "id": "chatcmpl-A45CjTyhYcECVY59WoJPWdYaWQvlo",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport abc\nfrom pysnooper.pycompat import ABC\n\ndef test_ABC_inheritance():\n    class TestClass(ABC):\n        @abc.abstractmethod\n        def my_method(self):\n            pass\n\n    with pytest.raises(TypeError):\n        TestClass()\n\ndef test_ABC_slots():\n    class TestClass(ABC):\n        __slots__ = ('attribute',)\n\n        def __init__(self, attribute):\n            self.attribute = attribute\n\n    instance = TestClass(attribute='test')\n    assert instance.attribute == 'test'\n    with pytest.raises(AttributeError):\n        instance.new_attribute = 'new'\n\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 128,
+    "prompt_tokens": 224,
+    "total_tokens": 352
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/tracer.py:330-331 ----
+{
+  "id": "chatcmpl-A45CkHF7RsKmrrwoqJ0b7nxv1zAdD",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport types\nfrom pysnooper.tracer import Tracer\n\n@pytest.fixture\ndef mock_frame():\n    frame = types.SimpleNamespace()\n    frame.f_code = types.SimpleNamespace()\n    return frame\n\ndef test_is_internal_frame_true(mock_frame, monkeypatch):\n    mock_frame.f_code.co_filename = Tracer.__enter__.__code__.co_filename\n    tracer = Tracer()\n    assert tracer._is_internal_frame(mock_frame) is True\n\ndef test_is_internal_frame_false(mock_frame, monkeypatch):\n    mock_frame.f_code.co_filename = \"some_other_file.py\"\n    tracer = Tracer()\n    assert tracer._is_internal_frame(mock_frame) is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 141,
+    "prompt_tokens": 214,
+    "total_tokens": 355
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/utils.py:44-47 ----
+{
+  "id": "chatcmpl-A45CjIeb1drAncHbMjbAiLVPJZsVW",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom pysnooper.utils import shitcode\n\ndef test_shitcode_all_ascii():\n    result = shitcode(\"Hello, World!\")\n    assert result == \"Hello, World!\"\n\ndef test_shitcode_non_ascii():\n    result = shitcode(\"Hello, \u4e16\u754c!\")\n    assert result == \"Hello, ??!\"\n\ndef test_shitcode_empty_string():\n    result = shitcode(\"\")\n    assert result == \"\"\n\ndef test_shitcode_mixed_ascii_non_ascii():\n    result = shitcode(\"H\u00e9llo, W\u00f6rld!\")\n    assert result == \"H?llo, W?rld!\"\n\ndef test_shitcode_boundary_values():\n    result = shitcode(chr(0) + chr(255) + chr(256))\n    assert result == \"?\\xff?\"\n\n@pytest.fixture(autouse=True)\ndef cleanup():\n    yield\n    # No state to clean up in this case, but fixture is here for future-proofing\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 195,
+    "prompt_tokens": 215,
+    "total_tokens": 410
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/tracer.py:289-291 ----
+{
+  "id": "chatcmpl-A45CkN2cXOLr20tClHRlDPTHdJS22",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock\n\nclass Tracer:\n    def __init__(self, prefix=''):\n        self.prefix = prefix\n\n    def write(self, s):\n        s = u'{self.prefix}{s}\\n'.format(**locals())\n        self._write(s)\n\n    def _write(self, s):\n        pass  # This method should be implemented in the actual class\n\n@pytest.fixture\ndef tracer():\n    tracer = Tracer(prefix='test_prefix_')\n    tracer._write = MagicMock()\n    return tracer\n\ndef test_write(tracer):\n    tracer.write('test_string')\n    tracer._write.assert_called_once_with('test_prefix_test_string\\n')\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 142,
+    "prompt_tokens": 215,
+    "total_tokens": 357
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/pycompat.py:86-88 ----
+{
+  "id": "chatcmpl-A45CkW7cbHek70HehliMnRnRwjOXL",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom datetime import timedelta, datetime as datetime_module\n\ndef timedelta_format(timedelta):\n    time = (datetime_module.datetime.min + timedelta).time()\n    return time_isoformat(time, timespec='microseconds')\n\ndef time_isoformat(time, timespec='microseconds'):\n    return time.isoformat(timespec=timespec)\n\ndef test_timedelta_format(monkeypatch):\n    class MockTime:\n        def isoformat(self, timespec):\n            return f\"mocked_time_{timespec}\"\n\n    def mock_time(*args, **kwargs):\n        return MockTime()\n\n    monkeypatch.setattr(datetime_module, 'time', mock_time)\n\n    td = timedelta(days=1, seconds=3600, microseconds=123456)\n    result = timedelta_format(td)\n    assert result == \"mocked_time_microseconds\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 172,
+    "prompt_tokens": 215,
+    "total_tokens": 387
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:43 pysnooper/pycompat.py:75-83 ----
+{
+  "id": "chatcmpl-A45CjUBbxRU1DoK3ODT27UZf1OkyA",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom datetime import time as datetime_time\nfrom pysnooper.pycompat import time_isoformat\n\ndef test_time_isoformat_microseconds():\n    test_time = datetime_time(12, 34, 56, 789012)\n    result = time_isoformat(test_time)\n    assert result == '12:34:56.789012'\n    assert len(result) == 15\n\ndef test_time_isoformat_not_implemented():\n    test_time = datetime_time(12, 34, 56, 789012)\n    with pytest.raises(NotImplementedError):\n        time_isoformat(test_time, timespec='seconds')\n\ndef test_time_isoformat_invalid_type():\n    with pytest.raises(AssertionError):\n        time_isoformat(\"12:34:56.789012\")\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 163,
+    "prompt_tokens": 270,
+    "total_tokens": 433
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:44 pysnooper/tracer.py:333-337 ----
+{
+  "id": "chatcmpl-A45CkrnGgULlOtYXNjQzXg2BH5y6k",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom pysnooper.tracer import Tracer\n\n@pytest.fixture\ndef tracer():\n    return Tracer()\n\ndef test_set_thread_info_padding_initial(tracer):\n    tracer.thread_info_padding = 0\n    result = tracer.set_thread_info_padding(\"thread1\")\n    assert result == \"thread1\"\n    assert tracer.thread_info_padding == 7\n\ndef test_set_thread_info_padding_increase(tracer):\n    tracer.thread_info_padding = 5\n    result = tracer.set_thread_info_padding(\"longer_thread\")\n    assert result == \"longer_thread\"\n    assert tracer.thread_info_padding == 13\n\ndef test_set_thread_info_padding_no_change(tracer):\n    tracer.thread_info_padding = 15\n    result = tracer.set_thread_info_padding(\"short\")\n    assert result == \"short          \"\n    assert tracer.thread_info_padding == 15\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 178,
+    "prompt_tokens": 234,
+    "total_tokens": 412
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:44 pysnooper/tracer.py:136-145 ----
+{
+  "id": "chatcmpl-A45Ckb8XGkUYu1YsxpiVV5zsfalJc",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport os\n\nfrom pysnooper.tracer import FileWriter\n\n@pytest.fixture\ndef temp_file(tmp_path):\n    file_path = tmp_path / \"test_file.txt\"\n    yield file_path\n    if file_path.exists():\n        file_path.unlink()\n\ndef test_file_writer_overwrite(temp_file):\n    writer = FileWriter(temp_file, overwrite=True)\n    writer.write(\"Hello, World!\")\n    \n    with open(temp_file, 'r', encoding='utf-8') as f:\n        content = f.read()\n    \n    assert content == \"Hello, World!\"\n    assert writer.overwrite is False\n\ndef test_file_writer_append(temp_file):\n    writer = FileWriter(temp_file, overwrite=True)\n    writer.write(\"Hello, World!\")\n    \n    writer = FileWriter(temp_file, overwrite=False)\n    writer.write(\" Goodbye, World!\")\n    \n    with open(temp_file, 'r', encoding='utf-8') as f:\n        content = f.read()\n    \n    assert content == \"Hello, World! Goodbye, World!\"\n    assert writer.overwrite is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 222,
+    "prompt_tokens": 263,
+    "total_tokens": 485
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:44 pysnooper/variables.py:100-108 ----
+{
+  "id": "chatcmpl-A45Ck4OwX2VcMR5DQZE4QNtudts1J",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest import mock\n\n# Assuming utils.get_shortish_repr is a function that needs to be mocked\nimport utils\nfrom pysnooper.variables import Keys\n\n@pytest.fixture\ndef keys_instance():\n    return Keys()\n\ndef test_keys_method(keys_instance):\n    main_value = {'a': 1, 'b': 2}\n    result = keys_instance._keys(main_value)\n    assert result == main_value.keys()\n\ndef test_format_key_method(keys_instance, monkeypatch):\n    key = 'test_key'\n    short_repr = 'short_repr'\n    \n    # Mocking utils.get_shortish_repr\n    monkeypatch.setattr(utils, 'get_shortish_repr', lambda x: short_repr)\n    \n    result = keys_instance._format_key(key)\n    assert result == '[{}]'.format(short_repr)\n\ndef test_get_value_method(keys_instance):\n    main_value = {'a': 1, 'b': 2}\n    key = 'a'\n    result = keys_instance._get_value(main_value, key)\n    assert result == main_value[key]\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 221,
+    "prompt_tokens": 245,
+    "total_tokens": 466
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:44 pysnooper/variables.py:100-108 ----
+Missing modules utils
+---- 2024-09-05T11:44:46 pysnooper/variables.py:100-108 ----
+Installed module utils
+---- 2024-09-05T11:44:46 pysnooper/utils.py:62-64 ----
+{
+  "id": "chatcmpl-A45CjDGAjtrEnKDhEyH3N84TnIot2",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport re\nimport pytest\n\n# Assuming DEFAULT_REPR_RE is defined somewhere in pysnooper/utils.py\nDEFAULT_REPR_RE = re.compile(r'\\b0x[0-9a-fA-F]+\\b')\n\nfrom pysnooper.utils import normalize_repr\n\ndef test_normalize_repr_removes_memory_address():\n    item_repr = \"<object at 0x7f8b8c0d2d30>\"\n    expected = \"<object at >\"\n    assert normalize_repr(item_repr) == expected\n\ndef test_normalize_repr_no_memory_address():\n    item_repr = \"<object at some_location>\"\n    expected = \"<object at some_location>\"\n    assert normalize_repr(item_repr) == expected\n\ndef test_normalize_repr_empty_string():\n    item_repr = \"\"\n    expected = \"\"\n    assert normalize_repr(item_repr) == expected\n\ndef test_normalize_repr_no_at_keyword():\n    item_repr = \"This is a test string without memory address\"\n    expected = \"This is a test string without memory address\"\n    assert normalize_repr(item_repr) == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 219,
+    "prompt_tokens": 213,
+    "total_tokens": 432
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/utils.py:81-87 ----
+{
+  "id": "chatcmpl-A45CjuHqq2AbOySbvXixuhPwaY64w",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom pysnooper.utils import truncate\n\ndef test_truncate_no_max_length():\n    assert truncate(\"hello world\", None) == \"hello world\"\n\ndef test_truncate_short_string():\n    assert truncate(\"short\", 10) == \"short\"\n\ndef test_truncate_exact_length():\n    assert truncate(\"exactly ten\", 12) == \"exactly ten\"\n\ndef test_truncate_truncated():\n    assert truncate(\"this is a long string\", 10) == \"thi...ing\"\n\ndef test_truncate_edge_case():\n    assert truncate(\"edgecase\", 5) == \"e...e\"\n\ndef test_truncate_empty_string():\n    assert truncate(\"\", 5) == \"\"\n\ndef test_truncate_max_length_three():\n    assert truncate(\"abcdef\", 3) == \"...\"\n\ndef test_truncate_max_length_two():\n    assert truncate(\"abcdef\", 2) == \"...\"\n\ndef test_truncate_max_length_one():\n    assert truncate(\"abcdef\", 1) == \"...\"\n\ndef test_truncate_max_length_zero():\n    assert truncate(\"abcdef\", 0) == \"...\"\n\n@pytest.fixture(autouse=True)\ndef run_around_tests():\n    # Setup: nothing to set up\n    yield\n    # Teardown: nothing to tear down\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 261,
+    "prompt_tokens": 254,
+    "total_tokens": 515
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/utils.py:10-20 ----
+{
+  "id": "chatcmpl-A45CjfURR23sGQJ29cO60ttXh82hn",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom pysnooper.utils import _check_methods\n\nclass TestCheckMethods:\n    def test_all_methods_present(self):\n        class A:\n            def method1(self): pass\n            def method2(self): pass\n\n        assert _check_methods(A, 'method1', 'method2') == True\n\n    def test_method_not_present(self):\n        class A:\n            def method1(self): pass\n\n        assert _check_methods(A, 'method1', 'method2') == NotImplemented\n\n    def test_method_is_none(self):\n        class A:\n            method1 = None\n            def method2(self): pass\n\n        assert _check_methods(A, 'method1', 'method2') == NotImplemented\n\n    def test_inherited_method(self):\n        class A:\n            def method1(self): pass\n\n        class B(A):\n            def method2(self): pass\n\n        assert _check_methods(B, 'method1', 'method2') == True\n\n    def test_inherited_method_is_none(self):\n        class A:\n            method1 = None\n\n        class B(A):\n            def method2(self): pass\n\n        assert _check_methods(B, 'method1', 'method2') == NotImplemented\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 255,
+    "prompt_tokens": 252,
+    "total_tokens": 507
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/pycompat.py:28-43 ----
+{
+  "id": "chatcmpl-A45CjNK0hkLyKMcGbrHETHsFmBhxX",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom abc import ABC\nimport abc\n\n# Import the PathLike class from the module where it is defined\nfrom pysnooper.pycompat import PathLike\n\nclass TestPathLike:\n    def test_subclasshook_with_fspath(self):\n        class WithFspath:\n            def __fspath__(self):\n                return \"path\"\n\n        assert issubclass(WithFspath, PathLike)\n\n    def test_subclasshook_with_open_and_path_in_name(self):\n        class PathWithOpen:\n            def open(self):\n                pass\n\n        assert issubclass(PathWithOpen, PathLike)\n\n    def test_subclasshook_without_fspath_or_open(self):\n        class WithoutFspathOrOpen:\n            pass\n\n        assert not issubclass(WithoutFspathOrOpen, PathLike)\n\n    def test_subclasshook_with_open_but_no_path_in_name(self):\n        class WithOpenNoPath:\n            def open(self):\n                pass\n\n        assert not issubclass(WithOpenNoPath, PathLike)\n\n    def test_abstract_method(self):\n        class IncompletePathLike(PathLike):\n            pass\n\n        with pytest.raises(TypeError):\n            IncompletePathLike()\n\n    def test_complete_pathlike(self):\n        class CompletePathLike(PathLike):\n            def __fspath__(self):\n                return \"path\"\n\n        instance = CompletePathLike()\n        assert instance.__fspath__() == \"path\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 294,
+    "prompt_tokens": 304,
+    "total_tokens": 598
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/variables.py:111-121 ----
+{
+  "id": "chatcmpl-A45CjLHpHWb0GraVhX7MNkOMpLM6M",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom copy import deepcopy\n\nclass Keys:\n    pass\n\nclass Indices(Keys):\n    _slice = slice(None)\n\n    def _keys(self, main_value):\n        return range(len(main_value))[self._slice]\n\n    def __getitem__(self, item):\n        assert isinstance(item, slice)\n        result = deepcopy(self)\n        result._slice = item\n        return result\n\n@pytest.fixture\ndef indices():\n    return Indices()\n\ndef test_indices_keys_full_slice(indices):\n    main_value = [1, 2, 3, 4, 5]\n    keys = indices._keys(main_value)\n    assert list(keys) == list(range(len(main_value)))\n\ndef test_indices_keys_partial_slice(indices):\n    indices._slice = slice(1, 4)\n    main_value = [1, 2, 3, 4, 5]\n    keys = indices._keys(main_value)\n    assert list(keys) == [1, 2, 3]\n\ndef test_indices_getitem(indices):\n    sliced_indices = indices[slice(1, 4)]\n    assert isinstance(sliced_indices, Indices)\n    assert sliced_indices._slice == slice(1, 4)\n\ndef test_indices_getitem_invalid():\n    indices = Indices()\n    with pytest.raises(AssertionError):\n        indices[1]\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 275,
+    "prompt_tokens": 249,
+    "total_tokens": 524
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/utils.py:50-56 ----
+{
+  "id": "chatcmpl-A45CjjmpmWzZ7bUdi7TThtPpyh1tT",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\nfrom pysnooper.utils import get_repr_function\n\ndef test_get_repr_function_with_type_condition():\n    custom_repr = [\n        (int, lambda x: f\"int: {x}\"),\n        (str, lambda x: f\"str: {x}\")\n    ]\n    item = 42\n    repr_func = get_repr_function(item, custom_repr)\n    assert repr_func(item) == \"int: 42\"\n\ndef test_get_repr_function_with_lambda_condition():\n    custom_repr = [\n        (lambda x: x == 42, lambda x: \"The answer to life, the universe, and everything\"),\n        (str, lambda x: f\"str: {x}\")\n    ]\n    item = 42\n    repr_func = get_repr_function(item, custom_repr)\n    assert repr_func(item) == \"The answer to life, the universe, and everything\"\n\ndef test_get_repr_function_with_no_matching_condition():\n    custom_repr = [\n        (str, lambda x: f\"str: {x}\")\n    ]\n    item = 42\n    repr_func = get_repr_function(item, custom_repr)\n    assert repr_func(item) == repr(item)\n\ndef test_get_repr_function_with_multiple_conditions():\n    custom_repr = [\n        (int, lambda x: f\"int: {x}\"),\n        (lambda x: x == 42, lambda x: \"The answer to life, the universe, and everything\"),\n        (str, lambda x: f\"str: {x}\")\n    ]\n    item = 42\n    repr_func = get_repr_function(item, custom_repr)\n    assert repr_func(item) == \"int: 42\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 345,
+    "prompt_tokens": 234,
+    "total_tokens": 579
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/utils.py:90-95 ----
+{
+  "id": "chatcmpl-A45CkwcNtgiBP98GXl8KyZ67AY072",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom pysnooper.utils import ensure_tuple\nfrom collections.abc import Iterable\nimport collections.abc as collections_abc\nimport six\n\ndef test_ensure_tuple_with_iterable(monkeypatch):\n    class MockIterable:\n        def __iter__(self):\n            yield 1\n            yield 2\n\n    mock_iterable = MockIterable()\n    result = ensure_tuple(mock_iterable)\n    assert result == (1, 2)\n\ndef test_ensure_tuple_with_string():\n    result = ensure_tuple(\"test\")\n    assert result == (\"test\",)\n\ndef test_ensure_tuple_with_non_iterable():\n    result = ensure_tuple(42)\n    assert result == (42,)\n\ndef test_ensure_tuple_with_list():\n    result = ensure_tuple([1, 2, 3])\n    assert result == (1, 2, 3)\n\ndef test_ensure_tuple_with_tuple():\n    result = ensure_tuple((1, 2, 3))\n    assert result == (1, 2, 3)\n\ndef test_ensure_tuple_with_dict():\n    result = ensure_tuple({'a': 1, 'b': 2})\n    assert result == ('a', 'b')\n\ndef test_ensure_tuple_with_set():\n    result = ensure_tuple({1, 2, 3})\n    assert result == (1, 2, 3) or result == (2, 1, 3) or result == (3, 2, 1) or result == (1, 3, 2) or result == (2, 3, 1) or result == (3, 1, 2)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 346,
+    "prompt_tokens": 221,
+    "total_tokens": 567
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/utils.py:67-78 ----
+{
+  "id": "chatcmpl-A45CjyvAzmkugguCMHc6RenHDd2ig",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom pysnooper.utils import get_shortish_repr\n\ndef test_get_shortish_repr_normal_case():\n    item = [1, 2, 3]\n    result = get_shortish_repr(item)\n    assert result == repr(item).replace('\\r', '').replace('\\n', '')\n\ndef test_get_shortish_repr_custom_repr():\n    item = [1, 2, 3]\n    custom_repr = {list: lambda x: 'custom repr'}\n    result = get_shortish_repr(item, custom_repr=custom_repr)\n    assert result == 'custom repr'\n\ndef test_get_shortish_repr_exception():\n    class BadRepr:\n        def __repr__(self):\n            raise ValueError(\"bad repr\")\n    item = BadRepr()\n    result = get_shortish_repr(item)\n    assert result == 'REPR FAILED'\n\ndef test_get_shortish_repr_normalize():\n    item = \"Hello\\nWorld\"\n    result = get_shortish_repr(item, normalize=True)\n    assert result == \"Hello World\"\n\ndef test_get_shortish_repr_max_length():\n    item = \"Hello World\"\n    result = get_shortish_repr(item, max_length=5)\n    assert result == \"Hello...\"\n\ndef test_get_shortish_repr_all_options():\n    item = \"Hello\\nWorld\"\n    custom_repr = {str: lambda x: 'custom\\nrepr'}\n    result = get_shortish_repr(item, custom_repr=custom_repr, max_length=10, normalize=True)\n    assert result == \"custom...repr\"\n\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 316,
+    "prompt_tokens": 276,
+    "total_tokens": 592
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/utils.py:23-32 ----
+{
+  "id": "chatcmpl-A45Cj4HHZ6Hv1JNpOmxnpLh4IxKkL",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom abc import ABC\nimport abc\n\n# Assuming _check_methods is defined somewhere in pysnooper/utils.py\n# We will mock it for the purpose of this test\ndef _check_methods(C, *methods):\n    for method in methods:\n        if not any(method in B.__dict__ for B in C.__mro__):\n            return NotImplemented\n    return True\n\nclass WritableStream(ABC):\n    @abc.abstractmethod\n    def write(self, s):\n        pass\n\n    @classmethod\n    def __subclasshook__(cls, C):\n        if cls is WritableStream:\n            return _check_methods(C, 'write')\n        return NotImplemented\n\ndef test_writable_stream_subclasshook(mocker):\n    # Mock _check_methods to control its behavior\n    mock_check_methods = mocker.patch('__main__._check_methods', return_value=True)\n\n    class TestClass:\n        def write(self, s):\n            pass\n\n    assert issubclass(TestClass, WritableStream)\n    mock_check_methods.assert_called_once_with(TestClass, 'write')\n\n    # Test when _check_methods returns NotImplemented\n    mock_check_methods.return_value = NotImplemented\n\n    class AnotherTestClass:\n        pass\n\n    assert not issubclass(AnotherTestClass, WritableStream)\n    mock_check_methods.assert_called_with(AnotherTestClass, 'write')\n\ndef test_writable_stream_subclasshook_not_writable_stream():\n    class TestClass:\n        pass\n\n    class AnotherClass(WritableStream):\n        def write(self, s):\n            pass\n\n    assert WritableStream.__subclasshook__(TestClass) == NotImplemented\n    assert WritableStream.__subclasshook__(AnotherClass) == NotImplemented\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 355,
+    "prompt_tokens": 240,
+    "total_tokens": 595
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:246-255 ----
+{
+  "id": "chatcmpl-A45Cks9fUovJLftJAFVJ4mK7CE1Uu",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest import mock\nimport inspect\n\nclass Tracer:\n    def _wrap_class(self, cls):\n        for attr_name, attr in cls.__dict__.items():\n            # Coroutines are functions, but snooping them is not supported\n            # at the moment\n            if pycompat.iscoroutinefunction(attr):\n                continue\n\n            if inspect.isfunction(attr):\n                setattr(cls, attr_name, self._wrap_function(attr))\n        return cls\n\n    def _wrap_function(self, func):\n        def wrapped(*args, **kwargs):\n            return func(*args, **kwargs)\n        return wrapped\n\nclass pycompat:\n    @staticmethod\n    def iscoroutinefunction(func):\n        return inspect.iscoroutinefunction(func)\n\nclass TestTracer:\n    @pytest.fixture\n    def tracer(self):\n        return Tracer()\n\n    def test_wrap_class_with_regular_function(self, tracer):\n        class MyClass:\n            def my_method(self):\n                return \"Hello\"\n\n        wrapped_class = tracer._wrap_class(MyClass)\n        assert wrapped_class.my_method() == \"Hello\"\n\n    def test_wrap_class_with_coroutine_function(self, tracer):\n        class MyClass:\n            async def my_coroutine(self):\n                return \"Hello\"\n\n        wrapped_class = tracer._wrap_class(MyClass)\n        assert inspect.iscoroutinefunction(wrapped_class.my_coroutine)\n\n    def test_wrap_class_with_no_functions(self, tracer):\n        class MyClass:\n            my_attr = \"Hello\"\n\n        wrapped_class = tracer._wrap_class(MyClass)\n        assert wrapped_class.my_attr == \"Hello\"\n\n    def test_wrap_class_with_mixed_functions(self, tracer):\n        class MyClass:\n            def my_method(self):\n                return \"Hello\"\n\n            async def my_coroutine(self):\n                return \"Hello\"\n\n        wrapped_class = tracer._wrap_class(MyClass)\n        assert wrapped_class.my_method() == \"Hello\"\n        assert inspect.iscoroutinefunction(wrapped_class.my_coroutine)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 403,
+    "prompt_tokens": 266,
+    "total_tokens": 669
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/pycompat.py:90-97 ----
+{
+  "id": "chatcmpl-A45CkjTeRQ7yQnfNsTBWgzFsLnJz2",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom datetime import timedelta as timedelta_module\n\ndef timedelta_parse(s):\n    hours, minutes, seconds, microseconds = map(\n        int,\n        s.replace('.', ':').split(':')\n    )\n    return timedelta_module(hours=hours, minutes=minutes,\n                            seconds=seconds,\n                            microseconds=microseconds)\n\ndef test_timedelta_parse_valid_input():\n    result = timedelta_parse(\"01:02:03.004005\")\n    expected = timedelta_module(hours=1, minutes=2, seconds=3, microseconds=4005)\n    assert result == expected\n\ndef test_timedelta_parse_no_microseconds():\n    result = timedelta_parse(\"01:02:03.000000\")\n    expected = timedelta_module(hours=1, minutes=2, seconds=3, microseconds=0)\n    assert result == expected\n\ndef test_timedelta_parse_zero_time():\n    result = timedelta_parse(\"00:00:00.000000\")\n    expected = timedelta_module(hours=0, minutes=0, seconds=0, microseconds=0)\n    assert result == expected\n\ndef test_timedelta_parse_single_digit():\n    result = timedelta_parse(\"1:2:3.4\")\n    expected = timedelta_module(hours=1, minutes=2, seconds=3, microseconds=4)\n    assert result == expected\n\ndef test_timedelta_parse_invalid_format():\n    with pytest.raises(ValueError):\n        timedelta_parse(\"invalid_format\")\n\ndef test_timedelta_parse_missing_microseconds():\n    with pytest.raises(ValueError):\n        timedelta_parse(\"01:02:03\")\n\ndef test_timedelta_parse_extra_colon():\n    with pytest.raises(ValueError):\n        timedelta_parse(\"01:02:03:04.005\")\n\ndef test_timedelta_parse_negative_values():\n    result = timedelta_parse(\"-01:-02:-03.-004005\")\n    expected = timedelta_module(hours=-1, minutes=-2, seconds=-3, microseconds=-4005)\n    assert result == expected\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 405,
+    "prompt_tokens": 239,
+    "total_tokens": 644
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:237-244 ----
+{
+  "id": "chatcmpl-A45CkKl4e3IHwD3pIMIXCpnHF77W7",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport inspect\nfrom unittest.mock import patch\n\n# Assuming DISABLED is a global variable in the module\nDISABLED = False\n\nclass Tracer:\n    def __call__(self, function_or_class):\n        if DISABLED:\n            return function_or_class\n\n        if inspect.isclass(function_or_class):\n            return self._wrap_class(function_or_class)\n        else:\n            return self._wrap_function(function_or_class)\n\n    def _wrap_class(self, cls):\n        # Dummy implementation for testing\n        return cls\n\n    def _wrap_function(self, func):\n        # Dummy implementation for testing\n        return func\n\n@pytest.fixture\ndef tracer():\n    return Tracer()\n\ndef test_tracer_disabled(tracer, monkeypatch):\n    monkeypatch.setattr('pysnooper.tracer.DISABLED', True)\n    def dummy_function():\n        pass\n    assert tracer(dummy_function) is dummy_function\n\ndef test_tracer_wrap_class(tracer):\n    class DummyClass:\n        pass\n    wrapped_class = tracer(DummyClass)\n    assert wrapped_class is DummyClass\n\ndef test_tracer_wrap_function(tracer):\n    def dummy_function():\n        pass\n    wrapped_function = tracer(dummy_function)\n    assert wrapped_function is dummy_function\n\ndef test_tracer_wrap_class_with_mock(tracer, mocker):\n    class DummyClass:\n        pass\n    mock_wrap_class = mocker.patch.object(tracer, '_wrap_class', return_value=DummyClass)\n    result = tracer(DummyClass)\n    mock_wrap_class.assert_called_once_with(DummyClass)\n    assert result is DummyClass\n\ndef test_tracer_wrap_function_with_mock(tracer, mocker):\n    def dummy_function():\n        pass\n    mock_wrap_function = mocker.patch.object(tracer, '_wrap_function', return_value=dummy_function)\n    result = tracer(dummy_function)\n    mock_wrap_function.assert_called_once_with(dummy_function)\n    assert result is dummy_function\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 395,
+    "prompt_tokens": 240,
+    "total_tokens": 635
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:41-43 ----
+.....                                                                    [100%]
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:41-43 ----
+Saved as /output/coverup-tests/test_coverup_1.py
+
+---- 2024-09-05T11:44:46 pysnooper/pycompat.py:17-22 ----
+..........                                                               [100%]
+
+---- 2024-09-05T11:44:46 pysnooper/pycompat.py:17-22 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:330-331 ----
+..........                                                               [100%]
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:330-331 ----
+Saved as /output/coverup-tests/test_coverup_2.py
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:289-291 ----
+.....                                                                    [100%]
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:289-291 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:46 pysnooper/pycompat.py:86-88 ----
+Test failed:
+
+cls = <class '_pytest.runner.CallInfo'>
+func = <function call_runtest_hook.<locals>.<lambda> at 0x7f018aa34550>
+when = 'teardown'
+reraise = (<class '_pytest.outcomes.Exit'>, <class 'KeyboardInterrupt'>)
+
+    @classmethod
+    def from_call(
+        cls,
+        func: "Callable[[], TResult]",
+        when: "Literal['collect', 'setup', 'call', 'teardown']",
+        reraise: Optional[
+            Union[Type[BaseException], Tuple[Type[BaseException], ...]]
+        ] = None,
+    ) -> "CallInfo[TResult]":
+        """Call func, wrapping the result in a CallInfo.
+    
+        :param func:
+            The function to call. Called without arguments.
+        :param when:
+            The phase in which the function is called.
+        :param reraise:
+            Exception or exceptions that shall propagate if raised by the
+            function, instead of being wrapped in the CallInfo.
+        """
+        excinfo = None
+        start = timing.time()
+        precise_start = timing.perf_counter()
+        try:
+>           result: Optional[TResult] = func()
+
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:338: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:259: in <lambda>
+    lambda: ihook(item=item, **kwds), when=when, reraise=reraise
+/usr/local/lib/python3.10/site-packages/pluggy/_hooks.py:265: in __call__
+    return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
+/usr/local/lib/python3.10/site-packages/pluggy/_manager.py:80: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:179: in pytest_runtest_teardown
+    item.session._setupstate.teardown_exact(nextitem)
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:529: in teardown_exact
+    raise exc
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:522: in teardown_exact
+    fin()
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:667: in <lambda>
+    subrequest.node.addfinalizer(lambda: fixturedef.finish(request=subrequest))
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:1019: in finish
+    raise exc
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:1012: in finish
+    func()
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:899: in _teardown_yield_fixture
+    next(it)
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:50: in monkeypatch
+    mpatch.undo()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_pytest.monkeypatch.MonkeyPatch object at 0x7f018b1bf2e0>
+
+    def undo(self) -> None:
+        """Undo previous changes.
+    
+        This call consumes the undo stack. Calling it a second time has no
+        effect unless you do more monkeypatching after the undo call.
+    
+        There is generally no need to call `undo()`, since it is
+        called automatically during tear-down.
+    
+        Note that the same `monkeypatch` fixture is used across a
+        single test function invocation. If `monkeypatch` is used both by
+        the test function itself and one of the test fixtures,
+        calling `undo()` will undo all of the changes made in
+        both functions.
+        """
+        for obj, name, value in reversed(self._setattr):
+            if value is not notset:
+>               setattr(obj, name, value)
+E               TypeError: cannot set 'time' attribute of immutable type 'datetime.datetime'
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:364: TypeError
+=================================== FAILURES ===================================
+__________________________ test_timedelta_format[1-5] __________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f018b1bf2e0>
+
+    def test_timedelta_format(monkeypatch):
+        class MockTime:
+            def isoformat(self, timespec):
+                return f"mocked_time_{timespec}"
+    
+        def mock_time(*args, **kwargs):
+            return MockTime()
+    
+>       monkeypatch.setattr(datetime_module, 'time', mock_time)
+E       TypeError: cannot set 'time' attribute of immutable type 'datetime.datetime'
+
+coverup-tests/tmp_test_shzoonmd.py:19: TypeError
+
+---- 2024-09-05T11:44:46 pysnooper/pycompat.py:75-83 ----
+Test failed:
+
+    def test_time_isoformat_not_implemented():
+        test_time = datetime_time(12, 34, 56, 789012)
+>       with pytest.raises(NotImplementedError):
+E       Failed: DID NOT RAISE <class 'NotImplementedError'>
+
+coverup-tests/tmp_test_6l7rxr6f.py:13: Failed
+
+---- 2024-09-05T11:44:46 pysnooper/utils.py:44-47 ----
+Test failed:
+
+    def test_shitcode_mixed_ascii_non_ascii():
+        result = shitcode("Héllo, Wörld!")
+>       assert result == "H?llo, W?rld!"
+E       AssertionError: assert 'Héllo, Wörld!' == 'H?llo, W?rld!'
+E         - H?llo, W?rld!
+E         ?  ^      ^
+E         + Héllo, Wörld!
+E         ?  ^      ^
+
+coverup-tests/tmp_test_b_wd0axg.py:19: AssertionError
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:333-337 ----
+...............                                                          [100%]
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:333-337 ----
+Saved as /output/coverup-tests/test_coverup_3.py
+
+---- 2024-09-05T11:44:46 pysnooper/variables.py:13-17 ----
+Test failed:
+
+source = 'a * (b + c)', expected = False
+
+    @pytest.mark.parametrize("source, expected", [
+        ("a + b", True),
+        ("a", False),
+        ("a * b + c", True),
+        ("a * (b + c)", False),
+        ("(a + b)", False),
+        ("a + (b * c)", False),
+        ("(a + b) * c", False),
+    ])
+    def test_needs_parentheses(source, expected):
+>       assert needs_parentheses(source) == expected
+E       AssertionError: assert True == False
+E        +  where True = needs_parentheses('a * (b + c)')
+
+coverup-tests/tmp_test_4etdxbfh.py:15: AssertionError
+
+---- 2024-09-05T11:44:46 pysnooper/tracer.py:111-133 ----
+{
+  "id": "chatcmpl-A45CkTUlkwArIS2kwZeZh59WAFiYc",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport sys\nfrom unittest.mock import MagicMock, mock_open, patch\nfrom pysnooper import utils, pycompat\nfrom pysnooper.tracer import get_write_function\n\ndef test_get_write_function_none_output(monkeypatch):\n    mock_stderr = MagicMock()\n    monkeypatch.setattr(sys, 'stderr', mock_stderr)\n    \n    write_func = get_write_function(None, False)\n    write_func(\"test\")\n    \n    mock_stderr.write.assert_called_once_with(\"test\")\n\ndef test_get_write_function_none_output_unicode_error(monkeypatch):\n    mock_stderr = MagicMock()\n    monkeypatch.setattr(sys, 'stderr', mock_stderr)\n    mock_stderr.write.side_effect = UnicodeEncodeError(\"codec\", b\"\", 0, 1, \"reason\")\n    mock_shitcode = MagicMock(return_value=\"encoded\")\n    monkeypatch.setattr(utils, 'shitcode', mock_shitcode)\n    \n    write_func = get_write_function(None, False)\n    write_func(\"test\")\n    \n    mock_shitcode.assert_called_once_with(\"test\")\n    mock_stderr.write.assert_called_with(\"encoded\")\n\ndef test_get_write_function_path_output(monkeypatch):\n    mock_file_writer = MagicMock()\n    monkeypatch.setattr('pysnooper.tracer.FileWriter', mock_file_writer)\n    \n    write_func = get_write_function(\"test_path\", False)\n    write_func(\"test\")\n    \n    mock_file_writer.assert_called_once_with(\"test_path\", False)\n    mock_file_writer().write.assert_called_once_with(\"test\")\n\ndef test_get_write_function_callable_output():\n    mock_callable = MagicMock()\n    \n    write_func = get_write_function(mock_callable, False)\n    write_func(\"test\")\n    \n    mock_callable.assert_called_once_with(\"test\")\n\ndef test_get_write_function_writable_stream_output():\n    mock_stream = MagicMock(spec=utils.WritableStream)\n    \n    write_func = get_write_function(mock_stream, False)\n    write_func(\"test\")\n    \n    mock_stream.write.assert_called_once_with(\"test\")\n\ndef test_get_write_function_overwrite_exception():\n    with pytest.raises(Exception, match='`overwrite=True` can only be used when writing content to file.'):\n        get_write_function(MagicMock(), True)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 465,
+    "prompt_tokens": 335,
+    "total_tokens": 800
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:47 pysnooper/variables.py:124-133 ----
+{
+  "id": "chatcmpl-A45CkXCctKMaywLjZsO5VuxS8m1sg",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom collections.abc import Mapping, Sequence\nfrom unittest.mock import Mock\n\nclass BaseVariable:\n    def __init__(self, source, exclude):\n        self.source = source\n        self.exclude = exclude\n\nclass Keys(BaseVariable):\n    def _items(self, main_value, normalize=False):\n        return list(main_value.keys())\n\nclass Indices(BaseVariable):\n    def _items(self, main_value, normalize=False):\n        return list(range(len(main_value)))\n\nclass Attrs(BaseVariable):\n    def _items(self, main_value, normalize=False):\n        return [attr for attr in dir(main_value) if not attr.startswith('__')]\n\nclass Exploding(BaseVariable):\n    def _items(self, main_value, normalize=False):\n        if isinstance(main_value, Mapping):\n            cls = Keys\n        elif isinstance(main_value, Sequence):\n            cls = Indices\n        else:\n            cls = Attrs\n\n        return cls(self.source, self.exclude)._items(main_value, normalize)\n\n@pytest.fixture\ndef mock_source():\n    return Mock()\n\n@pytest.fixture\ndef mock_exclude():\n    return Mock()\n\ndef test_exploding_with_mapping(mock_source, mock_exclude):\n    exploding = Exploding(mock_source, mock_exclude)\n    main_value = {'a': 1, 'b': 2}\n    result = exploding._items(main_value)\n    assert result == ['a', 'b']\n\ndef test_exploding_with_sequence(mock_source, mock_exclude):\n    exploding = Exploding(mock_source, mock_exclude)\n    main_value = [1, 2, 3]\n    result = exploding._items(main_value)\n    assert result == [0, 1, 2]\n\ndef test_exploding_with_other(mock_source, mock_exclude):\n    class Dummy:\n        def __init__(self):\n            self.attr1 = 1\n            self.attr2 = 2\n\n    exploding = Exploding(mock_source, mock_exclude)\n    main_value = Dummy()\n    result = exploding._items(main_value)\n    assert 'attr1' in result\n    assert 'attr2' in result\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 435,
+    "prompt_tokens": 251,
+    "total_tokens": 686
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:47 pysnooper/tracer.py:136-145 ----
+..........                                                               [100%]
+
+---- 2024-09-05T11:44:47 pysnooper/tracer.py:136-145 ----
+Saved as /output/coverup-tests/test_coverup_4.py
+
+---- 2024-09-05T11:44:47 pysnooper/variables.py:86-97 ----
+{
+  "id": "chatcmpl-A45CjWeCjxY9r3oCvKNY5M9t7cn7n",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest import mock\nimport itertools\n\nclass CommonVariable:\n    pass\n\nclass Attrs(CommonVariable):\n    def _keys(self, main_value):\n        return itertools.chain(\n            getattr(main_value, '__dict__', ()),\n            getattr(main_value, '__slots__', ())\n        )\n\n    def _format_key(self, key):\n        return '.' + key\n\n    def _get_value(self, main_value, key):\n        return getattr(main_value, key)\n\nclass TestAttrs:\n    @pytest.fixture\n    def attrs(self):\n        return Attrs()\n\n    def test_keys_with_dict(self, attrs):\n        class TestClass:\n            def __init__(self):\n                self.a = 1\n                self.b = 2\n\n        obj = TestClass()\n        keys = list(attrs._keys(obj))\n        assert 'a' in keys\n        assert 'b' in keys\n\n    def test_keys_with_slots(self, attrs):\n        class TestClass:\n            __slots__ = ['a', 'b']\n            def __init__(self):\n                self.a = 1\n                self.b = 2\n\n        obj = TestClass()\n        keys = list(attrs._keys(obj))\n        assert 'a' in keys\n        assert 'b' in keys\n\n    def test_format_key(self, attrs):\n        key = 'test'\n        formatted_key = attrs._format_key(key)\n        assert formatted_key == '.test'\n\n    def test_get_value(self, attrs):\n        class TestClass:\n            def __init__(self):\n                self.a = 1\n\n        obj = TestClass()\n        value = attrs._get_value(obj, 'a')\n        assert value == 1\n\n    def test_keys_with_no_dict_or_slots(self, attrs):\n        class TestClass:\n            pass\n\n        obj = TestClass()\n        keys = list(attrs._keys(obj))\n        assert keys == []\n\n    def test_get_value_nonexistent_key(self, attrs):\n        class TestClass:\n            def __init__(self):\n                self.a = 1\n\n        obj = TestClass()\n        with pytest.raises(AttributeError):\n            attrs._get_value(obj, 'b')\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 445,
+    "prompt_tokens": 261,
+    "total_tokens": 706
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:47 pysnooper/tracer.py:293-307 ----
+{
+  "id": "chatcmpl-A45Cku6IFokOhlkrKwAmV28dkZKZF",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport sys\nimport inspect\nimport datetime as datetime_module\nfrom unittest.mock import MagicMock\n\n# Assuming DISABLED, thread_global, and Tracer are defined in pysnooper.tracer\nfrom pysnooper.tracer import Tracer, DISABLED, thread_global\n\n@pytest.fixture\ndef mock_thread_global(monkeypatch):\n    mock = MagicMock()\n    monkeypatch.setattr('pysnooper.tracer.thread_global', mock)\n    return mock\n\n@pytest.fixture\ndef mock_datetime(monkeypatch):\n    mock = MagicMock()\n    monkeypatch.setattr('pysnooper.tracer.datetime_module', mock)\n    return mock\n\n@pytest.fixture\ndef mock_sys(monkeypatch):\n    mock = MagicMock()\n    monkeypatch.setattr('pysnooper.tracer.sys', mock)\n    return mock\n\n@pytest.fixture\ndef mock_inspect(monkeypatch):\n    mock = MagicMock()\n    monkeypatch.setattr('pysnooper.tracer.inspect', mock)\n    return mock\n\ndef test_tracer_enter_disabled(mock_thread_global, mock_datetime, mock_sys, mock_inspect):\n    global DISABLED\n    DISABLED = True\n    tracer = Tracer()\n    result = tracer.__enter__()\n    assert result is None\n    DISABLED = False\n\ndef test_tracer_enter_enabled_internal_frame(mock_thread_global, mock_datetime, mock_sys, mock_inspect):\n    global DISABLED\n    DISABLED = False\n    tracer = Tracer()\n    mock_frame = MagicMock()\n    mock_inspect.currentframe.return_value.f_back = mock_frame\n    tracer._is_internal_frame = MagicMock(return_value=True)\n    \n    tracer.__enter__()\n    \n    assert mock_frame.f_trace is None\n    assert mock_frame not in tracer.target_frames\n    assert len(tracer.thread_local.__dict__['original_trace_functions']) == 1\n    assert tracer.start_times[mock_frame] == mock_datetime.datetime.now()\n    assert mock_sys.settrace.called\n\ndef test_tracer_enter_enabled_external_frame(mock_thread_global, mock_datetime, mock_sys, mock_inspect):\n    global DISABLED\n    DISABLED = False\n    tracer = Tracer()\n    mock_frame = MagicMock()\n    mock_inspect.currentframe.return_value.f_back = mock_frame\n    tracer._is_internal_frame = MagicMock(return_value=False)\n    \n    tracer.__enter__()\n    \n    assert mock_frame.f_trace == tracer.trace\n    assert mock_frame in tracer.target_frames\n    assert len(tracer.thread_local.__dict__['original_trace_functions']) == 1\n    assert tracer.start_times[mock_frame] == mock_datetime.datetime.now()\n    assert mock_sys.settrace.called\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 548,
+    "prompt_tokens": 306,
+    "total_tokens": 854
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:47 pysnooper/tracer.py:206-235 ----
+{
+  "id": "chatcmpl-A45CkOG5MDfChHZJqwiZD0EMYJ7ft",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport threading\nfrom pysnooper.tracer import Tracer\nfrom pysnooper.utils import ensure_tuple\nfrom pysnooper.variables import BaseVariable, CommonVariable, Exploding\nfrom pysnooper.pycompat import collections_abc\n\ndef get_write_function(output, overwrite):\n    def write_function(msg):\n        pass\n    return write_function\n\n@pytest.fixture\ndef mock_utils(monkeypatch):\n    def mock_ensure_tuple(value):\n        return (value,) if not isinstance(value, tuple) else value\n    monkeypatch.setattr('pysnooper.utils.ensure_tuple', mock_ensure_tuple)\n\n@pytest.fixture\ndef mock_variables(monkeypatch):\n    class MockBaseVariable(BaseVariable):\n        pass\n    class MockCommonVariable(CommonVariable):\n        pass\n    class MockExploding(Exploding):\n        pass\n    monkeypatch.setattr('pysnooper.variables.BaseVariable', MockBaseVariable)\n    monkeypatch.setattr('pysnooper.variables.CommonVariable', MockCommonVariable)\n    monkeypatch.setattr('pysnooper.variables.Exploding', MockExploding)\n\ndef test_tracer_initialization(mock_utils, mock_variables):\n    tracer = Tracer(output=None, watch=('var1',), watch_explode=('var2',), depth=2,\n                    prefix='test', overwrite=True, thread_info=True, custom_repr=(('repr1', 'repr2'),),\n                    max_variable_length=200, normalize=True, relative_time=True)\n    \n    assert tracer.depth == 2\n    assert tracer.prefix == 'test'\n    assert tracer.thread_info is True\n    assert tracer.custom_repr == (('repr1', 'repr2'),)\n    assert tracer.max_variable_length == 200\n    assert tracer.normalize is True\n    assert tracer.relative_time is True\n    assert len(tracer.watch) == 2\n    assert isinstance(tracer.watch[0], CommonVariable)\n    assert isinstance(tracer.watch[1], Exploding)\n    assert tracer.thread_local is not None\n\ndef test_tracer_custom_repr_single(mock_utils, mock_variables):\n    tracer = Tracer(custom_repr=('repr1', 'repr2'))\n    assert tracer.custom_repr == (('repr1', 'repr2'),)\n\ndef test_tracer_custom_repr_multiple(mock_utils, mock_variables):\n    tracer = Tracer(custom_repr=(('repr1', 'repr2'), ('repr3', 'repr4')))\n    assert tracer.custom_repr == (('repr1', 'repr2'), ('repr3', 'repr4'))\n\ndef test_tracer_custom_repr_invalid(mock_utils, mock_variables):\n    tracer = Tracer(custom_repr=('repr1', 123))\n    assert tracer.custom_repr == (('repr1', 123),)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 560,
+    "prompt_tokens": 463,
+    "total_tokens": 1023
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:48 pysnooper/tracer.py:257-287 ----
+{
+  "id": "chatcmpl-A45CkF1s2yKO43D8Kcd1vJQhhXkU6",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport functools\nimport inspect\nfrom unittest import mock\n\nclass pycompat:\n    @staticmethod\n    def iscoroutinefunction(func):\n        return False\n\n    @staticmethod\n    def isasyncgenfunction(func):\n        return False\n\nclass Tracer:\n    def __init__(self):\n        self.target_codes = set()\n\n    def __enter__(self):\n        pass\n\n    def __exit__(self, exc_type, exc_val, exc_tb):\n        pass\n\n    def _wrap_function(self, function):\n        self.target_codes.add(function.__code__)\n\n        @functools.wraps(function)\n        def simple_wrapper(*args, **kwargs):\n            with self:\n                return function(*args, **kwargs)\n\n        @functools.wraps(function)\n        def generator_wrapper(*args, **kwargs):\n            gen = function(*args, **kwargs)\n            method, incoming = gen.send, None\n            while True:\n                with self:\n                    try:\n                        outgoing = method(incoming)\n                    except StopIteration:\n                        return\n                try:\n                    method, incoming = gen.send, (yield outgoing)\n                except Exception as e:\n                    method, incoming = gen.throw, e\n\n        if pycompat.iscoroutinefunction(function):\n            raise NotImplementedError\n        if pycompat.isasyncgenfunction(function):\n            raise NotImplementedError\n        elif inspect.isgeneratorfunction(function):\n            return generator_wrapper\n        else:\n            return simple_wrapper\n\ndef test_simple_function():\n    tracer = Tracer()\n\n    def simple_function(x, y):\n        return x + y\n\n    wrapped_function = tracer._wrap_function(simple_function)\n    assert wrapped_function(2, 3) == 5\n    assert simple_function.__code__ in tracer.target_codes\n\ndef test_generator_function():\n    tracer = Tracer()\n\n    def generator_function(x):\n        for i in range(x):\n            yield i\n\n    wrapped_function = tracer._wrap_function(generator_function)\n    gen = wrapped_function(3)\n    assert next(gen) == 0\n    assert next(gen) == 1\n    assert next(gen) == 2\n    with pytest.raises(StopIteration):\n        next(gen)\n    assert generator_function.__code__ in tracer.target_codes\n\ndef test_not_implemented_coroutine_function(monkeypatch):\n    tracer = Tracer()\n\n    def coroutine_function():\n        pass\n\n    monkeypatch.setattr(pycompat, 'iscoroutinefunction', lambda func: True)\n    with pytest.raises(NotImplementedError):\n        tracer._wrap_function(coroutine_function)\n\ndef test_not_implemented_asyncgen_function(monkeypatch):\n    tracer = Tracer()\n\n    def asyncgen_function():\n        pass\n\n    monkeypatch.setattr(pycompat, 'isasyncgenfunction', lambda func: True)\n    with pytest.raises(NotImplementedError):\n        tracer._wrap_function(asyncgen_function)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 586,
+    "prompt_tokens": 387,
+    "total_tokens": 973
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:48 pysnooper/tracer.py:309-326 ----
+{
+  "id": "chatcmpl-A45CkaKoCKTz4CKjS4S2eNHhlcmM7",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport sys\nimport inspect\nimport datetime as datetime_module\nfrom unittest import mock\n\n# Assuming DISABLED, thread_local, thread_global, pycompat, and Tracer are defined elsewhere\n# Mocking them for the purpose of this test\n\nclass MockThreadLocal:\n    def __init__(self):\n        self.original_trace_functions = []\n\nclass MockThreadGlobal:\n    def __init__(self):\n        self.depth = 0\n\nclass MockPyCompat:\n    @staticmethod\n    def timedelta_format(duration):\n        return str(duration)\n\nDISABLED = False\nthread_local = MockThreadLocal()\nthread_global = MockThreadGlobal()\npycompat = MockPyCompat()\n\nclass Tracer:\n    def __init__(self):\n        self.thread_local = thread_local\n        self.target_frames = set()\n        self.frame_to_local_reprs = {}\n        self.start_times = {}\n\n    def write(self, message):\n        pass  # Mocked method, no-op for now\n\n    def __exit__(self, exc_type, exc_value, exc_traceback):\n        if DISABLED:\n            return\n        stack = self.thread_local.original_trace_functions\n        sys.settrace(stack.pop())\n        calling_frame = inspect.currentframe().f_back\n        self.target_frames.discard(calling_frame)\n        self.frame_to_local_reprs.pop(calling_frame, None)\n\n        start_time = self.start_times.pop(calling_frame)\n        duration = datetime_module.datetime.now() - start_time\n        elapsed_time_string = pycompat.timedelta_format(duration)\n        indent = ' ' * 4 * (thread_global.depth + 1)\n        self.write(\n            '{indent}Elapsed time: {elapsed_time_string}'.format(**locals())\n        )\n\n@pytest.fixture\ndef mock_sys_settrace(monkeypatch):\n    def mock_settrace(trace_func):\n        pass  # No-op for testing\n    monkeypatch.setattr(sys, 'settrace', mock_settrace)\n\n@pytest.fixture\ndef mock_inspect_currentframe(monkeypatch):\n    frame = inspect.currentframe()\n    monkeypatch.setattr(inspect, 'currentframe', lambda: frame)\n    return frame\n\n@pytest.fixture\ndef mock_datetime_now(monkeypatch):\n    fixed_now = datetime_module.datetime(2023, 1, 1, 12, 0, 0)\n    monkeypatch.setattr(datetime_module.datetime, 'now', lambda: fixed_now)\n    return fixed_now\n\ndef test_tracer_exit(mock_sys_settrace, mock_inspect_currentframe, mock_datetime_now):\n    tracer = Tracer()\n    frame = mock_inspect_currentframe\n\n    # Setup initial state\n    tracer.thread_local.original_trace_functions.append(None)\n    tracer.start_times[frame] = mock_datetime_now - datetime_module.timedelta(seconds=5)\n    tracer.target_frames.add(frame)\n    tracer.frame_to_local_reprs[frame] = 'some_repr'\n\n    with mock.patch.object(tracer, 'write') as mock_write:\n        tracer.__exit__(None, None, None)\n\n    assert frame not in tracer.target_frames\n    assert frame not in tracer.frame_to_local_reprs\n    assert frame not in tracer.start_times\n    mock_write.assert_called_once_with('    Elapsed time: 0:00:05')\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 663,
+    "prompt_tokens": 351,
+    "total_tokens": 1014
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:49 pysnooper/utils.py:67-78 ----
+Test failed:
+
+    def test_get_shortish_repr_custom_repr():
+        item = [1, 2, 3]
+        custom_repr = {list: lambda x: 'custom repr'}
+>       result = get_shortish_repr(item, custom_repr=custom_repr)
+
+coverup-tests/tmp_test_oiduqmv1.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pysnooper/utils.py:68: in get_shortish_repr
+    repr_function = get_repr_function(item, custom_repr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+item = [1, 2, 3]
+custom_repr = {<class 'list'>: <function test_get_shortish_repr_custom_repr.<locals>.<lambda> at 0x7f7aebef7640>}
+
+    def get_repr_function(item, custom_repr):
+>       for condition, action in custom_repr:
+E       TypeError: cannot unpack non-iterable type object
+
+pysnooper/utils.py:51: TypeError
+
+---- 2024-09-05T11:44:49 pysnooper/utils.py:10-20 ----
+.........................                                                [100%]
+
+---- 2024-09-05T11:44:49 pysnooper/utils.py:10-20 ----
+Saved as /output/coverup-tests/test_coverup_5.py
+
+---- 2024-09-05T11:44:49 pysnooper/variables.py:111-121 ----
+....................                                                     [100%]
+
+---- 2024-09-05T11:44:49 pysnooper/variables.py:111-121 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:49 pysnooper/variables.py:100-108 ----
+Test failed:
+
+    @pytest.fixture
+    def keys_instance():
+>       return Keys()
+E       TypeError: BaseVariable.__init__() missing 1 required positional argument: 'source'
+
+coverup-tests/tmp_test_56q9bhxo.py:10: TypeError
+
+---- 2024-09-05T11:44:49 pysnooper/tracer.py:25-38 ----
+{
+  "id": "chatcmpl-A45CkWivdgMQ57IerecwyC4fQctzo",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport collections\nfrom unittest import mock\nfrom pysnooper import utils\n\n# Mocking utils.get_shortish_repr to return a predictable value\n@pytest.fixture\ndef mock_get_shortish_repr(monkeypatch):\n    def mock_repr(value, custom_repr, max_length, normalize):\n        return f\"repr({value})\"\n    monkeypatch.setattr(utils, 'get_shortish_repr', mock_repr)\n\ndef test_get_local_reprs_basic(mock_get_shortish_repr):\n    frame = mock.MagicMock()\n    frame.f_code.co_varnames = ('a', 'b')\n    frame.f_code.co_cellvars = ('c',)\n    frame.f_code.co_freevars = ('d',)\n    frame.f_locals = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}\n\n    from pysnooper.tracer import get_local_reprs\n    result = get_local_reprs(frame)\n    \n    expected_keys = ['a', 'b', 'c', 'd', 'e']\n    assert list(result.keys()) == expected_keys\n    for key in expected_keys:\n        assert result[key] == f\"repr({frame.f_locals[key]})\"\n\ndef test_get_local_reprs_with_watch(mock_get_shortish_repr):\n    frame = mock.MagicMock()\n    frame.f_code.co_varnames = ('a',)\n    frame.f_code.co_cellvars = ()\n    frame.f_code.co_freevars = ()\n    frame.f_locals = {'a': 1}\n\n    watch = [mock.MagicMock()]\n    watch[0].items.return_value = [('watched_var', 'watched_value')]\n\n    from pysnooper.tracer import get_local_reprs\n    result = get_local_reprs(frame, watch=watch)\n    \n    assert 'a' in result\n    assert result['a'] == \"repr(1)\"\n    assert 'watched_var' in result\n    assert result['watched_var'] == 'watched_value'\n\ndef test_get_local_reprs_with_custom_repr(mock_get_shortish_repr):\n    frame = mock.MagicMock()\n    frame.f_code.co_varnames = ('a',)\n    frame.f_code.co_cellvars = ()\n    frame.f_code.co_freevars = ()\n    frame.f_locals = {'a': 1}\n\n    custom_repr = [mock.MagicMock()]\n    custom_repr[0].return_value = 'custom_repr'\n\n    from pysnooper.tracer import get_local_reprs\n    result = get_local_reprs(frame, custom_repr=custom_repr)\n    \n    assert 'a' in result\n    assert result['a'] == \"repr(1)\"\n\ndef test_get_local_reprs_with_max_length(mock_get_shortish_repr):\n    frame = mock.MagicMock()\n    frame.f_code.co_varnames = ('a',)\n    frame.f_code.co_cellvars = ()\n    frame.f_code.co_freevars = ()\n    frame.f_locals = {'a': 'a' * 100}\n\n    from pysnooper.tracer import get_local_reprs\n    result = get_local_reprs(frame, max_length=10)\n    \n    assert 'a' in result\n    assert result['a'] == \"repr(\" + 'a' * 100 + \")\"\n\ndef test_get_local_reprs_with_normalize(mock_get_shortish_repr):\n    frame = mock.MagicMock()\n    frame.f_code.co_varnames = ('a',)\n    frame.f_code.co_cellvars = ()\n    frame.f_code.co_freevars = ()\n    frame.f_locals = {'a': 1}\n\n    from pysnooper.tracer import get_local_reprs\n    result = get_local_reprs(frame, normalize=True)\n    \n    assert 'a' in result\n    assert result['a'] == \"repr(1)\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 797,
+    "prompt_tokens": 322,
+    "total_tokens": 1119
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:49 pysnooper/utils.py:90-95 ----
+...................................                                      [100%]
+
+---- 2024-09-05T11:44:49 pysnooper/utils.py:90-95 ----
+Saved as /output/coverup-tests/test_coverup_6.py
+
+---- 2024-09-05T11:44:49 pysnooper/tracer.py:246-255 ----
+Test failed:
+
+self = <tmp_test_du086sk5.TestTracer object at 0x7f6e47244d00>
+tracer = <tmp_test_du086sk5.Tracer object at 0x7f6e46fd1a50>
+
+    def test_wrap_class_with_regular_function(self, tracer):
+        class MyClass:
+            def my_method(self):
+                return "Hello"
+    
+        wrapped_class = tracer._wrap_class(MyClass)
+>       assert wrapped_class.my_method() == "Hello"
+
+coverup-tests/tmp_test_du086sk5.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (), kwargs = {}
+
+    def wrapped(*args, **kwargs):
+>       return func(*args, **kwargs)
+E       TypeError: TestTracer.test_wrap_class_with_regular_function.<locals>.MyClass.my_method() missing 1 required positional argument: 'self'
+
+coverup-tests/tmp_test_du086sk5.py:19: TypeError
+
+---- 2024-09-05T11:44:49 pysnooper/pycompat.py:28-43 ----
+Test failed:
+
+self = <tmp_test_9s8i14vl.TestPathLike object at 0x7f6a9c19bf70>
+
+    def test_subclasshook_with_open_and_path_in_name(self):
+        class PathWithOpen:
+            def open(self):
+                pass
+    
+>       assert issubclass(PathWithOpen, PathLike)
+E       AssertionError: assert False
+E        +  where False = issubclass(<class 'tmp_test_9s8i14vl.TestPathLike.test_subclasshook_with_open_and_path_in_name.<locals>.PathWithOpen'>, PathLike)
+
+coverup-tests/tmp_test_9s8i14vl.py:21: AssertionError
+
+---- 2024-09-05T11:44:49 pysnooper/utils.py:23-32 ----
+Test failed:
+
+mocker = <pytest_mock.plugin.MockerFixture object at 0x7f35f453a560>
+
+    def test_writable_stream_subclasshook(mocker):
+        # Mock _check_methods to control its behavior
+>       mock_check_methods = mocker.patch('__main__._check_methods', return_value=True)
+
+coverup-tests/tmp_test_4ruopeky.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__
+    return self._start_patch(
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch
+    mocked: MockType = p.start()
+/usr/local/lib/python3.10/unittest/mock.py:1585: in start
+    result = self.__enter__()
+/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <unittest.mock._patch object at 0x7f35f453be20>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+    
+        original = DEFAULT
+        local = False
+    
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+    
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+    
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <module 'pytest.__main__' from '/usr/local/lib/python3.10/site-packages/pytest/__main__.py'> does not have the attribute '_check_methods'
+
+/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError
+
+---- 2024-09-05T11:44:49 pysnooper/utils.py:62-64 ----
+Test failed:
+
+    def test_normalize_repr_removes_memory_address():
+        item_repr = "<object at 0x7f8b8c0d2d30>"
+        expected = "<object at >"
+>       assert normalize_repr(item_repr) == expected
+E       AssertionError: assert '<object>' == '<object at >'
+E         - <object at >
+E         ?        ----
+E         + <object>
+
+coverup-tests/tmp_test_0_7tficv.py:12: AssertionError
+
+---- 2024-09-05T11:44:50 pysnooper/utils.py:81-87 ----
+Test failed:
+
+    def test_truncate_truncated():
+>       assert truncate("this is a long string", 10) == "thi...ing"
+E       AssertionError: assert 'thi...ring' == 'thi...ing'
+E         - thi...ing
+E         + thi...ring
+E         ?       +
+
+coverup-tests/tmp_test_ied73q43.py:15: AssertionError
+
+---- 2024-09-05T11:44:50 pysnooper/variables.py:124-133 ----
+...............                                                          [100%]
+
+---- 2024-09-05T11:44:50 pysnooper/variables.py:124-133 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:50 pysnooper/utils.py:50-56 ----
+....................                                                     [100%]
+
+---- 2024-09-05T11:44:50 pysnooper/utils.py:50-56 ----
+Saved as /output/coverup-tests/test_coverup_7.py
+
+---- 2024-09-05T11:44:50 pysnooper/pycompat.py:90-97 ----
+........................................                                 [100%]
+
+---- 2024-09-05T11:44:50 pysnooper/pycompat.py:90-97 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:111-133 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2d92d6c5e0>
+
+    def test_get_write_function_none_output_unicode_error(monkeypatch):
+        mock_stderr = MagicMock()
+        monkeypatch.setattr(sys, 'stderr', mock_stderr)
+>       mock_stderr.write.side_effect = UnicodeEncodeError("codec", b"", 0, 1, "reason")
+E       TypeError: argument 2 must be str, not bytes
+
+coverup-tests/tmp_test_2bznxouw.py:19: TypeError
+
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:237-244 ----
+.........................                                                [100%]
+
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:237-244 ----
+Saved as /output/coverup-tests/test_coverup_8.py
+
+---- 2024-09-05T11:44:50 pysnooper/variables.py:20-50 ----
+{
+  "id": "chatcmpl-A45Cjy2lnliUcqIJLk7kSV78pGZJX",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest import mock\nfrom pysnooper import pycompat, utils\nimport abc\n\n# Mocking pycompat.ABC and utils.ensure_tuple\nclass MockABCMeta(abc.ABCMeta):\n    pass\n\npycompat.ABC = MockABCMeta('ABC', (object,), {})\n\ndef mock_ensure_tuple(value):\n    if isinstance(value, tuple):\n        return value\n    return (value,)\n\nutils.ensure_tuple = mock_ensure_tuple\n\n# Mocking needs_parentheses function\ndef mock_needs_parentheses(source):\n    return '(' in source or ')' in source\n\nneeds_parentheses = mock_needs_parentheses\n\nclass MockBaseVariable(pycompat.ABC):\n    def __init__(self, source, exclude=()):\n        self.source = source\n        self.exclude = utils.ensure_tuple(exclude)\n        self.code = compile(source, '<variable>', 'eval')\n        if needs_parentheses(source):\n            self.unambiguous_source = '({})'.format(source)\n        else:\n            self.unambiguous_source = source\n\n    def items(self, frame, normalize=False):\n        try:\n            main_value = eval(self.code, frame.f_globals or {}, frame.f_locals)\n        except Exception:\n            return ()\n        return self._items(main_value, normalize)\n\n    @abc.abstractmethod\n    def _items(self, key, normalize=False):\n        raise NotImplementedError\n\n    @property\n    def _fingerprint(self):\n        return (type(self), self.source, self.exclude)\n\n    def __hash__(self):\n        return hash(self._fingerprint)\n\n    def __eq__(self, other):\n        return (isinstance(other, MockBaseVariable) and\n                                               self._fingerprint == other._fingerprint)\n\nclass ConcreteVariable(MockBaseVariable):\n    def _items(self, key, normalize=False):\n        return [(key, normalize)]\n\n@pytest.fixture\ndef mock_frame():\n    class MockFrame:\n        f_globals = {}\n        f_locals = {}\n    return MockFrame()\n\ndef test_base_variable_init():\n    var = ConcreteVariable('x + 1', exclude=('a', 'b'))\n    assert var.source == 'x + 1'\n    assert var.exclude == ('a', 'b')\n    assert var.unambiguous_source == '(x + 1)'\n\ndef test_base_variable_items(mock_frame):\n    var = ConcreteVariable('x + 1')\n    mock_frame.f_locals = {'x': 1}\n    items = var.items(mock_frame)\n    assert items == [(2, False)]\n\ndef test_base_variable_items_exception(mock_frame):\n    var = ConcreteVariable('x + 1')\n    items = var.items(mock_frame)\n    assert items == ()\n\ndef test_base_variable_fingerprint():\n    var = ConcreteVariable('x + 1', exclude=('a', 'b'))\n    assert var._fingerprint == (ConcreteVariable, 'x + 1', ('a', 'b'))\n\ndef test_base_variable_hash():\n    var = ConcreteVariable('x + 1', exclude=('a', 'b'))\n    assert hash(var) == hash((ConcreteVariable, 'x + 1', ('a', 'b')))\n\ndef test_base_variable_eq():\n    var1 = ConcreteVariable('x + 1', exclude=('a', 'b'))\n    var2 = ConcreteVariable('x + 1', exclude=('a', 'b'))\n    var3 = ConcreteVariable('x + 2', exclude=('a', 'b'))\n    assert var1 == var2\n    assert var1 != var3\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 731,
+    "prompt_tokens": 408,
+    "total_tokens": 1139
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:50 pysnooper/variables.py:86-97 ----
+..............................                                           [100%]
+
+---- 2024-09-05T11:44:50 pysnooper/variables.py:86-97 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:206-235 ----
+Test failed:
+
+mock_utils = None, mock_variables = None
+
+    def test_tracer_initialization(mock_utils, mock_variables):
+>       tracer = Tracer(output=None, watch=('var1',), watch_explode=('var2',), depth=2,
+                        prefix='test', overwrite=True, thread_info=True, custom_repr=(('repr1', 'repr2'),),
+                        max_variable_length=200, normalize=True, relative_time=True)
+
+coverup-tests/tmp_test_4w332yl4.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pysnooper/tracer.py:209: in __init__
+    self._write = get_write_function(output, overwrite)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output = None, overwrite = True
+
+    def get_write_function(output, overwrite):
+        is_path = isinstance(output, (pycompat.PathLike, str))
+        if overwrite and not is_path:
+>           raise Exception('`overwrite=True` can only be used when writing '
+                            'content to file.')
+E           Exception: `overwrite=True` can only be used when writing content to file.
+
+pysnooper/tracer.py:114: Exception
+
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:293-307 ----
+Test failed:
+
+mock_thread_global = <MagicMock id='139913298454336'>
+mock_datetime = <MagicMock id='139913285591360'>
+mock_sys = <MagicMock id='139913285998368'>
+mock_inspect = <MagicMock id='139913302960224'>
+
+    def test_tracer_enter_enabled_internal_frame(mock_thread_global, mock_datetime, mock_sys, mock_inspect):
+        global DISABLED
+        DISABLED = False
+        tracer = Tracer()
+        mock_frame = MagicMock()
+        mock_inspect.currentframe.return_value.f_back = mock_frame
+        tracer._is_internal_frame = MagicMock(return_value=True)
+    
+        tracer.__enter__()
+    
+>       assert mock_frame.f_trace is None
+E       AssertionError: assert <MagicMock name='mock.currentframe().f_back.f_trace' id='139913279185360'> is None
+E        +  where <MagicMock name='mock.currentframe().f_back.f_trace' id='139913279185360'> = <MagicMock name='mock.currentframe().f_back' id='139913280025312'>.f_trace
+
+coverup-tests/tmp_test_aazzrhmv.py:52: AssertionError
+
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:257-287 ----
+....................                                                     [100%]
+
+---- 2024-09-05T11:44:50 pysnooper/tracer.py:257-287 ----
+Test doesn't improve coverage
+---- 2024-09-05T11:44:51 pysnooper/tracer.py:309-326 ----
+Test failed:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f8e677f7430>
+
+    @pytest.fixture
+    def mock_datetime_now(monkeypatch):
+        fixed_now = datetime_module.datetime(2023, 1, 1, 12, 0, 0)
+>       monkeypatch.setattr(datetime_module.datetime, 'now', lambda: fixed_now)
+E       TypeError: cannot set 'now' attribute of immutable type 'datetime.datetime'
+
+coverup-tests/tmp_test_6u0mxjcr.py:70: TypeError
+__________________ ERROR at teardown of test_tracer_exit[1-5] __________________
+
+cls = <class '_pytest.runner.CallInfo'>
+func = <function call_runtest_hook.<locals>.<lambda> at 0x7f8e6725de10>
+when = 'teardown'
+reraise = (<class '_pytest.outcomes.Exit'>, <class 'KeyboardInterrupt'>)
+
+    @classmethod
+    def from_call(
+        cls,
+        func: "Callable[[], TResult]",
+        when: "Literal['collect', 'setup', 'call', 'teardown']",
+        reraise: Optional[
+            Union[Type[BaseException], Tuple[Type[BaseException], ...]]
+        ] = None,
+    ) -> "CallInfo[TResult]":
+        """Call func, wrapping the result in a CallInfo.
+    
+        :param func:
+            The function to call. Called without arguments.
+        :param when:
+            The phase in which the function is called.
+        :param reraise:
+            Exception or exceptions that shall propagate if raised by the
+            function, instead of being wrapped in the CallInfo.
+        """
+        excinfo = None
+        start = timing.time()
+        precise_start = timing.perf_counter()
+        try:
+>           result: Optional[TResult] = func()
+
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:338: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:259: in <lambda>
+    lambda: ihook(item=item, **kwds), when=when, reraise=reraise
+/usr/local/lib/python3.10/site-packages/pluggy/_hooks.py:265: in __call__
+    return self._hookexec(self.name, self.get_hookimpls(), kwargs, firstresult)
+/usr/local/lib/python3.10/site-packages/pluggy/_manager.py:80: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:179: in pytest_runtest_teardown
+    item.session._setupstate.teardown_exact(nextitem)
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:529: in teardown_exact
+    raise exc
+/usr/local/lib/python3.10/site-packages/_pytest/runner.py:522: in teardown_exact
+    fin()
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:667: in <lambda>
+    subrequest.node.addfinalizer(lambda: fixturedef.finish(request=subrequest))
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:1019: in finish
+    raise exc
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:1012: in finish
+    func()
+/usr/local/lib/python3.10/site-packages/_pytest/fixtures.py:899: in _teardown_yield_fixture
+    next(it)
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:50: in monkeypatch
+    mpatch.undo()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <_pytest.monkeypatch.MonkeyPatch object at 0x7f8e677f7430>
+
+    def undo(self) -> None:
+        """Undo previous changes.
+    
+        This call consumes the undo stack. Calling it a second time has no
+        effect unless you do more monkeypatching after the undo call.
+    
+        There is generally no need to call `undo()`, since it is
+        called automatically during tear-down.
+    
+        Note that the same `monkeypatch` fixture is used across a
+        single test function invocation. If `monkeypatch` is used both by
+        the test function itself and one of the test fixtures,
+        calling `undo()` will undo all of the changes made in
+        both functions.
+        """
+        for obj, name, value in reversed(self._setattr):
+            if value is not notset:
+>               setattr(obj, name, value)
+E               TypeError: cannot set 'now' attribute of immutable type 'datetime.datetime'
+
+/usr/local/lib/python3.10/site-packages/_pytest/monkeypatch.py:364: TypeError
+
+---- 2024-09-05T11:44:51 pysnooper/variables.py:53-83 ----
+{
+  "id": "chatcmpl-A45CjRCsEqHS82v3pRfKbtebVKyMM",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\n\n# Assuming the necessary imports from pysnooper and utils\n# from pysnooper.variables import CommonVariable, BaseVariable\n# import utils\n\nclass TestCommonVariable:\n    @pytest.fixture\n    def common_variable(self):\n        class TestVariable(CommonVariable):\n            def _format_key(self, key):\n                return f'[{key}]'\n\n            def _get_value(self, main_value, key):\n                return main_value[key]\n\n            def _keys(self, main_value):\n                return main_value.keys()\n\n        return TestVariable(source='source', unambiguous_source='unambiguous_source', exclude=set())\n\n    def test_items(self, common_variable):\n        main_value = {'a': 1, 'b': 2, 'c': 3}\n        result = common_variable._items(main_value)\n        expected = [\n            ('source', 'shortish_repr'),\n            ('unambiguous_source[a]', 'shortish_repr'),\n            ('unambiguous_source[b]', 'shortish_repr'),\n            ('unambiguous_source[c]', 'shortish_repr')\n        ]\n        assert result == expected\n\n    def test_items_with_exclude(self, common_variable):\n        common_variable.exclude = {'b'}\n        main_value = {'a': 1, 'b': 2, 'c': 3}\n        result = common_variable._items(main_value)\n        expected = [\n            ('source', 'shortish_repr'),\n            ('unambiguous_source[a]', 'shortish_repr'),\n            ('unambiguous_source[c]', 'shortish_repr')\n        ]\n        assert result == expected\n\n    def test_items_with_exception_in_get_value(self, common_variable):\n        common_variable._get_value = MagicMock(side_effect=Exception)\n        main_value = {'a': 1, 'b': 2, 'c': 3}\n        result = common_variable._items(main_value)\n        expected = [('source', 'shortish_repr')]\n        assert result == expected\n\n    def test_safe_keys_with_exception(self, common_variable):\n        common_variable._keys = MagicMock(side_effect=Exception)\n        main_value = {'a': 1, 'b': 2, 'c': 3}\n        result = list(common_variable._safe_keys(main_value))\n        assert result == []\n\n    def test_format_key_not_implemented(self, common_variable):\n        with pytest.raises(NotImplementedError):\n            common_variable._format_key('key')\n\n    def test_get_value_not_implemented(self, common_variable):\n        with pytest.raises(NotImplementedError):\n            common_variable._get_value('main_value', 'key')\n\n    @patch('utils.get_shortish_repr', return_value='shortish_repr')\n    def test_items_with_normalize(self, mock_get_shortish_repr, common_variable):\n        main_value = {'a': 1, 'b': 2, 'c': 3}\n        result = common_variable._items(main_value, normalize=True)\n        expected = [\n            ('source', 'shortish_repr'),\n            ('unambiguous_source[a]', 'shortish_repr'),\n            ('unambiguous_source[b]', 'shortish_repr'),\n            ('unambiguous_source[c]', 'shortish_repr')\n        ]\n        assert result == expected\n        mock_get_shortish_repr.assert_called_with(main_value, normalize=True)\n```\n",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536681,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 690,
+    "prompt_tokens": 377,
+    "total_tokens": 1067
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:52 pysnooper/tracer.py:339-498 ----
+{
+  "id": "chatcmpl-A45CklFpBIV7thkiPQkmypkE6IvV9",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport threading\nimport datetime as datetime_module\nimport itertools\nimport opcode\nimport os\nimport traceback\nfrom unittest.mock import MagicMock, patch\n\nfrom pysnooper.tracer import Tracer, get_path_and_source_from_frame, pycompat, utils\n\nclass MockFrame:\n    def __init__(self, f_code, f_lineno, f_back=None):\n        self.f_code = f_code\n        self.f_lineno = f_lineno\n        self.f_back = f_back\n\nclass MockCode:\n    def __init__(self, co_code, co_name):\n        self.co_code = co_code\n        self.co_name = co_name\n\n@pytest.fixture\ndef mock_tracer():\n    tracer = Tracer()\n    tracer.target_codes = set()\n    tracer.target_frames = set()\n    tracer.depth = 1\n    tracer.normalize = False\n    tracer.relative_time = False\n    tracer.start_times = {}\n    tracer.last_source_path = None\n    tracer.thread_info = False\n    tracer.frame_to_local_reprs = {}\n    tracer.watch = []\n    tracer.custom_repr = None\n    tracer.max_variable_length = None\n    return tracer\n\n@pytest.fixture\ndef mock_thread_global(monkeypatch):\n    class MockThreadGlobal:\n        def __init__(self):\n            self.depth = 0\n\n    mock_thread_global = MockThreadGlobal()\n    monkeypatch.setattr('pysnooper.tracer.thread_global', mock_thread_global)\n    return mock_thread_global\n\ndef test_trace_decorated_function(mock_tracer, mock_thread_global):\n    mock_code = MockCode(co_code=b'\\x83', co_name='test_func')\n    mock_frame = MockFrame(f_code=mock_code, f_lineno=1)\n    mock_tracer.target_codes.add(mock_code)\n    \n    with patch('pysnooper.tracer.get_path_and_source_from_frame', return_value=('test_path', ['def test_func(): pass'])):\n        with patch('pysnooper.tracer.pycompat.time_isoformat', return_value='00:00:00.000000'):\n            result = mock_tracer.trace(mock_frame, 'call', None)\n            assert result == mock_tracer.trace\n            assert mock_thread_global.depth == 1\n\ndef test_trace_internal_frame(mock_tracer, mock_thread_global):\n    mock_code = MockCode(co_code=b'\\x83', co_name='test_func')\n    mock_frame = MockFrame(f_code=mock_code, f_lineno=1)\n    \n    with patch.object(mock_tracer, '_is_internal_frame', return_value=True):\n        result = mock_tracer.trace(mock_frame, 'call', None)\n        assert result is None\n\ndef test_trace_depth(mock_tracer, mock_thread_global):\n    mock_code = MockCode(co_code=b'\\x83', co_name='test_func')\n    mock_frame = MockFrame(f_code=mock_code, f_lineno=1)\n    mock_tracer.depth = 2\n    mock_tracer.target_codes.add(mock_code)\n    \n    with patch('pysnooper.tracer.get_path_and_source_from_frame', return_value=('test_path', ['def test_func(): pass'])):\n        with patch('pysnooper.tracer.pycompat.time_isoformat', return_value='00:00:00.000000'):\n            result = mock_tracer.trace(mock_frame, 'call', None)\n            assert result == mock_tracer.trace\n            assert mock_thread_global.depth == 1\n\ndef test_trace_return_event(mock_tracer, mock_thread_global):\n    mock_code = MockCode(co_code=b'\\x83', co_name='test_func')\n    mock_frame = MockFrame(f_code=mock_code, f_lineno=1)\n    mock_tracer.target_codes.add(mock_code)\n    \n    with patch('pysnooper.tracer.get_path_and_source_from_frame', return_value=('test_path', ['def test_func(): pass'])):\n        with patch('pysnooper.tracer.pycompat.time_isoformat', return_value='00:00:00.000000'):\n            result = mock_tracer.trace(mock_frame, 'return', None)\n            assert result == mock_tracer.trace\n            assert mock_thread_global.depth == 0\n\ndef test_trace_exception_event(mock_tracer, mock_thread_global):\n    mock_code = MockCode(co_code=b'\\x83', co_name='test_func')\n    mock_frame = MockFrame(f_code=mock_code, f_lineno=1)\n    mock_tracer.target_codes.add(mock_code)\n    \n    with patch('pysnooper.tracer.get_path_and_source_from_frame', return_value=('test_path', ['def test_func(): pass'])):\n        with patch('pysnooper.tracer.pycompat.time_isoformat', return_value='00:00:00.000000'):\n            result = mock_tracer.trace(mock_frame, 'exception', (Exception, Exception('test'), None))\n            assert result == mock_tracer.trace\n            assert mock_thread_global.depth == 0\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 1021,
+    "prompt_tokens": 1494,
+    "total_tokens": 2515
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:52 pysnooper/tracer.py:25-38 ----
+.........................                                                [100%]
+
+---- 2024-09-05T11:44:52 pysnooper/tracer.py:25-38 ----
+Saved as /output/coverup-tests/test_coverup_9.py
+
+---- 2024-09-05T11:44:52 pysnooper/variables.py:20-50 ----
+Test failed:
+
+    def test_base_variable_init():
+        var = ConcreteVariable('x + 1', exclude=('a', 'b'))
+        assert var.source == 'x + 1'
+        assert var.exclude == ('a', 'b')
+>       assert var.unambiguous_source == '(x + 1)'
+E       AssertionError: assert 'x + 1' == '(x + 1)'
+E         - (x + 1)
+E         ? -     -
+E         + x + 1
+
+coverup-tests/tmp_test_vdulbhw0.py:72: AssertionError
+
+---- 2024-09-05T11:44:53 pysnooper/tracer.py:49-108 ----
+{
+  "id": "chatcmpl-A45CkRS1cRBMEQXDi9fYOJJLrLWmK",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom unittest.mock import MagicMock, mock_open, patch\n\n# Assuming these are defined somewhere in the module\nsource_and_path_cache = {}\nipython_filename_pattern = re.compile(r'<ipython-input-(\\d+)-.*>')\nUnavailableSource = type('UnavailableSource', (object,), {})\nutils = MagicMock()\nutils.file_reading_errors = (OSError, IOError)\npycompat = MagicMock()\npycompat.text_type = str\n\n# The function to be tested\ndef get_path_and_source_from_frame(frame):\n    globs = frame.f_globals or {}\n    module_name = globs.get('__name__')\n    file_name = frame.f_code.co_filename\n    cache_key = (module_name, file_name)\n    try:\n        return source_and_path_cache[cache_key]\n    except KeyError:\n        pass\n    loader = globs.get('__loader__')\n\n    source = None\n    if hasattr(loader, 'get_source'):\n        try:\n            source = loader.get_source(module_name)\n        except ImportError:\n            pass\n        if source is not None:\n            source = source.splitlines()\n    if source is None:\n        ipython_filename_match = ipython_filename_pattern.match(file_name)\n        if ipython_filename_match:\n            entry_number = int(ipython_filename_match.group(1))\n            try:\n                import IPython\n                ipython_shell = IPython.get_ipython()\n                ((_, _, source_chunk),) = ipython_shell.history_manager. \\\n                                  get_range(0, entry_number, entry_number + 1)\n                source = source_chunk.splitlines()\n            except Exception:\n                pass\n        else:\n            try:\n                with open(file_name, 'rb') as fp:\n                    source = fp.read().splitlines()\n            except utils.file_reading_errors:\n                pass\n    if not source:\n        source = UnavailableSource()\n\n    if isinstance(source[0], bytes):\n        encoding = 'utf-8'\n        for line in source[:2]:\n            match = re.search(br'coding[:=]\\s*([-\\w.]+)', line)\n            if match:\n                encoding = match.group(1).decode('ascii')\n                break\n        source = [pycompat.text_type(sline, encoding, 'replace') for sline in source]\n\n    result = (file_name, source)\n    source_and_path_cache[cache_key] = result\n    return result\n\n@pytest.fixture\ndef mock_frame():\n    frame = MagicMock()\n    frame.f_globals = {}\n    frame.f_code.co_filename = 'test_file.py'\n    return frame\n\ndef test_cache_hit(mock_frame):\n    source_and_path_cache[('test_module', 'test_file.py')] = ('test_file.py', ['line1', 'line2'])\n    mock_frame.f_globals = {'__name__': 'test_module'}\n    result = get_path_and_source_from_frame(mock_frame)\n    assert result == ('test_file.py', ['line1', 'line2'])\n\ndef test_loader_get_source(mock_frame):\n    loader = MagicMock()\n    loader.get_source.return_value = 'line1\\nline2'\n    mock_frame.f_globals = {'__name__': 'test_module', '__loader__': loader}\n    result = get_path_and_source_from_frame(mock_frame)\n    assert result == ('test_file.py', ['line1', 'line2'])\n\ndef test_ipython_source(mock_frame, monkeypatch):\n    mock_frame.f_code.co_filename = '<ipython-input-1-abc>'\n    ipython_shell = MagicMock()\n    ipython_shell.history_manager.get_range.return_value = [(None, None, 'line1\\nline2')]\n    monkeypatch.setattr('IPython.get_ipython', lambda: ipython_shell)\n    result = get_path_and_source_from_frame(mock_frame)\n    assert result == ('<ipython-input-1-abc>', ['line1', 'line2'])\n\ndef test_file_reading(mock_frame):\n    mock_frame.f_globals = {'__name__': 'test_module'}\n    m = mock_open(read_data=b'line1\\nline2')\n    with patch('builtins.open', m):\n        result = get_path_and_source_from_frame(mock_frame)\n    assert result == ('test_file.py', [b'line1', b'line2'])\n\ndef test_file_reading_error(mock_frame):\n    mock_frame.f_globals = {'__name__': 'test_module'}\n    with patch('builtins.open', side_effect=OSError):\n        result = get_path_and_source_from_frame(mock_frame)\n    assert isinstance(result[1], UnavailableSource)\n\ndef test_source_encoding(mock_frame):\n    mock_frame.f_globals = {'__name__': 'test_module'}\n    m = mock_open(read_data=b'# coding: latin-1\\nline1\\nline2')\n    with patch('builtins.open', m):\n        result = get_path_and_source_from_frame(mock_frame)\n    assert result == ('test_file.py', ['# coding: latin-1', 'line1', 'line2'])\n\ndef test_source_default_encoding(mock_frame):\n    mock_frame.f_globals = {'__name__': 'test_module'}\n    m = mock_open(read_data=b'line1\\nline2')\n    with patch('builtins.open', m):\n        result = get_path_and_source_from_frame(mock_frame)\n    assert result == ('test_file.py', ['line1', 'line2'])\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1725536682,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_157b3831f5",
+  "usage": {
+    "completion_tokens": 1114,
+    "prompt_tokens": 700,
+    "total_tokens": 1814
+  },
+  "service_tier": null
+}
+---- 2024-09-05T11:44:53 pysnooper/variables.py:53-83 ----
+Test failed:
+
+self = <tmp_test_83uv6gjh.TestCommonVariable object at 0x7fdeca038d00>
+
+    @pytest.fixture
+    def common_variable(self):
+>       class TestVariable(CommonVariable):
+E       NameError: name 'CommonVariable' is not defined
+
+coverup-tests/tmp_test_83uv6gjh.py:11: NameError
+
+---- 2024-09-05T11:44:54 pysnooper/tracer.py:339-498 ----
+Test failed:
+
+mock_tracer = <pysnooper.tracer.Tracer object at 0x7fcba7944790>
+mock_thread_global = <tmp_test_x8q1thz8.mock_thread_global.<locals>.MockThreadGlobal object at 0x7fcba7945600>
+
+    def test_trace_decorated_function(mock_tracer, mock_thread_global):
+        mock_code = MockCode(co_code=b'\x83', co_name='test_func')
+        mock_frame = MockFrame(f_code=mock_code, f_lineno=1)
+        mock_tracer.target_codes.add(mock_code)
+    
+        with patch('pysnooper.tracer.get_path_and_source_from_frame', return_value=('test_path', ['def test_func(): pass'])):
+            with patch('pysnooper.tracer.pycompat.time_isoformat', return_value='00:00:00.000000'):
+>               result = mock_tracer.trace(mock_frame, 'call', None)
+
+coverup-tests/tmp_test_x8q1thz8.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pysnooper/tracer.py:415: in trace
+    get_local_reprs(frame,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+frame = <tmp_test_x8q1thz8.MockFrame object at 0x7fcba7945cc0>, watch = []
+custom_repr = None, max_length = None, normalize = False
+
+    def get_local_reprs(frame, watch=(), custom_repr=(), max_length=None, normalize=False):
+        code = frame.f_code
+>       vars_order = (code.co_varnames + code.co_cellvars + code.co_freevars +
+                      tuple(frame.f_locals.keys()))
+E       AttributeError: 'MockCode' object has no attribute 'co_varnames'
+
+pysnooper/tracer.py:27: AttributeError
+----------------------------- Captured stderr call -----------------------------
+    Source path:... test_path
+
+---- 2024-09-05T11:44:56 pysnooper/tracer.py:49-108 ----
+Test failed:
+
+mock_frame = <MagicMock id='140536072488800'>
+
+    def test_file_reading(mock_frame):
+        mock_frame.f_globals = {'__name__': 'test_module'}
+        m = mock_open(read_data=b'line1\nline2')
+        with patch('builtins.open', m):
+            result = get_path_and_source_from_frame(mock_frame)
+>       assert result == ('test_file.py', [b'line1', b'line2'])
+E       AssertionError: assert ('test_file.p...e1', 'line2']) == ('test_file.p...1', b'line2'])
+E         At index 1 diff: ['line1', 'line2'] != [b'line1', b'line2']
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_6_le9tkq.py:101: AssertionError
+

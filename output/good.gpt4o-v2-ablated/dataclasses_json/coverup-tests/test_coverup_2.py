@@ -1,0 +1,16 @@
+# file: dataclasses_json/undefined.py:130-131
+# asked: {"lines": [130, 131], "branches": []}
+# gained: {"lines": [130, 131], "branches": []}
+
+import pytest
+from dataclasses_json.undefined import _CatchAllUndefinedParameters
+
+def test_sentinel_no_default():
+    sentinel_instance = _CatchAllUndefinedParameters._SentinelNoDefault()
+    assert isinstance(sentinel_instance, _CatchAllUndefinedParameters._SentinelNoDefault)
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    # No specific cleanup required for this test as no state is modified
+
