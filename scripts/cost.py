@@ -2,7 +2,9 @@ from pathlib import Path
 import json
 from coverup.logreader import parse_log_raw
 import litellm
+import re
 
+EXCLUDED = ['thefuck', 'mimesis', 'sanic']
 
 def parse_args():
     import argparse
@@ -11,37 +13,107 @@ def parse_args():
     ap.add_argument('--suite', choices=['good', '1_0'], default='good',
                     help='suite of modules to compare')
 
+    ap.add_argument('--coda', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='show likely CodaMosa costs')
+
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
     return ap.parse_args()
 
 
-def cost_of(log_content: str):
-    cost = 0
+def coverup_log(log_content: str):
+    model = None
+    prompts = completions = prompt_tokens = completion_tokens = 0
 
     for ts, ctx, content in parse_log_raw(log_content):
         if content.startswith("{"):
             j = json.loads(content)
             if 'choices' in j:
-                cost += litellm.completion_cost(j)
+                completions += 1
+                model = j['model']
+                prompt_tokens += j['usage']['prompt_tokens']
+                completion_tokens += j['usage']['completion_tokens']
+            else:
+                prompts += 1
 
-    return cost
+    return (model, prompts, completions, prompt_tokens, completion_tokens)
 
-if __name__ == '__main__':
+
+def coda_prompts(content: str):
+    model = None
+    prompts = prompt_tokens = 0
+
+    for m in re.finditer(r'^({.*?})$', content, re.MULTILINE):
+        j = json.loads(m.group(1))
+        model = j['model']
+        prompts += 1
+        prompt_tokens += litellm.token_counter(model, messages=j['messages'])
+
+    return (model, prompts, prompt_tokens)
+
+
+def coda_completions(model:str, content: str):
+    completions = completion_tokens = 0
+
+    for m in re.finditer(r'(```python.*?)(?:# Generated at|\Z)', content, re.DOTALL):
+        completion = m.group(1)
+        completions += 1
+        completion_tokens += litellm.token_counter(model, messages=[
+            {'role': 'assistant', 'content': completion}
+        ])
+
+    return completions, completion_tokens
+
+
+def count_beans():
     args = parse_args()
 
-    total = 0
+    model = None
+    total_prompts = 0
+    total_completions = 0
+    total_prompt_tokens = 0
+    total_completion_tokens = 0
 
-    path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
+    path = (Path('codamosa/replication') / f"{args.config}-coda" if args.coda else
+            Path('output') / (args.suite + (f".{args.config}" if args.config else "")))
+
     if not path.exists():
         print(f"{path} doesn't exist")
+        return
 
-    else:
-        for file in path.glob("*/coverup-log-*"):
-            if '.' in file.name: # "foobar.failed" and such
-                continue
+    files = path.glob("*/llm_prompts.txt") if args.coda else path.glob("*/coverup-log-*")
 
-            cost = cost_of(file.read_text())
-            print(f"{str(file.relative_to(path)):<55} $ {cost:6.2f}")
-            total += cost
+    for file in files:
+        rel = file.relative_to(path)
+        if any(rel.parts[0].startswith(name) for name in EXCLUDED):
+            continue
 
-        print(f"\nTotal cost: $ {total:6.2f}")
+        if args.coda:
+            model, prompts, prompt_tokens = coda_prompts(file.read_text())
+
+            file = file.parent / "llm_completions.txt"
+            completions, completion_tokens = coda_completions(model, file.read_text())
+
+            rel = rel.parent
+        else:
+            model, prompts, completions, prompt_tokens, completion_tokens = coverup_log(file.read_text())
+
+        print(f"{str(rel):<70} {prompts=:,} {completions=:,}")
+
+        total_prompts += prompts
+        total_completions += completions
+        total_prompt_tokens += prompt_tokens
+        total_completion_tokens += completion_tokens
+
+    print(f"{total_prompt_tokens:,} tokens in {total_prompts:,} prompts")
+    print(f"{total_completion_tokens:,} tokens in {total_completions:,} completions")
+
+    cost_prompt, cost_completion = litellm.cost_per_token(
+        model=model, prompt_tokens=total_prompt_tokens,
+        completion_tokens=total_completion_tokens
+    )
+
+    print(f"$ {cost_prompt:6.2f} prompt + $ {cost_completion:6.2f} completion = $ {cost_prompt+cost_completion:6.2f}")
+
+if __name__ == '__main__':
+    count_beans()
