@@ -5,6 +5,8 @@ import re
 import csv
 from statistics import mean, median
 import sys
+import scipy.stats
+import numpy as np
 
 coverup_output = Path("output")
 replication = Path("codamosa") / "replication"
@@ -15,7 +17,7 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
+    ap.add_argument('--suite', choices=['cm', 'good', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use for the first CoverUp')
@@ -91,6 +93,10 @@ def load_coverup(suite, config = None):
 
     config_output_dir = coverup_output / (suite['name'] + (f".{config}" if config else ""))
 
+    if suite['name'] == 'cm' and not config_output_dir.exists():
+        # load from "good", which is a superset of "cm"
+        config_output_dir = coverup_output / ("good" + (f".{config}" if config else ""))
+
     if not config_output_dir.exists():
         print(f"Cannot load data: directory {config_output_dir} missing")
         sys.exit(1)
@@ -162,7 +168,7 @@ def load_mutap(suite, config = None):
 
 
 def load_codamosa(suite, coda_config):
-    assert suite['name'] == 'good'
+    assert suite['name'] in ('good', 'cm')
 
     config_output_dir = replication / f"output-{coda_config}"
 
@@ -264,7 +270,6 @@ if __name__ == "__main__":
     # compute delta between the two coverage_lb
     cov_delta = [a - b for a, b in zip(coverage_lb[0], coverage_lb[1]) if a is not None and b is not None]
 
-
     # compute lines and branches for each module, for easy access
     module_info = defaultdict(dict)
     for module, summ in datasets[0]['data'].items():
@@ -355,7 +360,7 @@ if __name__ == "__main__":
     else:
         from tabulate import tabulate
 
-        headers=["Module", "Lines", "Branches", datasets[0]['name'] + " %", datasets[1]['name'] + " %", "samples"]
+        headers=["Module", "Lines", "Branches", datasets[0]['name'] + " %", datasets[1]['name'] + " %", "samples", "delta %"]
         def table():
             if sys.stdout.isatty():
                 from simple_colors import red, green
@@ -366,7 +371,9 @@ if __name__ == "__main__":
                 if a is not None: a = round(a, 2)
                 if b is not None: b = round(b, 2)
 
+                delta = ''
                 if a is not None and b is not None:
+                    delta = a - b
                     v = f"{a:5.2f}"
                     if a > b:
                         a = green(v)
@@ -375,9 +382,10 @@ if __name__ == "__main__":
                     else:
                         a = v
 
-                yield m, module_info[m]['lines'], module_info[m]['branches'], a, b, len(datasets[1]['data'][m])
+                yield m, module_info[m]['lines'], module_info[m]['branches'], a, b, len(datasets[1]['data'][m]), delta
 
         print('')
+#        print(tabulate(sorted(table(), key=lambda x: x[1]*x[-1]), headers=headers)) # sort worst to best performance
         print(tabulate(table(), headers=headers))
 
         for ds in datasets:
@@ -410,6 +418,37 @@ if __name__ == "__main__":
         better_count = sum([v > 0 for v in cov_delta])
         worse_count = sum([v < 0 for v in cov_delta])
 
-        print('')
+        print()
         print(f"{datasets[0]['name']} did better on {better_count} ({100*better_count/len(cov_delta):.1f}%) " +\
                            f"and worse on {worse_count} benchmarks out of {len(cov_delta)}.")
+
+
+        print()
+        print(f"Statistical significance tests for module coverage ({datasets[0]['name']} - {datasets[1]['name']}):")
+        print()
+        for metrics in [['lines'], ['branches'], ['lines','branches']]:
+            label = '+'.join(metrics)
+            short_label = '+'.join(m[0] for m in metrics)
+
+            data = []
+            for ds in datasets:
+                tmp = [mean_of(cover_pct(sample, metrics) for sample in ds['data'][m]) for m in module_names]
+                tmp = [d for d in tmp if d is not None]
+                data.append(tmp)
+
+            assert len(data[0]) == len(data[1])
+            for i in range(2):
+                data[i] = np.array(data[i])
+                assert not np.any(np.isnan(data[i]))
+
+#            ttest = scipy.stats.ttest_rel(*data)
+            ptest = scipy.stats.permutation_test(
+                (*data,),
+                statistic=lambda x, y: np.mean(x-y),
+                alternative='greater',
+                permutation_type='samples',
+                n_resamples=50000,
+                random_state=42
+            )
+
+            print(f"{short_label + ':':10} ptest stat={ptest.statistic:.1f}, p-value={ptest.pvalue:.1e}")

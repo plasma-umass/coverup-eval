@@ -1,68 +1,70 @@
 from pathlib import Path
-from coverup.logreader import parse_log, get_sequences
-from sequences import parse_args
+from coverup.logreader import parse_log_raw
 from datetime import datetime
-import llm_utils
+import re
 
-MODEL='gpt-4-1106-preview'
-args = parse_args()
+EXCLUDED = ['thefuck', 'mimesis', 'sanic']
 
-_token_encoding_cache = dict()
-def count_tokens(text: str, model = MODEL):
-    """Counts the number of tokens in a chat completion request."""
-    import tiktoken
+def parse_args():
+    import argparse
+    ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    if not (encoding := _token_encoding_cache.get(model)):
-        encoding = _token_encoding_cache[model] = tiktoken.encoding_for_model(model)
+    ap.add_argument('--suite', choices=['good', 'cm', '1_0', 'mutap'], default='cm',
+                    help='suite of modules to compare')
 
-    return len(encoding.encode(text))
+    ap.add_argument('--coda', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='show likely CodaMosa costs')
 
-total_time = 0
-total_serial_time = 0
-total_tokens = 0
-for file in sorted((Path('output') / (args.suite + (f".{args.config}" if args.config else ""))).glob(args.logs)):
-    if '.' in file.name: # "foobar.failed" and such
-        continue
+    ap.add_argument('--config', type=str, default='gpt4o-v2', help='specify a (non-default) configuration to use')
+    return ap.parse_args()
 
-    if args.skip and args.skip in str(file):
-        continue
 
-    log_content = file.read_text()
-
+def coverup_log(log_content: str):
     file_time = 0
     start = end = None
-    for ts, ev, details, content in parse_log(log_content):
-        if ev == 'startup':
-            if start:
-#                print(f"start: {start} end: {end}")
+    for ts, ctx, content in parse_log_raw(log_content):
+        if ctx == 'startup':
+            if start and end:
                 diff = datetime.fromisoformat(end) - datetime.fromisoformat(start)
                 file_time += diff.total_seconds()
-
-            start = end = ts
+            start = ts
+            end = None
             continue
-
-        # include ? just in case... not all are actually responses/prompts.
-        if ev in ('P', 'C', 'F', 'S', 'R', 'U', '?'):
-            total_tokens += count_tokens(content)
 
         end = ts
 
-    if start:
-#        print(f"start: {start} end: {end}")
+    if start and end:
         diff = datetime.fromisoformat(end) - datetime.fromisoformat(start)
         file_time += diff.total_seconds()
 
-    serial_time = 0
-    for _, _, ts in get_sequences(log_content):
-        diff = datetime.fromisoformat(ts[-1]) - datetime.fromisoformat(ts[0])
-#        print(ts[0], ts[-1], diff.total_seconds())
-        serial_time += diff.total_seconds()
+    return file_time
 
-    print(f"{str(file):60} {file_time:.0f}s {serial_time:.0f}s")
-    total_time += file_time
-    total_serial_time += serial_time
 
-print('')
-print(f"Total time:  {total_time}s, {total_time/3600:.1f}h")
-print(f"Serial time: {total_serial_time}s, {total_serial_time/3600:.1f}h, {total_serial_time/total_time:.1f}x")
-print(f"Tokens:      {total_tokens}  {llm_utils.calculate_cost(total_tokens, 0, MODEL):.1f}")
+def count_beans():
+    args = parse_args()
+
+    total_time = 0
+
+    path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
+
+    if not path.exists():
+        print(f"{path} doesn't exist")
+        return
+
+    total_time = 0
+    files = path.glob("*/coverup-log-*")
+    for file in files:
+        rel = file.relative_to(path)
+        if any(rel.parts[0].startswith(name) for name in EXCLUDED):
+            continue
+
+        file_time = coverup_log(file.read_text())
+        print(f"{str(rel):<70} {file_time=:,}")
+
+        total_time += file_time
+
+    print(f"{total_time:,}s = {total_time/3600:,.1f}h total")
+
+if __name__ == '__main__':
+    count_beans()

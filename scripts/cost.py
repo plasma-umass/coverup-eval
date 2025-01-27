@@ -10,14 +10,18 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', '1_0'], default='good',
+    ap.add_argument('--suite', choices=['cm', 'good', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
     ap.add_argument('--coda', default=False,
                     action=argparse.BooleanOptionalAction,
                     help='show likely CodaMosa costs')
 
-    ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
+    ap.add_argument('--mutap', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='show MuTAP costs')
+
+    ap.add_argument('--config', type=str, default='gpt4o-v2', help='specify a (non-default) configuration to use')
     return ap.parse_args()
 
 
@@ -35,6 +39,22 @@ def coverup_log(log_content: str):
                 completion_tokens += j['usage']['completion_tokens']
             else:
                 prompts += 1
+
+    return (model, prompts, completions, prompt_tokens, completion_tokens)
+
+
+def mutap_log(log_content: str):
+    model = None
+    prompts = completions = prompt_tokens = completion_tokens = 0
+
+    for line in log_content.splitlines():
+        j = json.loads(line)
+        if 'choices' in j:
+            completions += 1
+            prompts += 1
+            model = j['model']
+            prompt_tokens += j['usage']['prompt_tokens']
+            completion_tokens += j['usage']['completion_tokens']
 
     return (model, prompts, completions, prompt_tokens, completion_tokens)
 
@@ -74,14 +94,23 @@ def count_beans():
     total_prompt_tokens = 0
     total_completion_tokens = 0
 
-    path = (Path('codamosa/replication') / f"{args.config}-coda" if args.coda else
-            Path('output') / (args.suite + (f".{args.config}" if args.config else "")))
+    if args.coda:
+        path = Path('codamosa/replication') / f"{args.config}-coda"
+    elif args.mutap:
+        path = Path('MuTAP-results') / args.config
+    else:
+        path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
 
     if not path.exists():
         print(f"{path} doesn't exist")
         return
 
-    files = path.glob("*/llm_prompts.txt") if args.coda else path.glob("*/coverup-log-*")
+    if args.coda:
+        files = path.glob("*/llm_prompts.txt")
+    elif args.mutap:
+        files = path.glob("completions.jsonl")
+    else:
+        files = path.glob("*/coverup-log-*")
 
     for file in files:
         rel = file.relative_to(path)
@@ -95,6 +124,8 @@ def count_beans():
             completions, completion_tokens = coda_completions(model, file.read_text())
 
             rel = rel.parent
+        elif args.mutap:
+            model, prompts, completions, prompt_tokens, completion_tokens = mutap_log(file.read_text())
         else:
             model, prompts, completions, prompt_tokens, completion_tokens = coverup_log(file.read_text())
 
@@ -105,8 +136,9 @@ def count_beans():
         total_prompt_tokens += prompt_tokens
         total_completion_tokens += completion_tokens
 
-    print(f"{total_prompt_tokens:,} tokens in {total_prompts:,} prompts")
-    print(f"{total_completion_tokens:,} tokens in {total_completions:,} completions")
+    print(f"model: {model}")
+    print(f"{total_prompts:,} prompts with {total_prompt_tokens:,} tokens")
+    print(f"{total_completions:,} completions with {total_completion_tokens:,} tokens")
 
     cost_prompt, cost_completion = litellm.cost_per_token(
         model=model, prompt_tokens=total_prompt_tokens,
