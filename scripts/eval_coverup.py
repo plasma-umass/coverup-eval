@@ -130,6 +130,6 @@ if __name__ == "__main__":
                "coverup-runner bash " +\
               (f"/eval/scripts/{script} {config} {src} {package} {' '.join(files)}" if not args.interactive else "")
 
-        print(cmd)
+        print(cmd, flush=True)
         if not args.dry_run:
             subprocess.run(cmd, shell=True, check=True)

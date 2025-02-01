@@ -1,10 +1,9 @@
 from pathlib import Path
 import json
 from coverup.logreader import parse_log_raw
-import litellm
+from sequences import get_coverup_logs
 import re
-
-EXCLUDED = ['thefuck', 'mimesis', 'sanic']
+import litellm
 
 def parse_args():
     import argparse
@@ -94,29 +93,23 @@ def count_beans():
     total_prompt_tokens = 0
     total_completion_tokens = 0
 
-    if args.coda:
-        path = Path('codamosa/replication') / f"{args.config}-coda"
-    elif args.mutap:
-        path = Path('MuTAP-results') / args.config
+    if args.coda or args.mutap:
+        if args.coda:
+            path = Path('codamosa/replication') / f"{args.config}-coda"
+            glob = "*/llm_prompts.txt"
+        else:
+            path = Path('MuTAP-results') / args.config
+            glob = "completions.jsonl"
+
+        if not path.exists():
+            print(f"{path} doesn't exist")
+            return
+
+        files = ((f, f.relative_to(path)) for f in path.glob(glob))
     else:
-        path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
+        files = get_coverup_logs(args.suite, args.config)
 
-    if not path.exists():
-        print(f"{path} doesn't exist")
-        return
-
-    if args.coda:
-        files = path.glob("*/llm_prompts.txt")
-    elif args.mutap:
-        files = path.glob("completions.jsonl")
-    else:
-        files = path.glob("*/coverup-log-*")
-
-    for file in files:
-        rel = file.relative_to(path)
-        if any(rel.parts[0].startswith(name) for name in EXCLUDED):
-            continue
-
+    for file, rel in sorted(files):
         if args.coda:
             model, prompts, prompt_tokens = coda_prompts(file.read_text())
 
@@ -136,16 +129,18 @@ def count_beans():
         total_prompt_tokens += prompt_tokens
         total_completion_tokens += completion_tokens
 
-    print(f"model: {model}")
-    print(f"{total_prompts:,} prompts with {total_prompt_tokens:,} tokens")
-    print(f"{total_completions:,} completions with {total_completion_tokens:,} tokens")
+    if model:
+        print()
+        print(f"model: {model}")
+        print(f"{total_prompts:,} prompts with {total_prompt_tokens:,} tokens")
+        print(f"{total_completions:,} completions with {total_completion_tokens:,} tokens")
 
-    cost_prompt, cost_completion = litellm.cost_per_token(
-        model=model, prompt_tokens=total_prompt_tokens,
-        completion_tokens=total_completion_tokens
-    )
+        cost_prompt, cost_completion = litellm.cost_per_token(
+            model=model, prompt_tokens=total_prompt_tokens,
+            completion_tokens=total_completion_tokens
+        )
 
-    print(f"$ {cost_prompt:6.2f} prompt + $ {cost_completion:6.2f} completion = $ {cost_prompt+cost_completion:6.2f}")
+        print(f"$ {cost_prompt:6.2f} prompt + $ {cost_completion:6.2f} completion = $ {cost_prompt+cost_completion:6.2f}")
 
 if __name__ == '__main__':
     count_beans()

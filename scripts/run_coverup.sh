@@ -24,14 +24,19 @@ fi
 
 run "cd /output"
 
-# install CodaMOSA-computed package dependencies;
-# requirementslib has a variable named _fragment_dict and pydantic, if also installed,
-# causes load failures (saying it should be renamed to fragment_dict).
-if ! [ -e package.txt ]; then
-    run "cp /package/$SRC/package.txt ."
-    run "sed -i '/requirementslib/d' package.txt"
+if [ -e /package/$SRC/package2.txt ]; then
+    run "pip install -r /package/$SRC/package2.txt"
+else
+    # install CodaMOSA-computed package dependencies;
+    # requirementslib has a variable named _fragment_dict and pydantic, if also installed,
+    # causes load failures (saying it should be renamed to fragment_dict).
+    if ! [ -e package.txt ]; then
+        run "cp /package/$SRC/package.txt ."
+        run "sed -i '/requirementslib/d' package.txt"
+        run "chown $OWNER package.txt"
+    fi
+    run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 fi
-run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 
 # (re)install modules previously found missing
 if [ -r missing-modules.txt ]; then
@@ -40,7 +45,9 @@ fi
 
 # install CoverUp and common test modules
 run "pip install /eval/coverup"
-run "pip install -r /eval/coverup/test-modules.txt"
+if ! [ -e /package/$SRC/package2.txt ]; then
+    run "pip install -r /eval/coverup/test-modules.txt"
+fi
 
 PYTEST_ARGS+=" --rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 
@@ -58,7 +65,7 @@ for RUN in 1 2 3; do
     if ! [ -e coverup-ckpt-$RUN.json ]; then
         # run CoverUp on it
         run "coverup $COVERUP_ARGS --log-file coverup-log-$RUN --checkpoint coverup-ckpt.json $FILES"
-        run "chown -R $OWNER coverup-log* *.json *.txt coverup-tests"
+        run "chown -R $OWNER coverup-log* *.json coverup-tests"
         if [ -e missing-modules.txt ]; then
             run "chown $OWNER missing-modules.txt"
         fi

@@ -7,6 +7,7 @@ from statistics import mean, median
 import sys
 import scipy.stats
 import numpy as np
+import functools
 
 coverup_output = Path("output")
 replication = Path("codamosa") / "replication"
@@ -31,6 +32,9 @@ def parse_args():
     ap.add_argument('--compare-to', '--to', type=other_system, default='codamosa-gpt4',
                     help='select what to compare to')
 
+    ap.add_argument('--ckpt', type=str,
+                    help='use a given checkpoint for CoverUp coverage results')
+
     ap.add_argument('--plot', default=False,
                     action=argparse.BooleanOptionalAction,
                     help='plot results instead of showing a table')
@@ -40,6 +44,18 @@ def parse_args():
 
     ap.add_argument('--histogram', choices=['coverage', 'delta', 'lines', 'lines+branches'],
                     help='draw a histogram')
+
+    ap.add_argument('--array', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='output main results in array format')
+
+    ap.add_argument('--latex', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='output main results in LaTeX format')
+
+    ap.add_argument('--sigtest', default=False,
+                    action=argparse.BooleanOptionalAction,
+                    help='test per-module results for statistical significance')
 
     ap.add_argument('--title', type=str, help='specify different title for --plot')
 
@@ -78,16 +94,13 @@ def load_suite(suite_name):
     }
 
 
-json_load_cache = dict()
+@functools.cache
 def json_load(path):
-    if path not in json_load_cache:
-        with path.open() as f:
-            json_load_cache[path] = json.load(f)
-
-    return json_load_cache[path]
+    with path.open() as f:
+        return json.load(f)
 
 
-def load_coverup(suite, config = None):
+def load_coverup(suite, config, ckpt):
     # per-module dictonary -> list of [coverage 'summary']
     data = defaultdict(list)
 
@@ -105,20 +118,24 @@ def load_coverup(suite, config = None):
         m_name = m['name']
         m_out_dir = config_output_dir / m['base_module']
 
-        cov_file = m_out_dir / "final.json"
-        if cov_file.exists():
-            cov = json_load(cov_file)
+        if ckpt:
+            ckpt_data = json_load(m_out_dir / f"coverup-ckpt-{ckpt}.json")
+            cov = ckpt_data.get('final_coverage')
         else:
-            cov = None
-            ckpt_files = sorted(m_out_dir.glob("coverup-ckpt-*.json"))
-            if ckpt_files:
-                if ckpt_files[-1] not in json_load_cache: print(f"Note: using {ckpt_files[-1]}")
+            cov_file = m_out_dir / "final.json"
+            if cov_file.exists():
+                cov = json_load(cov_file)
+            else:
+                cov = None
+                ckpt_files = sorted(m_out_dir.glob("coverup-ckpt-*.json"))
+                if ckpt_files:
+                    if ckpt_files[-1] not in json_load_cache: print(f"Note: using {ckpt_files[-1]}")
 
-                ckpt = json_load(ckpt_files[-1])
-                cov = ckpt.get('final_coverage')
+                    ckpt_data = json_load(ckpt_files[-1])
+                    cov = ckpt_data.get('final_coverage')
 
-            if not cov:
-                continue
+                if not cov:
+                    continue
 
         file = m['source_dir'] + m_name.replace('.','/') + ".py"
         if file not in cov['files']:
@@ -246,7 +263,7 @@ def mean_of(values):
 
 if __name__ == "__main__":
     suite = load_suite(args.suite)
-    datasets = [load_coverup(suite, args.config)]
+    datasets = [load_coverup(suite, args.config, args.ckpt)]
 
     second_config = args.compare_to[args.compare_to.index('-')+1:]
     if args.compare_to.startswith('codamosa-'):
@@ -257,7 +274,7 @@ if __name__ == "__main__":
     elif args.compare_to.startswith('mutap-'):
         datasets.append(load_mutap(suite, second_config))
     else:
-        datasets.append(load_coverup(suite, second_config))
+        datasets.append(load_coverup(suite, second_config, args.ckpt))
 
 #    module_names = sorted(datasets[0]['data'].keys() | datasets[1]['data'].keys())
     module_names = sorted(datasets[0]['data'].keys() & datasets[1]['data'].keys())
@@ -287,6 +304,9 @@ if __name__ == "__main__":
     if args.plot or args.histogram:
         import matplotlib.pyplot as plt
         import numpy as np
+
+        import seaborn as sns
+        sns.set_theme(palette=None)
 
         plt.rcParams.update({
             'font.weight': 'bold',
@@ -336,20 +356,20 @@ if __name__ == "__main__":
 
             fig, ax = plt.subplots()
             if args.title:
-                ax.set_title(args.title, size=20)
+                ax.set_title(args.title, size=20, weight='bold')
             else:
                 ax.set_title(f'Coverage increase {first_label} vs. {datasets[1]["name"]} (larger is better)', size=20, weight='bold')
 
-            ax.set_xlabel('Modules', size=18)
-            ax.set_ylabel('Coverage increase (%)', size=18)
+            ax.set_xlabel('modules', fontsize=18, weight='bold')
+            ax.set_ylabel('Coverage increase (%)', fontsize=18)
 
             colors = ['green' if d>0 else 'black' for d in cov_delta]
             bars_x = np.arange(len(cov_delta))
 
-            ax.bar(bars_x, cov_delta, .7, color=colors)
+            ax.bar(bars_x, cov_delta, .7, color=colors, lw=0.)  # lw=0. disables white shadow with seaborn
             ax.set_xticks([])
 
-            fig.set_size_inches(16, 8)
+            fig.set_size_inches(10, 6)
             fig.tight_layout()
 
             if args.out:
@@ -388,12 +408,20 @@ if __name__ == "__main__":
 #        print(tabulate(sorted(table(), key=lambda x: x[1]*x[-1]), headers=headers)) # sort worst to best performance
         print(tabulate(table(), headers=headers))
 
+        first_system = None
+
         for ds in datasets:
             name = ds['name']
             dataset = ds['data']
 
+            if args.ckpt:
+                name += f" ckpt {args.ckpt}"
+
             if 'is_fake' in ds and ds['is_fake']:
                 continue
+
+            numbers_1 = []
+            numbers_2 = []
 
             print("")
             for metrics in [['lines'], ['branches'], ['lines','branches']]:
@@ -407,6 +435,8 @@ if __name__ == "__main__":
                       f"{median(data):.1f}% median, {min(data):.1f}% min, {max(data):.1f}% max, " +\
                       f"{sum(c==100 for c in data)} @ 100%")
 
+                numbers_2.append(median(data))
+
             for metrics in [['lines'], ['branches'], ['lines','branches']]:
                 short_label = '+'.join(m[0] for m in metrics)
                 covered = sum(sample[f'covered_{metric}'] for metric in metrics for m in module_names for sample in dataset[m])
@@ -414,6 +444,20 @@ if __name__ == "__main__":
 
                 pct = f"{100*covered/total:.1f}%  " if total>0 else ""
                 print(f"   overall {short_label+':':6} {pct}({covered}/{total})")
+
+                numbers_1.append(100*covered/total)
+
+            if args.latex:
+                print()
+                print(' & '.join([f"\\pct{{{v:.1f}}}" for v in numbers_1 + numbers_2]), "\\\\")
+                if first_system:
+                    print(' & '.join([f"\\pct{{{b-a:.1f}}}" for a, b in zip(first_system, numbers_1 + numbers_2)]), "\\\\")
+
+            if args.array:
+                print(f"'{name}': {numbers_1 + numbers_2}")
+
+            if not first_system:
+                first_system = numbers_1 + numbers_2
 
         better_count = sum([v > 0 for v in cov_delta])
         worse_count = sum([v < 0 for v in cov_delta])
@@ -423,32 +467,33 @@ if __name__ == "__main__":
                            f"and worse on {worse_count} benchmarks out of {len(cov_delta)}.")
 
 
-        print()
-        print(f"Statistical significance tests for module coverage ({datasets[0]['name']} - {datasets[1]['name']}):")
-        print()
-        for metrics in [['lines'], ['branches'], ['lines','branches']]:
-            label = '+'.join(metrics)
-            short_label = '+'.join(m[0] for m in metrics)
+        if args.sigtest:
+            print()
+            print(f"Statistical significance tests for module coverage ({datasets[0]['name']} - {datasets[1]['name']}):")
+            print()
+            for metrics in [['lines'], ['branches'], ['lines','branches']]:
+                label = '+'.join(metrics)
+                short_label = '+'.join(m[0] for m in metrics)
 
-            data = []
-            for ds in datasets:
-                tmp = [mean_of(cover_pct(sample, metrics) for sample in ds['data'][m]) for m in module_names]
-                tmp = [d for d in tmp if d is not None]
-                data.append(tmp)
+                data = []
+                for ds in datasets:
+                    tmp = [mean_of(cover_pct(sample, metrics) for sample in ds['data'][m]) for m in module_names]
+                    tmp = [d for d in tmp if d is not None]
+                    data.append(tmp)
 
-            assert len(data[0]) == len(data[1])
-            for i in range(2):
-                data[i] = np.array(data[i])
-                assert not np.any(np.isnan(data[i]))
+                assert len(data[0]) == len(data[1])
+                for i in range(2):
+                    data[i] = np.array(data[i])
+                    assert not np.any(np.isnan(data[i]))
 
-#            ttest = scipy.stats.ttest_rel(*data)
-            ptest = scipy.stats.permutation_test(
-                (*data,),
-                statistic=lambda x, y: np.mean(x-y),
-                alternative='greater',
-                permutation_type='samples',
-                n_resamples=50000,
-                random_state=42
-            )
+                #ttest = scipy.stats.ttest_rel(*data)
+                ptest = scipy.stats.permutation_test(
+                    (*data,),
+                    statistic=lambda x, y: np.mean(x-y),
+                    alternative='greater',
+                    permutation_type='samples',
+                    n_resamples=50000,
+                    random_state=42
+                )
 
-            print(f"{short_label + ':':10} ptest stat={ptest.statistic:.1f}, p-value={ptest.pvalue:.1e}")
+                print(f"{short_label + ':':10} ptest stat={ptest.statistic:.1f}, p-value={ptest.pvalue:.1e}")

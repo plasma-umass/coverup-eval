@@ -1,9 +1,8 @@
 from pathlib import Path
 from coverup.logreader import parse_log_raw
+from sequences import get_coverup_logs
 from datetime import datetime
 import re
-
-EXCLUDED = ['thefuck', 'mimesis', 'sanic']
 
 def parse_args():
     import argparse
@@ -11,10 +10,6 @@ def parse_args():
 
     ap.add_argument('--suite', choices=['good', 'cm', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
-
-    ap.add_argument('--coda', default=False,
-                    action=argparse.BooleanOptionalAction,
-                    help='show likely CodaMosa costs')
 
     ap.add_argument('--config', type=str, default='gpt4o-v2', help='specify a (non-default) configuration to use')
     return ap.parse_args()
@@ -45,20 +40,7 @@ def count_beans():
     args = parse_args()
 
     total_time = 0
-
-    path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
-
-    if not path.exists():
-        print(f"{path} doesn't exist")
-        return
-
-    total_time = 0
-    files = path.glob("*/coverup-log-*")
-    for file in files:
-        rel = file.relative_to(path)
-        if any(rel.parts[0].startswith(name) for name in EXCLUDED):
-            continue
-
+    for file, rel in sorted(get_coverup_logs(args.suite, args.config)):
         file_time = coverup_log(file.read_text())
         print(f"{str(rel):<70} {file_time=:,}")
 

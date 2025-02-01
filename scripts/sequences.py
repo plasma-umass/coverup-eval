@@ -3,13 +3,14 @@ import re
 from collections import defaultdict
 import json
 from coverup.logreader import parse_log, TERMINAL_EVENTS
+from compare import load_suite
 
 
 def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
+    ap.add_argument('--suite', choices=['cm', 'good', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
@@ -23,8 +24,29 @@ def parse_args():
     ap.add_argument('--skip', type=str,
                     help='skip files containing this string')
 
-    ap.add_argument('logs', type=str, help='log files to process')
+    ap.add_argument('--ckpt', type=str,
+                    help='use a given checkpoint/run')
+
     return ap.parse_args()
+
+
+def get_coverup_logs(suite, config):
+    base_modules = {m['base_module'] for m in load_suite(suite)['modules']}
+
+    path = Path('output') / (suite + (f".{config}" if config else ""))
+    if not path.exists() and suite == 'cm':
+        path = Path('output') / ('good' + (f".{config}" if config else ""))
+
+    if not path.exists():
+        print(f"{path} doesn't exist")
+        return
+
+    for file in path.glob("*/coverup-log-*"):
+        rel = file.relative_to(path)
+        if rel.parts[0] not in base_modules:
+            continue
+
+        yield file, rel
 
 
 def get_sequences(log_content: str, check_c_p_equivalence=False):
@@ -64,13 +86,15 @@ if __name__ == '__main__':
     args = parse_args()
 
     seq_count = defaultdict(int)
-    path = Path('output') / (args.suite + (f".{args.config}" if args.config else ""))
-    for file in path.glob(args.logs):
-        if '.' in file.name: # "foobar.failed" and such
-            continue
-
+    for file, rel in sorted(get_coverup_logs(args.suite, args.config)):
         if args.skip and args.skip in str(file):
             continue
+
+        if args.ckpt and not str(file).endswith(f"-{args.ckpt}"):
+            print(f"Skipping {file}")
+            continue
+
+        print(rel)
 
         for seg, seq, _ in get_sequences(file.read_text(), check_c_p_equivalence=args.check_c_p):
             if args.show and args.show == seq:
@@ -128,6 +152,12 @@ if __name__ == '__main__':
         else:
             end_count["." + seq[1:]] += count
 
+    print('')
+    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
+
+    end_count = defaultdict(int)
+    for seq, count in seq_count.items():
+        end_count[('~' + seq[-1])] += count
     print('')
     print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
