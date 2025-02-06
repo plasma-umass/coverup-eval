@@ -63,8 +63,6 @@ def parse_args():
 
     return ap.parse_args()
 
-args = parse_args()
-
 def load_suite(suite_name):
     modules_list = []
 
@@ -262,6 +260,8 @@ def mean_of(values):
 
 
 if __name__ == "__main__":
+    args = parse_args()
+
     suite = load_suite(args.suite)
     datasets = [load_coverup(suite, args.config, args.ckpt)]
 
