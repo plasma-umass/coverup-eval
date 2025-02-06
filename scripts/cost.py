@@ -4,6 +4,7 @@ from coverup.logreader import parse_log_raw
 from sequences import get_coverup_logs
 import re
 import litellm
+from tqdm import tqdm
 
 def parse_args():
     import argparse
@@ -109,7 +110,7 @@ def count_beans():
     else:
         files = get_coverup_logs(args.suite, args.config)
 
-    for file, rel in sorted(files):
+    for file, rel in tqdm(sorted(files)):
         if args.coda:
             model, prompts, prompt_tokens = coda_prompts(file.read_text())
 
@@ -122,7 +123,7 @@ def count_beans():
         else:
             model, prompts, completions, prompt_tokens, completion_tokens = coverup_log(file.read_text())
 
-        print(f"{str(rel):<70} {prompts=:,} {completions=:,}")
+#        print(f"{str(rel):<70} {prompts=:,} {completions=:,}")
 
         total_prompts += prompts
         total_completions += completions
