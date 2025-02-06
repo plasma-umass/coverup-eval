@@ -26,32 +26,35 @@ fi
 
 run "cd /output"
 
-# install CodaMOSA-computed package dependencies;
-# requirementslib has a variable named _fragment_dict and pydantic, if also installed,
-# causes load failures (saying it should be renamed to fragment_dict).
-if ! [ -e package.txt ]; then
-    run "cp /package/$SRC/package.txt ."
-    run "sed -i '/requirementslib/d' package.txt"
+run "pip install -r /package/$SRC/package2.txt"
+# (re)install modules previously found missing
+if [ -r missing-modules.txt ]; then
+    run "pip install -r missing-modules.txt"
 fi
-run "pip install -r package.txt || true"    # ignore any errors because so did CodaMOSA
 
-# install CoverUp and common test modules
 run "pip install /eval/coverup"
-run "pip install -r /eval/coverup/test-modules.txt"
 
-PYTEST_ARGS+=" --rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
-PYTEST_ARGS+=" --count 1" # running once is enough for coverage
+# hypothesis slows down loading considerably, and our tests don't use it
+run "pip uninstall -y hypothesis"
+
+PYTEST_ARGS=" --rootdir . -c /dev/null" # ignore configuration which would deviate from expected defaults
 SLIPCOVER_ARGS+=" --source $SRC/$PKG --branch --json"
+PYTEST_FINAL_ARGS="" # delete --cleanslate, as it can't handle test names
 
-[ -d coverage ] || mkdir coverage
+DIR=func-coverage
+[ -d $DIR ] || mkdir $DIR
 
 # set Python path so the package can be 'import'ed
 export PYTHONPATH=$SRC
 
 shopt -s nullglob # allow empty expansion
-for F in coverup-tests/test_coverup_*.py; do
-    B=`basename $F .py`
-    if ! [ -e coverage/$B.json ]; then
-        run "python3 -m slipcover $SLIPCOVER_ARGS --out coverage/$B.json -m pytest -qq --disable-warnings $PYTEST_ARGS $PYTEST_FINAL_ARGS $F || [ \$? == 5 ]"
-    fi
+for FILE in coverup-tests/test_coverup_*.py; do
+    # remove [] to remove duplication of parametrized tests
+    for TESTFUNC in $(python3 -m pytest -q --collect-only $FILE 2>/dev/null | grep "::" | sed 's/\[.*\]//' | uniq); do
+        B=`basename $TESTFUNC`
+        OUT=$DIR/$B.json
+        if ! [ -e $OUT ]; then
+            run "python3 -m slipcover $SLIPCOVER_ARGS --out $OUT -m pytest -qq --disable-warnings $PYTEST_ARGS $PYTEST_FINAL_ARGS $TESTFUNC || [ \$? == 5 ]"
+        fi
+    done
 done
