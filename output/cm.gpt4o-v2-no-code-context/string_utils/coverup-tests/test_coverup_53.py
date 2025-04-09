@@ -1,0 +1,18 @@
+# file: string_utils/manipulation.py:246-248
+# asked: {"lines": [248], "branches": []}
+# gained: {"lines": [248], "branches": []}
+
+import pytest
+from string_utils.manipulation import __StringFormatter
+from uuid import uuid4
+
+def test_placeholder_key(monkeypatch):
+    def mock_uuid4():
+        class MockUUID:
+            hex = '1234567890abcdef'
+        return MockUUID()
+    
+    monkeypatch.setattr('string_utils.manipulation.uuid4', mock_uuid4)
+    
+    result = __StringFormatter._StringFormatter__placeholder_key()
+    assert result == '$1234567890abcdef$'

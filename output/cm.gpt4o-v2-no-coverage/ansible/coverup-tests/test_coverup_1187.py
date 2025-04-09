@@ -1,0 +1,43 @@
+# file: lib/ansible/config/manager.py:421-431
+# asked: {"lines": [427, 428, 429, 430], "branches": []}
+# gained: {"lines": [427, 428, 429, 430], "branches": []}
+
+import pytest
+from unittest.mock import Mock, patch
+from ansible.errors import AnsibleError
+from ansible.config.manager import ConfigManager
+
+@pytest.fixture
+def config_manager():
+    return ConfigManager()
+
+def test_get_config_value_success(config_manager, mocker):
+    mock_get_config_value_and_origin = mocker.patch.object(
+        config_manager, 'get_config_value_and_origin', return_value=('value', 'origin')
+    )
+    result = config_manager.get_config_value('some_config')
+    assert result == 'value'
+    mock_get_config_value_and_origin.assert_called_once_with(
+        'some_config', cfile=None, plugin_type=None, plugin_name=None, keys=None, variables=None, direct=None
+    )
+
+def test_get_config_value_ansible_error(config_manager, mocker):
+    mock_get_config_value_and_origin = mocker.patch.object(
+        config_manager, 'get_config_value_and_origin', side_effect=AnsibleError
+    )
+    with pytest.raises(AnsibleError):
+        config_manager.get_config_value('some_config')
+    mock_get_config_value_and_origin.assert_called_once_with(
+        'some_config', cfile=None, plugin_type=None, plugin_name=None, keys=None, variables=None, direct=None
+    )
+
+def test_get_config_value_unhandled_exception(config_manager, mocker):
+    mock_get_config_value_and_origin = mocker.patch.object(
+        config_manager, 'get_config_value_and_origin', side_effect=Exception('unexpected error')
+    )
+    with pytest.raises(AnsibleError) as excinfo:
+        config_manager.get_config_value('some_config')
+    assert 'Unhandled exception when retrieving some_config' in str(excinfo.value)
+    mock_get_config_value_and_origin.assert_called_once_with(
+        'some_config', cfile=None, plugin_type=None, plugin_name=None, keys=None, variables=None, direct=None
+    )

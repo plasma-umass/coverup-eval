@@ -1,0 +1,44 @@
+# file: flutils/codecs/raw_utf8_escape.py:91-140
+# asked: {"lines": [114, 117, 123, 127, 130, 131, 132, 133, 134, 135, 136, 137, 138, 140], "branches": []}
+# gained: {"lines": [114, 117, 123, 127, 130, 131, 132, 133, 134, 135, 136, 137, 138, 140], "branches": []}
+
+import pytest
+from flutils.codecs.raw_utf8_escape import decode
+
+def test_decode_valid_data():
+    data = b'\\x48\\x65\\x6c\\x6c\\x6f'  # "Hello" in escaped utf8 hexadecimal
+    result, length = decode(data)
+    assert result == "Hello"
+    assert length == len(data)
+
+def test_decode_memoryview_data():
+    data = memoryview(b'\\x48\\x65\\x6c\\x6c\\x6f')  # "Hello" in escaped utf8 hexadecimal
+    result, length = decode(data)
+    assert result == "Hello"
+    assert length == len(data)
+
+def test_decode_bytearray_data():
+    data = bytearray(b'\\x48\\x65\\x6c\\x6c\\x6f')  # "Hello" in escaped utf8 hexadecimal
+    result, length = decode(data)
+    assert result == "Hello"
+    assert length == len(data)
+
+def test_decode_invalid_utf8():
+    data = b'\\x80'  # Invalid utf8 byte
+    with pytest.raises(UnicodeDecodeError) as excinfo:
+        decode(data)
+    assert excinfo.value.start == 0
+    assert excinfo.value.end == 1
+    assert excinfo.value.reason == 'invalid start byte'
+
+def test_decode_invalid_utf8_ignore_errors():
+    data = b'\\x80'  # Invalid utf8 byte
+    result, length = decode(data, errors='ignore')
+    assert result == ''
+    assert length == len(data)
+
+def test_decode_invalid_utf8_replace_errors():
+    data = b'\\x80'  # Invalid utf8 byte
+    result, length = decode(data, errors='replace')
+    assert result == '\ufffd'
+    assert length == len(data)

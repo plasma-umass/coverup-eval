@@ -1,0 +1,20 @@
+# file: lib/ansible/utils/unsafe_proxy.py:105-106
+# asked: {"lines": [105, 106], "branches": []}
+# gained: {"lines": [105, 106], "branches": []}
+
+import pytest
+from ansible.utils.unsafe_proxy import wrap_var
+
+def test_wrap_dict(monkeypatch):
+    from ansible.utils.unsafe_proxy import _wrap_dict
+
+    def mock_wrap_var(value):
+        return f"wrapped_{value}"
+
+    monkeypatch.setattr('ansible.utils.unsafe_proxy.wrap_var', mock_wrap_var)
+
+    input_dict = {'key1': 'value1', 'key2': 'value2'}
+    expected_output = {'wrapped_key1': 'wrapped_value1', 'wrapped_key2': 'wrapped_value2'}
+
+    result = _wrap_dict(input_dict)
+    assert result == expected_output

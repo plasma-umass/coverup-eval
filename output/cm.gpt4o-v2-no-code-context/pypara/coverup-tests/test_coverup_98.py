@@ -1,0 +1,11 @@
+# file: pypara/monetary.py:1366-1367
+# asked: {"lines": [1366, 1367], "branches": []}
+# gained: {"lines": [1366, 1367], "branches": []}
+
+import pytest
+from pypara.monetary import Price, NonePrice
+
+def test_none_price_divide():
+    none_price = NonePrice()
+    result = none_price.divide(10)
+    assert result is none_price

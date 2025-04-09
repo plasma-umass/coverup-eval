@@ -1,0 +1,1544 @@
+---- 2025-01-31T02:57:31 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --max-attempts 3 --isolate-tests --prompt-family gpt-v2-no-get-info-no-imports --install-missing-modules --write-requirements-to missing-modules.txt --repeat-tests 5 --source-dir ./semantic_release --tests-dir coverup-tests --save-coverage-to coverage --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json semantic_release/ci_checks.py semantic_release/dist.py semantic_release/helpers.py semantic_release/hvcs.py semantic_release/pypi.py semantic_release/settings.py
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:373-397 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 384-397 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @staticmethod\n                @LoggedFunction(logger)\n                def check_build_status(owner: str, repo: str, ref: str) -> bool:\n                    \"\"\"Check last build status\n            \n                    :param owner: The owner namespace of the repository. It includes all groups and subgroups.\n                    :param repo: The repository name\n                    :param ref: The sha1 hash of the commit ref\n            \n                    :return: the status of the pipeline (False if a job failed)\n                    \"\"\"\n       384:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())\n       385:         gl.auth()\n       386:         jobs = gl.projects.get(owner + \"/\" + repo).commits.get(ref).statuses.list()\n       387:         for job in jobs:\n       388:             if job[\"status\"] not in [\"success\", \"skipped\"]:\n       389:                 if job[\"status\"] == \"pending\":\n       390:                     logger.debug(\n       391:                         f\"check_build_status: job {job['name']} is still in pending status\"\n                                )\n       393:                     return False\n       394:                 elif job[\"status\"] == \"failed\" and not job[\"allow_failure\"]:\n       395:                     logger.debug(f\"check_build_status: job {job['name']} failed\")\n       396:                     return False\n       397:         return True\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/settings.py:121-135 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/settings.py, does not achieve full coverage:\nwhen tested, lines 126-135 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def overload_configuration(func):\n                \"\"\"This decorator gets the content of the \"define\" array and edits \"config\"\n                according to the pairs of key/value.\n                \"\"\"\n            \n       126:     @wraps(func)\n       127:     def wrap(*args, **kwargs):\n       128:         if \"define\" in kwargs:\n       129:             for defined_param in kwargs[\"define\"]:\n       130:                 pair = defined_param.split(\"=\", maxsplit=1)\n       131:                 if len(pair) == 2:\n       132:                     config[str(pair[0])] = pair[1]\n       133:         return func(*args, **kwargs)\n            \n       135:     return wrap\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:399-426 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 413-426 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @classmethod\n                @LoggedFunction(logger)\n                def post_release_changelog(\n                    cls, owner: str, repo: str, version: str, changelog: str\n                ) -> bool:\n                    \"\"\"Post release changelog\n            \n                    :param owner: The owner namespace of the repository\n                    :param repo: The repository name\n                    :param version: The version number\n                    :param changelog: The release notes for this version\n            \n                    :return: The status of the request\n                    \"\"\"\n       413:         ref = \"v\" + version\n       414:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())\n       415:         gl.auth()\n       416:         try:\n       417:             tag = gl.projects.get(owner + \"/\" + repo).tags.get(ref)\n       418:             tag.set_release_description(changelog)\n       419:         except gitlab.exceptions.GitlabGetError:\n       420:             logger.debug(f\"Tag {ref} was not found for project {owner}/{repo}\")\n       421:             return False\n       422:         except gitlab.exceptions.GitlabUpdateError:\n       423:             logger.debug(f\"Failed to update tag {ref} for project {owner}/{repo}\")\n       424:             return False\n            \n       426:         return True\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:198-219 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 211-219 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Github(Base):\n                @classmethod\n                @LoggedFunction(logger)\n                def get_release(cls, owner: str, repo: str, tag: str) -> Optional[int]:\n                    \"\"\"Get a release by its tag name\n            \n                    https://docs.github.com/rest/reference/repos#get-a-release-by-tag-name\n            \n                    :param owner: The owner namespace of the repository\n                    :param repo: The repository name\n                    :param tag: Tag to get release for\n            \n                    :return: ID of found release\n                    \"\"\"\n       211:         try:\n       212:             response = Github.session().get(\n       213:                 f\"{Github.api_url()}/repos/{owner}/{repo}/releases/tags/{tag}\"\n                        )\n       215:             return response.json().get(\"id\")\n       216:         except HTTPError as e:\n       217:             if e.response.status_code != 404:\n       218:                 logger.debug(f\"Get release by tag on Github has failed: {e}\")\n       219:             return None\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:67-87 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 76-78, 83, 86-87 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class TokenAuth(AuthBase):\n                \"\"\"\n                requests Authentication for token based authorization\n                \"\"\"\n            \n                def __init__(self, token):\n                    self.token = token\n            \n                def __eq__(self, other):\n        76:         return all(\n        77:             [\n        78:                 self.token == getattr(other, \"token\", None),\n                        ]\n                    )\n            \n                def __ne__(self, other):\n        83:         return not self == other\n            \n                def __call__(self, r):\n        86:         r.headers[\"Authorization\"] = f\"token {self.token}\"\n        87:         return r\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:429-439 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 435-439 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @LoggedFunction(logger)\n            def get_hvcs() -> Base:\n                \"\"\"Get HVCS helper class\n            \n                :raises ImproperConfigurationError: if the hvcs option provided is not valid\n                \"\"\"\n       435:     hvcs = config.get(\"hvcs\")\n       436:     try:\n       437:         return globals()[hvcs.capitalize()]\n       438:     except KeyError:\n       439:         raise ImproperConfigurationError('\"{0}\" is not a valid option for hvcs.')\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/dist.py:12-17 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/dist.py, does not achieve full coverage:\nwhen tested, lines 13-17 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def should_build():\n        13:     upload_pypi = config.get(\"upload_to_pypi\")\n        14:     upload_release = config.get(\"upload_to_release\")\n        15:     build_command = config.get(\"build_command\")\n        16:     build_command = build_command if build_command != \"false\" else False\n        17:     return bool(build_command and (upload_pypi or upload_release))\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:96-104 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 102-104 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Github(Base):\n                @staticmethod\n                def domain() -> str:\n                    \"\"\"Github domain property\n            \n                    :return: The Github domain\n                    \"\"\"\n       102:         hvcs_domain = config.get(\"hvcs_domain\")\n       103:         domain = hvcs_domain if hvcs_domain else Github.DEFAULT_DOMAIN\n       104:         return domain\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/hvcs.py:348-355 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 354-355 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @staticmethod\n                def domain() -> str:\n                    \"\"\"Gitlab domain property\n            \n                    :return: The Gitlab instance domain\n                    \"\"\"\n       354:         domain = config.get(\"hvcs_domain\", os.environ.get(\"CI_SERVER_HOST\"))\n       355:         return domain if domain else \"gitlab.com\"\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/helpers.py:16-39 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/helpers.py, does not achieve full coverage:\nwhen tested, branch 29->39 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def build_requests_session(\n                raise_for_status=True, retry: Union[bool, int, Retry] = True\n            ) -> Session:\n                \"\"\"\n                Create a requests session.\n                :param raise_for_status: If True, a hook to invoke raise_for_status be installed\n                :param retry: If true, it will use default Retry configuration. if an integer, it will use default Retry\n                configuration with given integer as total retry count. if Retry instance, it will use this instance.\n                :return: configured requests Session\n                \"\"\"\n                session = Session()\n                if raise_for_status:\n                    session.hooks = {\"response\": [lambda r, *args, **kwargs: r.raise_for_status()]}\n        29:     if retry:\n                    if isinstance(retry, bool):\n                        retry = Retry()\n                    elif isinstance(retry, int):\n                        retry = Retry(retry)\n                    elif not isinstance(retry, Retry):\n                        raise ValueError(\"retry should be a bool, int or Retry instance.\")\n                    adapter = HTTPAdapter(max_retries=retry)\n                    session.mount(\"http://\", adapter)\n                    session.mount(\"https://\", adapter)\n        39:     return session\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/ci_checks.py:118-138 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/ci_checks.py, does not achieve full coverage:\nwhen tested, branch 137->exit does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def check(branch: str = \"master\"):\n                \"\"\"\n                Detects the current CI environment, if any, and performs necessary\n                environment checks.\n            \n                :param branch: The branch that should be the current branch.\n                \"\"\"\n                if os.environ.get(\"TRAVIS\") == \"true\":\n                    travis(branch)\n                elif os.environ.get(\"SEMAPHORE\") == \"true\":\n                    semaphore(branch)\n                elif os.environ.get(\"FRIGG\") == \"true\":\n                    frigg(branch)\n                elif os.environ.get(\"CIRCLECI\") == \"true\":\n                    circle(branch)\n                elif os.environ.get(\"GITLAB_CI\") == \"true\":\n                    gitlab(branch)\n                elif os.environ.get(\"JENKINS_URL\") is not None:\n                    jenkins(branch)\n       137:     elif \"BITBUCKET_BUILD_NUMBER\" in os.environ:\n                    bitbucket(branch)\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:39 semantic_release/settings.py:64-74 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/settings.py, does not achieve full coverage:\nwhen tested, branch 69->74 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def _config_from_pyproject(path):\n                if os.path.isfile(path):\n                    try:\n                        with open(path, \"r\") as f:\n                            pyproject = tomlkit.loads(f.read())\n        69:             if pyproject:\n                            return pyproject.get(\"tool\", {}).get(\"semantic_release\", {})\n                    except TOMLKitError as e:\n                        logger.debug(f\"Could not decode pyproject.toml: {e}\")\n            \n        74:     return {}\n\n```\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:41 semantic_release/hvcs.py:96-104 ----
+{
+  "id": "chatcmpl-AvbVrn6oUff20L9tQVqSYGhoXn3Q1",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom semantic_release.hvcs import Github\nfrom semantic_release import config\n\n@pytest.fixture\ndef reset_config():\n    original_config = config.copy()\n    yield\n    config.clear()\n    config.update(original_config)\n\ndef test_github_domain_with_hvcs_domain(monkeypatch, reset_config):\n    monkeypatch.setitem(config, \"hvcs_domain\", \"custom.domain.com\")\n    assert Github.domain() == \"custom.domain.com\"\n\ndef test_github_domain_without_hvcs_domain(reset_config):\n    if \"hvcs_domain\" in config:\n        del config[\"hvcs_domain\"]\n    assert Github.domain() == Github.DEFAULT_DOMAIN\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 136,
+    "prompt_tokens": 269,
+    "total_tokens": 405,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:41 semantic_release/hvcs.py:429-439 ----
+{
+  "id": "chatcmpl-AvbVrAtFa5eZAXxcnVfeaC6PWf9BW",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom semantic_release.hvcs import get_hvcs, ImproperConfigurationError, Base\nfrom semantic_release import config\n\ndef test_get_hvcs_valid(monkeypatch):\n    class MockHVCS(Base):\n        pass\n\n    monkeypatch.setattr(config, \"get\", lambda key: \"mockhvcs\")\n    monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n\n    result = get_hvcs()\n    assert result == MockHVCS\n\ndef test_get_hvcs_invalid(monkeypatch):\n    monkeypatch.setattr(config, \"get\", lambda key: \"invalidhvcs\")\n\n    with pytest.raises(ImproperConfigurationError) as excinfo:\n        get_hvcs()\n    assert str(excinfo.value) == '\"invalidhvcs\" is not a valid option for hvcs.'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 176,
+    "prompt_tokens": 303,
+    "total_tokens": 479,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:42 semantic_release/hvcs.py:67-87 ----
+{
+  "id": "chatcmpl-AvbVrhoaHfkYCYrWAL7mjMVmjeBgx",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom requests.auth import AuthBase\nfrom requests.models import Request\n\nclass TokenAuth(AuthBase):\n    \"\"\"\n    requests Authentication for token based authorization\n    \"\"\"\n\n    def __init__(self, token):\n        self.token = token\n\n    def __eq__(self, other):\n        return all(\n            [\n                self.token == getattr(other, \"token\", None),\n            ]\n        )\n\n    def __ne__(self, other):\n        return not self == other\n\n    def __call__(self, r):\n        r.headers[\"Authorization\"] = f\"token {self.token}\"\n        return r\n\ndef test_token_auth_eq():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token123\")\n    auth3 = TokenAuth(\"token456\")\n    assert auth1 == auth2\n    assert auth1 != auth3\n\ndef test_token_auth_ne():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token456\")\n    assert auth1 != auth2\n\ndef test_token_auth_call():\n    auth = TokenAuth(\"token123\")\n    request = Request()\n    prepared_request = auth(request)\n    assert prepared_request.headers[\"Authorization\"] == \"token token123\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 255,
+    "prompt_tokens": 336,
+    "total_tokens": 591,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:42 semantic_release/hvcs.py:348-355 ----
+{
+  "id": "chatcmpl-AvbVrViwVaNcFBjJFs8ybXpfOUTjq",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef clear_env(monkeypatch):\n    # Clear environment variables to avoid state pollution\n    monkeypatch.delenv(\"CI_SERVER_HOST\", raising=False)\n    yield\n    monkeypatch.undo()\n\n@pytest.fixture\ndef clear_config(mocker):\n    # Mock the config.get method to avoid state pollution\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    yield\n    mocker.stopall()\n\ndef test_gitlab_domain_from_config(mocker, clear_env):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=\"custom.gitlab.com\")\n    assert Gitlab.domain() == \"custom.gitlab.com\"\n\ndef test_gitlab_domain_from_env(monkeypatch, clear_config):\n    monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n    assert Gitlab.domain() == \"env.gitlab.com\"\n\ndef test_gitlab_domain_default(clear_env, clear_config):\n    assert Gitlab.domain() == \"gitlab.com\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 224,
+    "prompt_tokens": 267,
+    "total_tokens": 491,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:42 semantic_release/settings.py:121-135 ----
+{
+  "id": "chatcmpl-AvbVrCsSxEyA5NNSLx6J6P2RUMMEJ",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch\nfrom functools import wraps\n\n# Assuming the code to be tested is in a module named semantic_release.settings\n# and the config is a dictionary in that module.\nimport semantic_release.settings as settings\n\ndef test_overload_configuration(monkeypatch):\n    config = {}\n\n    def mock_func(*args, **kwargs):\n        return \"mocked\"\n\n    @settings.overload_configuration\n    def decorated_func(*args, **kwargs):\n        return mock_func(*args, **kwargs)\n\n    monkeypatch.setattr(settings, 'config', config)\n\n    # Test case where \"define\" is in kwargs and has valid key=value pairs\n    result = decorated_func(define=[\"key1=value1\", \"key2=value2\"])\n    assert result == \"mocked\"\n    assert settings.config[\"key1\"] == \"value1\"\n    assert settings.config[\"key2\"] == \"value2\"\n\n    # Test case where \"define\" is in kwargs but has an invalid pair\n    result = decorated_func(define=[\"key3=value3\", \"invalidpair\"])\n    assert result == \"mocked\"\n    assert settings.config[\"key3\"] == \"value3\"\n    assert \"invalidpair\" not in settings.config\n\n    # Test case where \"define\" is not in kwargs\n    result = decorated_func()\n    assert result == \"mocked\"\n\n    # Clean up\n    monkeypatch.undo()\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 295,
+    "prompt_tokens": 344,
+    "total_tokens": 639,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:42 semantic_release/hvcs.py:198-219 ----
+{
+  "id": "chatcmpl-AvbVrJVUaJm8wam0Z7s1MCTdSH8QV",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, Mock\nfrom requests import HTTPError\nfrom semantic_release.hvcs import Github\n\n@pytest.fixture\ndef mock_github_session(monkeypatch):\n    mock_session = Mock()\n    monkeypatch.setattr(Github, 'session', lambda: mock_session)\n    return mock_session\n\ndef test_get_release_success(mock_github_session):\n    mock_response = Mock()\n    mock_response.json.return_value = {\"id\": 123}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id == 123\n\ndef test_get_release_not_found(mock_github_session):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id is None\n\ndef test_get_release_http_error(mock_github_session, caplog):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))\n    mock_github_session.get.return_value = mock_response\n\n    with caplog.at_level('DEBUG'):\n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n        assert release_id is None\n        assert \"Get release by tag on Github has failed\" in caplog.text\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 306,
+    "prompt_tokens": 413,
+    "total_tokens": 719,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:43 semantic_release/hvcs.py:96-104 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 102-104 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Github(Base):\n                @staticmethod\n                def domain() -> str:\n                    \"\"\"Github domain property\n            \n                    :return: The Github domain\n                    \"\"\"\n       102:         hvcs_domain = config.get(\"hvcs_domain\")\n       103:         domain = hvcs_domain if hvcs_domain else Github.DEFAULT_DOMAIN\n       104:         return domain\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom semantic_release.hvcs import Github\nfrom semantic_release import config\n\n@pytest.fixture\ndef reset_config():\n    original_config = config.copy()\n    yield\n    config.clear()\n    config.update(original_config)\n\ndef test_github_domain_with_hvcs_domain(monkeypatch, reset_config):\n    monkeypatch.setitem(config, \"hvcs_domain\", \"custom.domain.com\")\n    assert Github.domain() == \"custom.domain.com\"\n\ndef test_github_domain_without_hvcs_domain(reset_config):\n    if \"hvcs_domain\" in config:\n        del config[\"hvcs_domain\"]\n    assert Github.domain() == Github.DEFAULT_DOMAIN\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule\n    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)\n/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path\n    importlib.import_module(module_name)\n/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n<frozen importlib._bootstrap>:1050: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1027: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:688: in _load_unlocked\n    ???\n/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module\n    exec(co, module.__dict__)\n/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper\n    exec(obj, g)\ncoverup-tests/tmp_test_q_v67jne.py:3: in <module>\n    from semantic_release import config\nE   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)\n\nThe above exception was the direct cause of the following exception:\n/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked\n    self.session.items = list(collect_items(module))\n/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items\n    for it in collector.collect():\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect\n    self._inject_setup_module_fixture()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture\n    self.obj, (\"setUpModule\", \"setup_module\")\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj\n    self._obj = obj = self._getobj()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj\n    return self._importtestmodule()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:633: in _importtestmodule\n    raise self.CollectError(\nE   _pytest.nodes.Collector.CollectError: ImportError while importing test module '/output/coverup-tests/tmp_test_q_v67jne.py'.\nE   Hint: make sure your test modules/packages have valid Python names.\nE   Traceback:\nE   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module\nE       return _bootstrap._gcd_import(name[level:], package, level)\nE   /usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper\nE       exec(obj, g)\nE   coverup-tests/tmp_test_q_v67jne.py:3: in <module>\nE       from semantic_release import config\nE   E   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:43 semantic_release/dist.py:12-17 ----
+{
+  "id": "chatcmpl-AvbVr0MiToxhPIjjIHAjQbAv83NqP",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\n\ndef test_should_build_with_upload_pypi_and_build_command(monkeypatch):\n    config = {\n        \"upload_to_pypi\": True,\n        \"upload_to_release\": False,\n        \"build_command\": \"build\"\n    }\n    monkeypatch.setattr('semantic_release.dist.config', config)\n    from semantic_release.dist import should_build\n    assert should_build() is True\n\ndef test_should_build_with_upload_release_and_build_command(monkeypatch):\n    config = {\n        \"upload_to_pypi\": False,\n        \"upload_to_release\": True,\n        \"build_command\": \"build\"\n    }\n    monkeypatch.setattr('semantic_release.dist.config', config)\n    from semantic_release.dist import should_build\n    assert should_build() is True\n\ndef test_should_build_with_no_upload_and_build_command(monkeypatch):\n    config = {\n        \"upload_to_pypi\": False,\n        \"upload_to_release\": False,\n        \"build_command\": \"build\"\n    }\n    monkeypatch.setattr('semantic_release.dist.config', config)\n    from semantic_release.dist import should_build\n    assert should_build() is False\n\ndef test_should_build_with_upload_pypi_and_no_build_command(monkeypatch):\n    config = {\n        \"upload_to_pypi\": True,\n        \"upload_to_release\": False,\n        \"build_command\": \"false\"\n    }\n    monkeypatch.setattr('semantic_release.dist.config', config)\n    from semantic_release.dist import should_build\n    assert should_build() is False\n\ndef test_should_build_with_upload_release_and_no_build_command(monkeypatch):\n    config = {\n        \"upload_to_pypi\": False,\n        \"upload_to_release\": True,\n        \"build_command\": \"false\"\n    }\n    monkeypatch.setattr('semantic_release.dist.config', config)\n    from semantic_release.dist import should_build\n    assert should_build() is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 394,
+    "prompt_tokens": 284,
+    "total_tokens": 678,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:43 semantic_release/hvcs.py:429-439 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 435-439 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @LoggedFunction(logger)\n            def get_hvcs() -> Base:\n                \"\"\"Get HVCS helper class\n            \n                :raises ImproperConfigurationError: if the hvcs option provided is not valid\n                \"\"\"\n       435:     hvcs = config.get(\"hvcs\")\n       436:     try:\n       437:         return globals()[hvcs.capitalize()]\n       438:     except KeyError:\n       439:         raise ImproperConfigurationError('\"{0}\" is not a valid option for hvcs.')\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom semantic_release.hvcs import get_hvcs, ImproperConfigurationError, Base\nfrom semantic_release import config\n\ndef test_get_hvcs_valid(monkeypatch):\n    class MockHVCS(Base):\n        pass\n\n    monkeypatch.setattr(config, \"get\", lambda key: \"mockhvcs\")\n    monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n\n    result = get_hvcs()\n    assert result == MockHVCS\n\ndef test_get_hvcs_invalid(monkeypatch):\n    monkeypatch.setattr(config, \"get\", lambda key: \"invalidhvcs\")\n\n    with pytest.raises(ImproperConfigurationError) as excinfo:\n        get_hvcs()\n    assert str(excinfo.value) == '\"invalidhvcs\" is not a valid option for hvcs.'\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule\n    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)\n/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path\n    importlib.import_module(module_name)\n/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n<frozen importlib._bootstrap>:1050: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1027: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:688: in _load_unlocked\n    ???\n/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module\n    exec(co, module.__dict__)\n/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper\n    exec(obj, g)\ncoverup-tests/tmp_test_td2ksxm5.py:3: in <module>\n    from semantic_release import config\nE   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)\n\nThe above exception was the direct cause of the following exception:\n/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked\n    self.session.items = list(collect_items(module))\n/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items\n    for it in collector.collect():\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect\n    self._inject_setup_module_fixture()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture\n    self.obj, (\"setUpModule\", \"setup_module\")\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj\n    self._obj = obj = self._getobj()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj\n    return self._importtestmodule()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:633: in _importtestmodule\n    raise self.CollectError(\nE   _pytest.nodes.Collector.CollectError: ImportError while importing test module '/output/coverup-tests/tmp_test_td2ksxm5.py'.\nE   Hint: make sure your test modules/packages have valid Python names.\nE   Traceback:\nE   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module\nE       return _bootstrap._gcd_import(name[level:], package, level)\nE   /usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper\nE       exec(obj, g)\nE   coverup-tests/tmp_test_td2ksxm5.py:3: in <module>\nE       from semantic_release import config\nE   E   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:43 semantic_release/settings.py:64-74 ----
+{
+  "id": "chatcmpl-AvbVrE2XdxMox2IyHle0GVDCEuAbT",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nimport tomlkit\nfrom unittest.mock import mock_open, patch\nfrom semantic_release.settings import _config_from_pyproject\n\ndef test_config_from_pyproject_file_exists_with_content(monkeypatch):\n    mock_toml_content = \"\"\"\n    [tool.semantic_release]\n    version = \"1.0.0\"\n    \"\"\"\n    mock_path = \"pyproject.toml\"\n\n    monkeypatch.setattr(os.path, \"isfile\", lambda x: True)\n    monkeypatch.setattr(\"builtins.open\", mock_open(read_data=mock_toml_content))\n\n    result = _config_from_pyproject(mock_path)\n    assert result == {\"version\": \"1.0.0\"}\n\ndef test_config_from_pyproject_file_exists_empty_content(monkeypatch):\n    mock_toml_content = \"\"\n    mock_path = \"pyproject.toml\"\n\n    monkeypatch.setattr(os.path, \"isfile\", lambda x: True)\n    monkeypatch.setattr(\"builtins.open\", mock_open(read_data=mock_toml_content))\n\n    result = _config_from_pyproject(mock_path)\n    assert result == {}\n\ndef test_config_from_pyproject_file_not_exists(monkeypatch):\n    mock_path = \"pyproject.toml\"\n\n    monkeypatch.setattr(os.path, \"isfile\", lambda x: False)\n\n    result = _config_from_pyproject(mock_path)\n    assert result == {}\n\ndef test_config_from_pyproject_tomlkit_error(monkeypatch):\n    mock_path = \"pyproject.toml\"\n\n    monkeypatch.setattr(os.path, \"isfile\", lambda x: True)\n    monkeypatch.setattr(\"builtins.open\", mock_open(read_data=\"invalid toml content\"))\n\n    with patch(\"tomlkit.loads\", side_effect=tomlkit.exceptions.TOMLKitError):\n        result = _config_from_pyproject(mock_path)\n        assert result == {}\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 391,
+    "prompt_tokens": 290,
+    "total_tokens": 681,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:44 semantic_release/hvcs.py:399-426 ----
+{
+  "id": "chatcmpl-AvbVrAxlocDN0rmqMes6PWyIjCKov",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nimport gitlab\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gl = mocker.patch('gitlab.Gitlab')\n    mock_instance = mock_gl.return_value\n    mock_instance.auth.return_value = None\n    return mock_instance\n\ndef test_post_release_changelog_success(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is True\n\ndef test_post_release_changelog_tag_not_found(mock_gitlab):\n    mock_project = MagicMock()\n    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    assert result is False\n\ndef test_post_release_changelog_update_error(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 489,
+    "prompt_tokens": 489,
+    "total_tokens": 978,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:44 semantic_release/hvcs.py:67-87 ----
+...............                                                          [100%]
+
+---- 2025-01-31T02:57:44 semantic_release/hvcs.py:67-87 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 76-78, 83, 86-87 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class TokenAuth(AuthBase):\n                \"\"\"\n                requests Authentication for token based authorization\n                \"\"\"\n            \n                def __init__(self, token):\n                    self.token = token\n            \n                def __eq__(self, other):\n        76:         return all(\n        77:             [\n        78:                 self.token == getattr(other, \"token\", None),\n                        ]\n                    )\n            \n                def __ne__(self, other):\n        83:         return not self == other\n            \n                def __call__(self, r):\n        86:         r.headers[\"Authorization\"] = f\"token {self.token}\"\n        87:         return r\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom requests.auth import AuthBase\nfrom requests.models import Request\n\nclass TokenAuth(AuthBase):\n    \"\"\"\n    requests Authentication for token based authorization\n    \"\"\"\n\n    def __init__(self, token):\n        self.token = token\n\n    def __eq__(self, other):\n        return all(\n            [\n                self.token == getattr(other, \"token\", None),\n            ]\n        )\n\n    def __ne__(self, other):\n        return not self == other\n\n    def __call__(self, r):\n        r.headers[\"Authorization\"] = f\"token {self.token}\"\n        return r\n\ndef test_token_auth_eq():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token123\")\n    auth3 = TokenAuth(\"token456\")\n    assert auth1 == auth2\n    assert auth1 != auth3\n\ndef test_token_auth_ne():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token456\")\n    assert auth1 != auth2\n\ndef test_token_auth_call():\n    auth = TokenAuth(\"token123\")\n    request = Request()\n    prepared_request = auth(request)\n    assert prepared_request.headers[\"Authorization\"] == \"token token123\"\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "The tests still lack coverage: lines 76-87 do not execute.\nModify it to correct that; respond only with the complete Python code in backticks.\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:44 semantic_release/helpers.py:16-39 ----
+{
+  "id": "chatcmpl-AvbVrbl6c1n0yTFVKSQId4V8S4CyY",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom requests import Session\nfrom requests.adapters import HTTPAdapter\nfrom requests.exceptions import RetryError\nfrom requests.packages.urllib3.util.retry import Retry\nfrom semantic_release.helpers import build_requests_session\n\ndef test_build_requests_session_no_retry():\n    session = build_requests_session(retry=False)\n    assert isinstance(session, Session)\n    assert \"http://\" not in session.adapters\n    assert \"https://\" not in session.adapters\n\ndef test_build_requests_session_retry_as_bool():\n    session = build_requests_session(retry=True)\n    assert isinstance(session, Session)\n    assert isinstance(session.adapters[\"http://\"], HTTPAdapter)\n    assert isinstance(session.adapters[\"https://\"], HTTPAdapter)\n\ndef test_build_requests_session_retry_as_int():\n    session = build_requests_session(retry=5)\n    assert isinstance(session, Session)\n    adapter = session.adapters[\"http://\"]\n    assert isinstance(adapter, HTTPAdapter)\n    assert adapter.max_retries.total == 5\n\ndef test_build_requests_session_retry_as_retry_instance():\n    retry_instance = Retry(total=3)\n    session = build_requests_session(retry=retry_instance)\n    assert isinstance(session, Session)\n    adapter = session.adapters[\"http://\"]\n    assert isinstance(adapter, HTTPAdapter)\n    assert adapter.max_retries.total == 3\n\ndef test_build_requests_session_invalid_retry():\n    with pytest.raises(ValueError, match=\"retry should be a bool, int or Retry instance.\"):\n        build_requests_session(retry=\"invalid\")\n\ndef test_build_requests_session_raise_for_status(monkeypatch):\n    class MockResponse:\n        def raise_for_status(self):\n            raise RetryError(\"Mocked error\")\n\n    session = build_requests_session(raise_for_status=True)\n    assert isinstance(session, Session)\n    assert \"response\" in session.hooks\n    with pytest.raises(RetryError, match=\"Mocked error\"):\n        for hook in session.hooks[\"response\"]:\n            hook(MockResponse())\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 393,
+    "prompt_tokens": 438,
+    "total_tokens": 831,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:44 semantic_release/hvcs.py:348-355 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 354-355 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @staticmethod\n                def domain() -> str:\n                    \"\"\"Gitlab domain property\n            \n                    :return: The Gitlab instance domain\n                    \"\"\"\n       354:         domain = config.get(\"hvcs_domain\", os.environ.get(\"CI_SERVER_HOST\"))\n       355:         return domain if domain else \"gitlab.com\"\n\n```\n"
+    },
+    {
+      "content": "```python\nimport os\nimport pytest\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef clear_env(monkeypatch):\n    # Clear environment variables to avoid state pollution\n    monkeypatch.delenv(\"CI_SERVER_HOST\", raising=False)\n    yield\n    monkeypatch.undo()\n\n@pytest.fixture\ndef clear_config(mocker):\n    # Mock the config.get method to avoid state pollution\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    yield\n    mocker.stopall()\n\ndef test_gitlab_domain_from_config(mocker, clear_env):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=\"custom.gitlab.com\")\n    assert Gitlab.domain() == \"custom.gitlab.com\"\n\ndef test_gitlab_domain_from_env(monkeypatch, clear_config):\n    monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n    assert Gitlab.domain() == \"env.gitlab.com\"\n\ndef test_gitlab_domain_default(clear_env, clear_config):\n    assert Gitlab.domain() == \"gitlab.com\"\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1b8117cfa0>\nclear_config = None\n\n    def test_gitlab_domain_from_env(monkeypatch, clear_config):\n        monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n>       assert Gitlab.domain() == \"env.gitlab.com\"\nE       AssertionError: assert 'gitlab.com' == 'env.gitlab.com'\nE         - env.gitlab.com\nE         ? ----\nE         + gitlab.com\n\ncoverup-tests/tmp_test_u4_l_qov.py:25: AssertionError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:44 semantic_release/settings.py:121-135 ----
+.....                                                                    [100%]
+
+---- 2025-01-31T02:57:44 semantic_release/settings.py:121-135 ----
+Saved as /output/coverup-tests/test_coverup_40.py
+
+---- 2025-01-31T02:57:44 semantic_release/hvcs.py:96-104 ----
+{
+  "id": "chatcmpl-AvbVv7dw0YYJqfNAlLgwWaA22mc41",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom semantic_release.hvcs import Github\nfrom semantic_release.settings import config\n\n@pytest.fixture\ndef reset_config():\n    original_config = config.copy()\n    yield\n    config.clear()\n    config.update(original_config)\n\ndef test_github_domain_with_hvcs_domain(monkeypatch, reset_config):\n    monkeypatch.setitem(config, \"hvcs_domain\", \"custom.domain.com\")\n    assert Github.domain() == \"custom.domain.com\"\n\ndef test_github_domain_without_hvcs_domain(reset_config):\n    if \"hvcs_domain\" in config:\n        del config[\"hvcs_domain\"]\n    assert Github.domain() == Github.DEFAULT_DOMAIN\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292263,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 137,
+    "prompt_tokens": 1159,
+    "total_tokens": 1296,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:44 semantic_release/hvcs.py:198-219 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 211-219 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Github(Base):\n                @classmethod\n                @LoggedFunction(logger)\n                def get_release(cls, owner: str, repo: str, tag: str) -> Optional[int]:\n                    \"\"\"Get a release by its tag name\n            \n                    https://docs.github.com/rest/reference/repos#get-a-release-by-tag-name\n            \n                    :param owner: The owner namespace of the repository\n                    :param repo: The repository name\n                    :param tag: Tag to get release for\n            \n                    :return: ID of found release\n                    \"\"\"\n       211:         try:\n       212:             response = Github.session().get(\n       213:                 f\"{Github.api_url()}/repos/{owner}/{repo}/releases/tags/{tag}\"\n                        )\n       215:             return response.json().get(\"id\")\n       216:         except HTTPError as e:\n       217:             if e.response.status_code != 404:\n       218:                 logger.debug(f\"Get release by tag on Github has failed: {e}\")\n       219:             return None\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import patch, Mock\nfrom requests import HTTPError\nfrom semantic_release.hvcs import Github\n\n@pytest.fixture\ndef mock_github_session(monkeypatch):\n    mock_session = Mock()\n    monkeypatch.setattr(Github, 'session', lambda: mock_session)\n    return mock_session\n\ndef test_get_release_success(mock_github_session):\n    mock_response = Mock()\n    mock_response.json.return_value = {\"id\": 123}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id == 123\n\ndef test_get_release_not_found(mock_github_session):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id is None\n\ndef test_get_release_http_error(mock_github_session, caplog):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))\n    mock_github_session.get.return_value = mock_response\n\n    with caplog.at_level('DEBUG'):\n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n        assert release_id is None\n        assert \"Get release by tag on Github has failed\" in caplog.text\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmock_github_session = <Mock id='140134182337744'>\n\n    def test_get_release_not_found(mock_github_session):\n        mock_response = Mock()\n        mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))\n        mock_github_session.get.return_value = mock_response\n    \n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n>       assert release_id is None\nE       AssertionError: assert <Mock name='mock.get().json().get()' id='140134182337696'> is None\n\ncoverup-tests/tmp_test_2xfy05ht.py:26: AssertionError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:45 semantic_release/hvcs.py:373-397 ----
+{
+  "id": "chatcmpl-AvbVrH1poOtY9iZ0chJpi6hlVadsW",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')\n    mock_gitlab_instance.api_url.return_value = 'https://gitlab.com/api/v4'\n    mock_gitlab_instance.token.return_value = 'fake_token'\n    return mock_gitlab_instance\n\ndef test_check_build_status_success(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"success\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is True\n\ndef test_check_build_status_pending(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"pending\", \"name\": \"job1\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is False\n\ndef test_check_build_status_failed(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"failed\", \"allow_failure\": False, \"name\": \"job1\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is False\n\ndef test_check_build_status_skipped(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"skipped\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is True\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 632,
+    "prompt_tokens": 497,
+    "total_tokens": 1129,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:45 semantic_release/hvcs.py:429-439 ----
+{
+  "id": "chatcmpl-AvbVvTT4baBJgOmQxx09Rnzun8Kdb",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom semantic_release.hvcs import get_hvcs, ImproperConfigurationError, Base\nfrom unittest import mock\n\ndef test_get_hvcs_valid(monkeypatch):\n    class MockHVCS(Base):\n        pass\n\n    with mock.patch('semantic_release.hvcs.config.get', return_value=\"mockhvcs\"):\n        monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n        result = get_hvcs()\n        assert result == MockHVCS\n\ndef test_get_hvcs_invalid(monkeypatch):\n    with mock.patch('semantic_release.hvcs.config.get', return_value=\"invalidhvcs\"):\n        with pytest.raises(ImproperConfigurationError) as excinfo:\n            get_hvcs()\n        assert str(excinfo.value) == '\"invalidhvcs\" is not a valid option for hvcs.'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292263,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 179,
+    "prompt_tokens": 1236,
+    "total_tokens": 1415,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:46 semantic_release/settings.py:64-74 ----
+....................                                                     [100%]
+
+---- 2025-01-31T02:57:46 semantic_release/settings.py:64-74 ----
+Saved as /output/coverup-tests/test_coverup_41.py
+
+---- 2025-01-31T02:57:46 semantic_release/hvcs.py:399-426 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 413-426 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @classmethod\n                @LoggedFunction(logger)\n                def post_release_changelog(\n                    cls, owner: str, repo: str, version: str, changelog: str\n                ) -> bool:\n                    \"\"\"Post release changelog\n            \n                    :param owner: The owner namespace of the repository\n                    :param repo: The repository name\n                    :param version: The version number\n                    :param changelog: The release notes for this version\n            \n                    :return: The status of the request\n                    \"\"\"\n       413:         ref = \"v\" + version\n       414:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())\n       415:         gl.auth()\n       416:         try:\n       417:             tag = gl.projects.get(owner + \"/\" + repo).tags.get(ref)\n       418:             tag.set_release_description(changelog)\n       419:         except gitlab.exceptions.GitlabGetError:\n       420:             logger.debug(f\"Tag {ref} was not found for project {owner}/{repo}\")\n       421:             return False\n       422:         except gitlab.exceptions.GitlabUpdateError:\n       423:             logger.debug(f\"Failed to update tag {ref} for project {owner}/{repo}\")\n       424:             return False\n            \n       426:         return True\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nimport gitlab\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gl = mocker.patch('gitlab.Gitlab')\n    mock_instance = mock_gl.return_value\n    mock_instance.auth.return_value = None\n    return mock_instance\n\ndef test_post_release_changelog_success(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is True\n\ndef test_post_release_changelog_tag_not_found(mock_gitlab):\n    mock_project = MagicMock()\n    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    assert result is False\n\ndef test_post_release_changelog_update_error(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is False\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmocker = <pytest_mock.plugin.MockerFixture object at 0x7ffbc12a5390>\n\n    @pytest.fixture\n    def mock_gitlab(mocker):\n>       mock_gl = mocker.patch('gitlab.Gitlab')\n\ncoverup-tests/tmp_test_ui22hi_g.py:8: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__\n    return self._start_patch(\n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch\n    mocked: MockType = p.start()\n/usr/local/lib/python3.10/unittest/mock.py:1585: in start\n    result = self.__enter__()\n/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__\n    original, local = self.get_original()\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <unittest.mock._patch object at 0x7ffbc12a40a0>\n\n    def get_original(self):\n        target = self.getter()\n        name = self.attribute\n    \n        original = DEFAULT\n        local = False\n    \n        try:\n            original = target.__dict__[name]\n        except (AttributeError, KeyError):\n            original = getattr(target, name, DEFAULT)\n        else:\n            local = True\n    \n        if name in _builtins and isinstance(target, ModuleType):\n            self.create = True\n    \n        if not self.create and original is DEFAULT:\n>           raise AttributeError(\n                \"%s does not have the attribute %r\" % (target, name)\n            )\nE           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'\n\n/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:46 semantic_release/helpers.py:16-39 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/helpers.py, does not achieve full coverage:\nwhen tested, branch 29->39 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def build_requests_session(\n                raise_for_status=True, retry: Union[bool, int, Retry] = True\n            ) -> Session:\n                \"\"\"\n                Create a requests session.\n                :param raise_for_status: If True, a hook to invoke raise_for_status be installed\n                :param retry: If true, it will use default Retry configuration. if an integer, it will use default Retry\n                configuration with given integer as total retry count. if Retry instance, it will use this instance.\n                :return: configured requests Session\n                \"\"\"\n                session = Session()\n                if raise_for_status:\n                    session.hooks = {\"response\": [lambda r, *args, **kwargs: r.raise_for_status()]}\n        29:     if retry:\n                    if isinstance(retry, bool):\n                        retry = Retry()\n                    elif isinstance(retry, int):\n                        retry = Retry(retry)\n                    elif not isinstance(retry, Retry):\n                        raise ValueError(\"retry should be a bool, int or Retry instance.\")\n                    adapter = HTTPAdapter(max_retries=retry)\n                    session.mount(\"http://\", adapter)\n                    session.mount(\"https://\", adapter)\n        39:     return session\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom requests import Session\nfrom requests.adapters import HTTPAdapter\nfrom requests.exceptions import RetryError\nfrom requests.packages.urllib3.util.retry import Retry\nfrom semantic_release.helpers import build_requests_session\n\ndef test_build_requests_session_no_retry():\n    session = build_requests_session(retry=False)\n    assert isinstance(session, Session)\n    assert \"http://\" not in session.adapters\n    assert \"https://\" not in session.adapters\n\ndef test_build_requests_session_retry_as_bool():\n    session = build_requests_session(retry=True)\n    assert isinstance(session, Session)\n    assert isinstance(session.adapters[\"http://\"], HTTPAdapter)\n    assert isinstance(session.adapters[\"https://\"], HTTPAdapter)\n\ndef test_build_requests_session_retry_as_int():\n    session = build_requests_session(retry=5)\n    assert isinstance(session, Session)\n    adapter = session.adapters[\"http://\"]\n    assert isinstance(adapter, HTTPAdapter)\n    assert adapter.max_retries.total == 5\n\ndef test_build_requests_session_retry_as_retry_instance():\n    retry_instance = Retry(total=3)\n    session = build_requests_session(retry=retry_instance)\n    assert isinstance(session, Session)\n    adapter = session.adapters[\"http://\"]\n    assert isinstance(adapter, HTTPAdapter)\n    assert adapter.max_retries.total == 3\n\ndef test_build_requests_session_invalid_retry():\n    with pytest.raises(ValueError, match=\"retry should be a bool, int or Retry instance.\"):\n        build_requests_session(retry=\"invalid\")\n\ndef test_build_requests_session_raise_for_status(monkeypatch):\n    class MockResponse:\n        def raise_for_status(self):\n            raise RetryError(\"Mocked error\")\n\n    session = build_requests_session(raise_for_status=True)\n    assert isinstance(session, Session)\n    assert \"response\" in session.hooks\n    with pytest.raises(RetryError, match=\"Mocked error\"):\n        for hook in session.hooks[\"response\"]:\n            hook(MockResponse())\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\n    def test_build_requests_session_no_retry():\n        session = build_requests_session(retry=False)\n        assert isinstance(session, Session)\n>       assert \"http://\" not in session.adapters\nE       AssertionError: assert 'http://' not in OrderedDict([('https://', <requests.adapters.HTTPAdapter object at 0x7fc327336290>), ('http://', <requests.adapters.HTTPAdapter object at 0x7fc3273362f0>)])\nE        +  where OrderedDict([('https://', <requests.adapters.HTTPAdapter object at 0x7fc327336290>), ('http://', <requests.adapters.HTTPAdapter object at 0x7fc3273362f0>)]) = <requests.sessions.Session object at 0x7fc327337250>.adapters\n\ncoverup-tests/tmp_test_bso6waaf.py:11: AssertionError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:46 semantic_release/hvcs.py:96-104 ----
+..........                                                               [100%]
+
+---- 2025-01-31T02:57:46 semantic_release/hvcs.py:96-104 ----
+Saved as /output/coverup-tests/test_coverup_42.py
+
+---- 2025-01-31T02:57:47 semantic_release/hvcs.py:348-355 ----
+{
+  "id": "chatcmpl-AvbVwHoQ4k5TdbpK3euVZykoMk8L1",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef clear_env(monkeypatch):\n    # Clear environment variables to avoid state pollution\n    monkeypatch.delenv(\"CI_SERVER_HOST\", raising=False)\n    yield\n    monkeypatch.undo()\n\n@pytest.fixture\ndef clear_config(mocker):\n    # Mock the config.get method to avoid state pollution\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    yield\n    mocker.stopall()\n\ndef test_gitlab_domain_from_config(mocker, clear_env):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=\"custom.gitlab.com\")\n    assert Gitlab.domain() == \"custom.gitlab.com\"\n\ndef test_gitlab_domain_from_env(monkeypatch, mocker):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n    assert Gitlab.domain() == \"env.gitlab.com\"\n\ndef test_gitlab_domain_default(clear_env, clear_config):\n    assert Gitlab.domain() == \"gitlab.com\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292264,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 241,
+    "prompt_tokens": 661,
+    "total_tokens": 902,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:47 semantic_release/dist.py:12-17 ----
+.........................                                                [100%]
+
+---- 2025-01-31T02:57:47 semantic_release/dist.py:12-17 ----
+Saved as /output/coverup-tests/test_coverup_43.py
+
+---- 2025-01-31T02:57:47 semantic_release/hvcs.py:373-397 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 384-397 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @staticmethod\n                @LoggedFunction(logger)\n                def check_build_status(owner: str, repo: str, ref: str) -> bool:\n                    \"\"\"Check last build status\n            \n                    :param owner: The owner namespace of the repository. It includes all groups and subgroups.\n                    :param repo: The repository name\n                    :param ref: The sha1 hash of the commit ref\n            \n                    :return: the status of the pipeline (False if a job failed)\n                    \"\"\"\n       384:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())\n       385:         gl.auth()\n       386:         jobs = gl.projects.get(owner + \"/\" + repo).commits.get(ref).statuses.list()\n       387:         for job in jobs:\n       388:             if job[\"status\"] not in [\"success\", \"skipped\"]:\n       389:                 if job[\"status\"] == \"pending\":\n       390:                     logger.debug(\n       391:                         f\"check_build_status: job {job['name']} is still in pending status\"\n                                )\n       393:                     return False\n       394:                 elif job[\"status\"] == \"failed\" and not job[\"allow_failure\"]:\n       395:                     logger.debug(f\"check_build_status: job {job['name']} failed\")\n       396:                     return False\n       397:         return True\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')\n    mock_gitlab_instance.api_url.return_value = 'https://gitlab.com/api/v4'\n    mock_gitlab_instance.token.return_value = 'fake_token'\n    return mock_gitlab_instance\n\ndef test_check_build_status_success(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"success\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is True\n\ndef test_check_build_status_pending(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"pending\", \"name\": \"job1\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is False\n\ndef test_check_build_status_failed(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"failed\", \"allow_failure\": False, \"name\": \"job1\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is False\n\ndef test_check_build_status_skipped(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"skipped\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is True\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmocker = <pytest_mock.plugin.MockerFixture object at 0x7f5588c43640>\n\n    @pytest.fixture\n    def mock_gitlab(mocker):\n>       mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab.Gitlab')\n\ncoverup-tests/tmp_test_9y7c3png.py:7: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__\n    return self._start_patch(\n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch\n    mocked: MockType = p.start()\n/usr/local/lib/python3.10/unittest/mock.py:1585: in start\n    result = self.__enter__()\n/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__\n    original, local = self.get_original()\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <unittest.mock._patch object at 0x7f5588c40280>\n\n    def get_original(self):\n        target = self.getter()\n        name = self.attribute\n    \n        original = DEFAULT\n        local = False\n    \n        try:\n            original = target.__dict__[name]\n        except (AttributeError, KeyError):\n            original = getattr(target, name, DEFAULT)\n        else:\n            local = True\n    \n        if name in _builtins and isinstance(target, ModuleType):\n            self.create = True\n    \n        if not self.create and original is DEFAULT:\n>           raise AttributeError(\n                \"%s does not have the attribute %r\" % (target, name)\n            )\nE           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'\n\n/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:47 semantic_release/hvcs.py:67-87 ----
+{
+  "id": "chatcmpl-AvbVw0itG29KKkEOy2C96CLDt5Svp",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom requests.auth import AuthBase\nfrom requests.models import Request\n\nclass TokenAuth(AuthBase):\n    \"\"\"\n    requests Authentication for token based authorization\n    \"\"\"\n\n    def __init__(self, token):\n        self.token = token\n\n    def __eq__(self, other):\n        return all(\n            [\n                self.token == getattr(other, \"token\", None),\n            ]\n        )\n\n    def __ne__(self, other):\n        return not self == other\n\n    def __call__(self, r):\n        r.headers[\"Authorization\"] = f\"token {self.token}\"\n        return r\n\ndef test_token_auth_eq():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token123\")\n    auth3 = TokenAuth(\"token456\")\n    assert auth1 == auth2\n    assert auth1 != auth3\n\ndef test_token_auth_ne():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token456\")\n    assert auth1 != auth2\n\ndef test_token_auth_call():\n    auth = TokenAuth(\"token123\")\n    request = Request()\n    prepared_request = auth(request)\n    assert prepared_request.headers[\"Authorization\"] == \"token token123\"\n\ndef test_token_auth_eq_false():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = object()\n    assert auth1 != auth2\n\ndef test_token_auth_ne_true():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = object()\n    assert auth1 != auth2\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292264,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 317,
+    "prompt_tokens": 630,
+    "total_tokens": 947,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:47 semantic_release/hvcs.py:429-439 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 435-439 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            @LoggedFunction(logger)\n            def get_hvcs() -> Base:\n                \"\"\"Get HVCS helper class\n            \n                :raises ImproperConfigurationError: if the hvcs option provided is not valid\n                \"\"\"\n       435:     hvcs = config.get(\"hvcs\")\n       436:     try:\n       437:         return globals()[hvcs.capitalize()]\n       438:     except KeyError:\n       439:         raise ImproperConfigurationError('\"{0}\" is not a valid option for hvcs.')\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom semantic_release.hvcs import get_hvcs, ImproperConfigurationError, Base\nfrom semantic_release import config\n\ndef test_get_hvcs_valid(monkeypatch):\n    class MockHVCS(Base):\n        pass\n\n    monkeypatch.setattr(config, \"get\", lambda key: \"mockhvcs\")\n    monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n\n    result = get_hvcs()\n    assert result == MockHVCS\n\ndef test_get_hvcs_invalid(monkeypatch):\n    monkeypatch.setattr(config, \"get\", lambda key: \"invalidhvcs\")\n\n    with pytest.raises(ImproperConfigurationError) as excinfo:\n        get_hvcs()\n    assert str(excinfo.value) == '\"invalidhvcs\" is not a valid option for hvcs.'\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:608: in _importtestmodule\n    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)\n/usr/local/lib/python3.10/site-packages/_pytest/pathlib.py:533: in import_path\n    importlib.import_module(module_name)\n/usr/local/lib/python3.10/importlib/__init__.py:126: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n<frozen importlib._bootstrap>:1050: in _gcd_import\n    ???\n<frozen importlib._bootstrap>:1027: in _find_and_load\n    ???\n<frozen importlib._bootstrap>:1006: in _find_and_load_unlocked\n    ???\n<frozen importlib._bootstrap>:688: in _load_unlocked\n    ???\n/usr/local/lib/python3.10/site-packages/_pytest/assertion/rewrite.py:168: in exec_module\n    exec(co, module.__dict__)\n/usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper\n    exec(obj, g)\ncoverup-tests/tmp_test_td2ksxm5.py:3: in <module>\n    from semantic_release import config\nE   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)\n\nThe above exception was the direct cause of the following exception:\n/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:56: in runforked\n    self.session.items = list(collect_items(module))\n/usr/local/lib/python3.10/site-packages/pytest_cleanslate/plugin.py:49: in collect_items\n    for it in collector.collect():\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:522: in collect\n    self._inject_setup_module_fixture()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:536: in _inject_setup_module_fixture\n    self.obj, (\"setUpModule\", \"setup_module\")\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:301: in obj\n    self._obj = obj = self._getobj()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:519: in _getobj\n    return self._importtestmodule()\n/usr/local/lib/python3.10/site-packages/_pytest/python.py:633: in _importtestmodule\n    raise self.CollectError(\nE   _pytest.nodes.Collector.CollectError: ImportError while importing test module '/output/coverup-tests/tmp_test_td2ksxm5.py'.\nE   Hint: make sure your test modules/packages have valid Python names.\nE   Traceback:\nE   /usr/local/lib/python3.10/importlib/__init__.py:126: in import_module\nE       return _bootstrap._gcd_import(name[level:], package, level)\nE   /usr/local/lib/python3.10/site-packages/slipcover/importer.py:216: in exec_wrapper\nE       exec(obj, g)\nE   coverup-tests/tmp_test_td2ksxm5.py:3: in <module>\nE       from semantic_release import config\nE   E   ImportError: cannot import name 'config' from 'semantic_release' (/output/semantic_release/__init__.py)\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom semantic_release.hvcs import get_hvcs, ImproperConfigurationError, Base\nfrom unittest import mock\n\ndef test_get_hvcs_valid(monkeypatch):\n    class MockHVCS(Base):\n        pass\n\n    with mock.patch('semantic_release.hvcs.config.get', return_value=\"mockhvcs\"):\n        monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n        result = get_hvcs()\n        assert result == MockHVCS\n\ndef test_get_hvcs_invalid(monkeypatch):\n    with mock.patch('semantic_release.hvcs.config.get', return_value=\"invalidhvcs\"):\n        with pytest.raises(ImproperConfigurationError) as excinfo:\n            get_hvcs()\n        assert str(excinfo.value) == '\"invalidhvcs\" is not a valid option for hvcs.'\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\n    @LoggedFunction(logger)\n    def get_hvcs() -> Base:\n        \"\"\"Get HVCS helper class\n    \n        :raises ImproperConfigurationError: if the hvcs option provided is not valid\n        \"\"\"\n        hvcs = config.get(\"hvcs\")\n        try:\n>           return globals()[hvcs.capitalize()]\nE           KeyError: 'Mockhvcs'\n\nsemantic_release/hvcs.py:437: KeyError\n\nDuring handling of the above exception, another exception occurred:\n\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fa0252a81f0>\n\n    def test_get_hvcs_valid(monkeypatch):\n        class MockHVCS(Base):\n            pass\n    \n        with mock.patch('semantic_release.hvcs.config.get', return_value=\"mockhvcs\"):\n            monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n>           result = get_hvcs()\n\ncoverup-tests/tmp_test_4zjjq6u9.py:11: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nsemantic_release/helpers.py:70: in logged_func\n    result = func(*args, **kwargs)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\n    @LoggedFunction(logger)\n    def get_hvcs() -> Base:\n        \"\"\"Get HVCS helper class\n    \n        :raises ImproperConfigurationError: if the hvcs option provided is not valid\n        \"\"\"\n        hvcs = config.get(\"hvcs\")\n        try:\n            return globals()[hvcs.capitalize()]\n        except KeyError:\n>           raise ImproperConfigurationError('\"{0}\" is not a valid option for hvcs.')\nE           semantic_release.errors.ImproperConfigurationError: \"{0}\" is not a valid option for hvcs.\n\nsemantic_release/hvcs.py:439: ImproperConfigurationError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:47 semantic_release/ci_checks.py:118-138 ----
+{
+  "id": "chatcmpl-AvbVrWWe1HJ7oXcyGT9qS1Htj1nev",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom semantic_release.ci_checks import check\n\ndef test_check_bitbucket(monkeypatch):\n    # Set up the environment variable to simulate Bitbucket environment\n    monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n\n    # Mock the bitbucket function to verify it gets called\n    from semantic_release.ci_checks import bitbucket\n    mock_bitbucket = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.bitbucket\", mock_bitbucket)\n\n    # Call the check function\n    check(\"master\")\n\n    # Assert that the bitbucket function was called with the correct branch\n    mock_bitbucket.assert_called_once_with(\"master\")\n\n    # Clean up the environment variable\n    monkeypatch.delenv(\"BITBUCKET_BUILD_NUMBER\")\n\n# Additional tests for other CI environments to ensure full coverage\ndef test_check_travis(monkeypatch):\n    monkeypatch.setenv(\"TRAVIS\", \"true\")\n    from semantic_release.ci_checks import travis\n    mock_travis = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.travis\", mock_travis)\n    check(\"master\")\n    mock_travis.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"TRAVIS\")\n\ndef test_check_semaphore(monkeypatch):\n    monkeypatch.setenv(\"SEMAPHORE\", \"true\")\n    from semantic_release.ci_checks import semaphore\n    mock_semaphore = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.semaphore\", mock_semaphore)\n    check(\"master\")\n    mock_semaphore.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"SEMAPHORE\")\n\ndef test_check_frigg(monkeypatch):\n    monkeypatch.setenv(\"FRIGG\", \"true\")\n    from semantic_release.ci_checks import frigg\n    mock_frigg = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.frigg\", mock_frigg)\n    check(\"master\")\n    mock_frigg.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"FRIGG\")\n\ndef test_check_circle(monkeypatch):\n    monkeypatch.setenv(\"CIRCLECI\", \"true\")\n    from semantic_release.ci_checks import circle\n    mock_circle = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.circle\", mock_circle)\n    check(\"master\")\n    mock_circle.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"CIRCLECI\")\n\ndef test_check_gitlab(monkeypatch):\n    monkeypatch.setenv(\"GITLAB_CI\", \"true\")\n    from semantic_release.ci_checks import gitlab\n    mock_gitlab = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.gitlab\", mock_gitlab)\n    check(\"master\")\n    mock_gitlab.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"GITLAB_CI\")\n\ndef test_check_jenkins(monkeypatch):\n    monkeypatch.setenv(\"JENKINS_URL\", \"http://jenkins.example.com\")\n    from semantic_release.ci_checks import jenkins\n    mock_jenkins = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.jenkins\", mock_jenkins)\n    check(\"master\")\n    mock_jenkins.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"JENKINS_URL\")\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292259,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 717,
+    "prompt_tokens": 381,
+    "total_tokens": 1098,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:48 semantic_release/hvcs.py:198-219 ----
+{
+  "id": "chatcmpl-AvbVwQmYSYv0Uc5n9z7LEOzWspXe9",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, Mock\nfrom requests import HTTPError\nfrom semantic_release.hvcs import Github\n\n@pytest.fixture\ndef mock_github_session(monkeypatch):\n    mock_session = Mock()\n    monkeypatch.setattr(Github, 'session', lambda: mock_session)\n    return mock_session\n\ndef test_get_release_success(mock_github_session):\n    mock_response = Mock()\n    mock_response.json.return_value = {\"id\": 123}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id == 123\n\ndef test_get_release_not_found(mock_github_session):\n    mock_response = Mock()\n    mock_response.status_code = 404\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id is None\n\ndef test_get_release_http_error(mock_github_session, caplog):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))\n    mock_github_session.get.return_value = mock_response\n\n    with caplog.at_level('DEBUG'):\n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n        assert release_id is None\n        assert \"Get release by tag on Github has failed\" in caplog.text\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292264,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 296,
+    "prompt_tokens": 892,
+    "total_tokens": 1188,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:49 semantic_release/hvcs.py:348-355 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 354-355 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @staticmethod\n                def domain() -> str:\n                    \"\"\"Gitlab domain property\n            \n                    :return: The Gitlab instance domain\n                    \"\"\"\n       354:         domain = config.get(\"hvcs_domain\", os.environ.get(\"CI_SERVER_HOST\"))\n       355:         return domain if domain else \"gitlab.com\"\n\n```\n"
+    },
+    {
+      "content": "```python\nimport os\nimport pytest\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef clear_env(monkeypatch):\n    # Clear environment variables to avoid state pollution\n    monkeypatch.delenv(\"CI_SERVER_HOST\", raising=False)\n    yield\n    monkeypatch.undo()\n\n@pytest.fixture\ndef clear_config(mocker):\n    # Mock the config.get method to avoid state pollution\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    yield\n    mocker.stopall()\n\ndef test_gitlab_domain_from_config(mocker, clear_env):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=\"custom.gitlab.com\")\n    assert Gitlab.domain() == \"custom.gitlab.com\"\n\ndef test_gitlab_domain_from_env(monkeypatch, clear_config):\n    monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n    assert Gitlab.domain() == \"env.gitlab.com\"\n\ndef test_gitlab_domain_default(clear_env, clear_config):\n    assert Gitlab.domain() == \"gitlab.com\"\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1b8117cfa0>\nclear_config = None\n\n    def test_gitlab_domain_from_env(monkeypatch, clear_config):\n        monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n>       assert Gitlab.domain() == \"env.gitlab.com\"\nE       AssertionError: assert 'gitlab.com' == 'env.gitlab.com'\nE         - env.gitlab.com\nE         ? ----\nE         + gitlab.com\n\ncoverup-tests/tmp_test_u4_l_qov.py:25: AssertionError\n"
+    },
+    {
+      "content": "```python\nimport os\nimport pytest\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef clear_env(monkeypatch):\n    # Clear environment variables to avoid state pollution\n    monkeypatch.delenv(\"CI_SERVER_HOST\", raising=False)\n    yield\n    monkeypatch.undo()\n\n@pytest.fixture\ndef clear_config(mocker):\n    # Mock the config.get method to avoid state pollution\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    yield\n    mocker.stopall()\n\ndef test_gitlab_domain_from_config(mocker, clear_env):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=\"custom.gitlab.com\")\n    assert Gitlab.domain() == \"custom.gitlab.com\"\n\ndef test_gitlab_domain_from_env(monkeypatch, mocker):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n    assert Gitlab.domain() == \"env.gitlab.com\"\n\ndef test_gitlab_domain_default(clear_env, clear_config):\n    assert Gitlab.domain() == \"gitlab.com\"\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f98f8158fa0>\nmocker = <pytest_mock.plugin.MockerFixture object at 0x7f98f8158610>\n\n    def test_gitlab_domain_from_env(monkeypatch, mocker):\n        mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n        monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\")\n>       assert Gitlab.domain() == \"env.gitlab.com\"\nE       AssertionError: assert 'gitlab.com' == 'env.gitlab.com'\nE         - env.gitlab.com\nE         ? ----\nE         + gitlab.com\n\ncoverup-tests/tmp_test_lzcickrv.py:26: AssertionError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:49 semantic_release/ci_checks.py:118-138 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/ci_checks.py, does not achieve full coverage:\nwhen tested, branch 137->exit does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def check(branch: str = \"master\"):\n                \"\"\"\n                Detects the current CI environment, if any, and performs necessary\n                environment checks.\n            \n                :param branch: The branch that should be the current branch.\n                \"\"\"\n                if os.environ.get(\"TRAVIS\") == \"true\":\n                    travis(branch)\n                elif os.environ.get(\"SEMAPHORE\") == \"true\":\n                    semaphore(branch)\n                elif os.environ.get(\"FRIGG\") == \"true\":\n                    frigg(branch)\n                elif os.environ.get(\"CIRCLECI\") == \"true\":\n                    circle(branch)\n                elif os.environ.get(\"GITLAB_CI\") == \"true\":\n                    gitlab(branch)\n                elif os.environ.get(\"JENKINS_URL\") is not None:\n                    jenkins(branch)\n       137:     elif \"BITBUCKET_BUILD_NUMBER\" in os.environ:\n                    bitbucket(branch)\n\n```\n"
+    },
+    {
+      "content": "```python\nimport os\nimport pytest\nfrom semantic_release.ci_checks import check\n\ndef test_check_bitbucket(monkeypatch):\n    # Set up the environment variable to simulate Bitbucket environment\n    monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n\n    # Mock the bitbucket function to verify it gets called\n    from semantic_release.ci_checks import bitbucket\n    mock_bitbucket = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.bitbucket\", mock_bitbucket)\n\n    # Call the check function\n    check(\"master\")\n\n    # Assert that the bitbucket function was called with the correct branch\n    mock_bitbucket.assert_called_once_with(\"master\")\n\n    # Clean up the environment variable\n    monkeypatch.delenv(\"BITBUCKET_BUILD_NUMBER\")\n\n# Additional tests for other CI environments to ensure full coverage\ndef test_check_travis(monkeypatch):\n    monkeypatch.setenv(\"TRAVIS\", \"true\")\n    from semantic_release.ci_checks import travis\n    mock_travis = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.travis\", mock_travis)\n    check(\"master\")\n    mock_travis.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"TRAVIS\")\n\ndef test_check_semaphore(monkeypatch):\n    monkeypatch.setenv(\"SEMAPHORE\", \"true\")\n    from semantic_release.ci_checks import semaphore\n    mock_semaphore = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.semaphore\", mock_semaphore)\n    check(\"master\")\n    mock_semaphore.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"SEMAPHORE\")\n\ndef test_check_frigg(monkeypatch):\n    monkeypatch.setenv(\"FRIGG\", \"true\")\n    from semantic_release.ci_checks import frigg\n    mock_frigg = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.frigg\", mock_frigg)\n    check(\"master\")\n    mock_frigg.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"FRIGG\")\n\ndef test_check_circle(monkeypatch):\n    monkeypatch.setenv(\"CIRCLECI\", \"true\")\n    from semantic_release.ci_checks import circle\n    mock_circle = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.circle\", mock_circle)\n    check(\"master\")\n    mock_circle.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"CIRCLECI\")\n\ndef test_check_gitlab(monkeypatch):\n    monkeypatch.setenv(\"GITLAB_CI\", \"true\")\n    from semantic_release.ci_checks import gitlab\n    mock_gitlab = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.gitlab\", mock_gitlab)\n    check(\"master\")\n    mock_gitlab.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"GITLAB_CI\")\n\ndef test_check_jenkins(monkeypatch):\n    monkeypatch.setenv(\"JENKINS_URL\", \"http://jenkins.example.com\")\n    from semantic_release.ci_checks import jenkins\n    mock_jenkins = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.jenkins\", mock_jenkins)\n    check(\"master\")\n    mock_jenkins.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"JENKINS_URL\")\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f9c5b02bf10>\n\n    def test_check_bitbucket(monkeypatch):\n        # Set up the environment variable to simulate Bitbucket environment\n        monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n    \n        # Mock the bitbucket function to verify it gets called\n        from semantic_release.ci_checks import bitbucket\n>       mock_bitbucket = pytest.mock.Mock()\n\ncoverup-tests/tmp_test_8a_eea29.py:11: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nname = 'mock'\n\n    def __getattr__(name: str) -> object:\n        if name == \"Instance\":\n            # The import emits a deprecation warning.\n            from _pytest.python import Instance\n    \n            return Instance\n>       raise AttributeError(f\"module {__name__} has no attribute {name}\")\nE       AttributeError: module pytest has no attribute mock\n\n/usr/local/lib/python3.10/site-packages/pytest/__init__.py:165: AttributeError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:49 semantic_release/hvcs.py:429-439 ----
+{
+  "id": "chatcmpl-AvbVz2q6J4d3nARGn5GohlWC4hZoR",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom semantic_release.hvcs import get_hvcs, ImproperConfigurationError, Base\nfrom unittest import mock\n\ndef test_get_hvcs_valid(monkeypatch):\n    class MockHVCS(Base):\n        pass\n\n    with mock.patch('semantic_release.hvcs.config.get', return_value=\"mockhvcs\"):\n        monkeypatch.setitem(globals(), \"Mockhvcs\", MockHVCS)\n        result = get_hvcs()\n        assert result == MockHVCS\n        monkeypatch.delitem(globals(), \"Mockhvcs\")\n\ndef test_get_hvcs_invalid():\n    with mock.patch('semantic_release.hvcs.config.get', return_value=\"invalidhvcs\"):\n        with pytest.raises(ImproperConfigurationError) as excinfo:\n            get_hvcs()\n        assert str(excinfo.value) == '\"invalidhvcs\" is not a valid option for hvcs.'\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292267,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 189,
+    "prompt_tokens": 1893,
+    "total_tokens": 2082,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:49 semantic_release/hvcs.py:67-87 ----
+.........................                                                [100%]
+
+---- 2025-01-31T02:57:49 semantic_release/hvcs.py:67-87 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 76-78, 83, 86-87 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class TokenAuth(AuthBase):\n                \"\"\"\n                requests Authentication for token based authorization\n                \"\"\"\n            \n                def __init__(self, token):\n                    self.token = token\n            \n                def __eq__(self, other):\n        76:         return all(\n        77:             [\n        78:                 self.token == getattr(other, \"token\", None),\n                        ]\n                    )\n            \n                def __ne__(self, other):\n        83:         return not self == other\n            \n                def __call__(self, r):\n        86:         r.headers[\"Authorization\"] = f\"token {self.token}\"\n        87:         return r\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom requests.auth import AuthBase\nfrom requests.models import Request\n\nclass TokenAuth(AuthBase):\n    \"\"\"\n    requests Authentication for token based authorization\n    \"\"\"\n\n    def __init__(self, token):\n        self.token = token\n\n    def __eq__(self, other):\n        return all(\n            [\n                self.token == getattr(other, \"token\", None),\n            ]\n        )\n\n    def __ne__(self, other):\n        return not self == other\n\n    def __call__(self, r):\n        r.headers[\"Authorization\"] = f\"token {self.token}\"\n        return r\n\ndef test_token_auth_eq():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token123\")\n    auth3 = TokenAuth(\"token456\")\n    assert auth1 == auth2\n    assert auth1 != auth3\n\ndef test_token_auth_ne():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token456\")\n    assert auth1 != auth2\n\ndef test_token_auth_call():\n    auth = TokenAuth(\"token123\")\n    request = Request()\n    prepared_request = auth(request)\n    assert prepared_request.headers[\"Authorization\"] == \"token token123\"\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "The tests still lack coverage: lines 76-87 do not execute.\nModify it to correct that; respond only with the complete Python code in backticks.\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom requests.auth import AuthBase\nfrom requests.models import Request\n\nclass TokenAuth(AuthBase):\n    \"\"\"\n    requests Authentication for token based authorization\n    \"\"\"\n\n    def __init__(self, token):\n        self.token = token\n\n    def __eq__(self, other):\n        return all(\n            [\n                self.token == getattr(other, \"token\", None),\n            ]\n        )\n\n    def __ne__(self, other):\n        return not self == other\n\n    def __call__(self, r):\n        r.headers[\"Authorization\"] = f\"token {self.token}\"\n        return r\n\ndef test_token_auth_eq():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token123\")\n    auth3 = TokenAuth(\"token456\")\n    assert auth1 == auth2\n    assert auth1 != auth3\n\ndef test_token_auth_ne():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token456\")\n    assert auth1 != auth2\n\ndef test_token_auth_call():\n    auth = TokenAuth(\"token123\")\n    request = Request()\n    prepared_request = auth(request)\n    assert prepared_request.headers[\"Authorization\"] == \"token token123\"\n\ndef test_token_auth_eq_false():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = object()\n    assert auth1 != auth2\n\ndef test_token_auth_ne_true():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = object()\n    assert auth1 != auth2\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "The tests still lack coverage: lines 76-87 do not execute.\nModify it to correct that; respond only with the complete Python code in backticks.\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:50 semantic_release/hvcs.py:198-219 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 211-219 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Github(Base):\n                @classmethod\n                @LoggedFunction(logger)\n                def get_release(cls, owner: str, repo: str, tag: str) -> Optional[int]:\n                    \"\"\"Get a release by its tag name\n            \n                    https://docs.github.com/rest/reference/repos#get-a-release-by-tag-name\n            \n                    :param owner: The owner namespace of the repository\n                    :param repo: The repository name\n                    :param tag: Tag to get release for\n            \n                    :return: ID of found release\n                    \"\"\"\n       211:         try:\n       212:             response = Github.session().get(\n       213:                 f\"{Github.api_url()}/repos/{owner}/{repo}/releases/tags/{tag}\"\n                        )\n       215:             return response.json().get(\"id\")\n       216:         except HTTPError as e:\n       217:             if e.response.status_code != 404:\n       218:                 logger.debug(f\"Get release by tag on Github has failed: {e}\")\n       219:             return None\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import patch, Mock\nfrom requests import HTTPError\nfrom semantic_release.hvcs import Github\n\n@pytest.fixture\ndef mock_github_session(monkeypatch):\n    mock_session = Mock()\n    monkeypatch.setattr(Github, 'session', lambda: mock_session)\n    return mock_session\n\ndef test_get_release_success(mock_github_session):\n    mock_response = Mock()\n    mock_response.json.return_value = {\"id\": 123}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id == 123\n\ndef test_get_release_not_found(mock_github_session):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id is None\n\ndef test_get_release_http_error(mock_github_session, caplog):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))\n    mock_github_session.get.return_value = mock_response\n\n    with caplog.at_level('DEBUG'):\n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n        assert release_id is None\n        assert \"Get release by tag on Github has failed\" in caplog.text\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmock_github_session = <Mock id='140134182337744'>\n\n    def test_get_release_not_found(mock_github_session):\n        mock_response = Mock()\n        mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=404))\n        mock_github_session.get.return_value = mock_response\n    \n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n>       assert release_id is None\nE       AssertionError: assert <Mock name='mock.get().json().get()' id='140134182337696'> is None\n\ncoverup-tests/tmp_test_2xfy05ht.py:26: AssertionError\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import patch, Mock\nfrom requests import HTTPError\nfrom semantic_release.hvcs import Github\n\n@pytest.fixture\ndef mock_github_session(monkeypatch):\n    mock_session = Mock()\n    monkeypatch.setattr(Github, 'session', lambda: mock_session)\n    return mock_session\n\ndef test_get_release_success(mock_github_session):\n    mock_response = Mock()\n    mock_response.json.return_value = {\"id\": 123}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id == 123\n\ndef test_get_release_not_found(mock_github_session):\n    mock_response = Mock()\n    mock_response.status_code = 404\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id is None\n\ndef test_get_release_http_error(mock_github_session, caplog):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))\n    mock_github_session.get.return_value = mock_response\n\n    with caplog.at_level('DEBUG'):\n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n        assert release_id is None\n        assert \"Get release by tag on Github has failed\" in caplog.text\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmock_github_session = <Mock id='140057679747280'>\n\n    def test_get_release_not_found(mock_github_session):\n        mock_response = Mock()\n        mock_response.status_code = 404\n        mock_github_session.get.return_value = mock_response\n    \n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n>       assert release_id is None\nE       AssertionError: assert <Mock name='mock.get().json().get()' id='140057700299728'> is None\n\ncoverup-tests/tmp_test_z4jhgn1p.py:26: AssertionError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:50 semantic_release/helpers.py:16-39 ----
+{
+  "id": "chatcmpl-AvbVyy7S0vJbsbZvKTj5PlBWe1BDQ",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom requests import Session\nfrom requests.adapters import HTTPAdapter\nfrom requests.exceptions import RetryError\nfrom requests.packages.urllib3.util.retry import Retry\nfrom semantic_release.helpers import build_requests_session\n\ndef test_build_requests_session_no_retry():\n    session = build_requests_session(retry=False)\n    assert isinstance(session, Session)\n    adapter_http = session.adapters.get(\"http://\")\n    adapter_https = session.adapters.get(\"https://\")\n    assert adapter_http is None or adapter_http.max_retries.total == 0\n    assert adapter_https is None or adapter_https.max_retries.total == 0\n\ndef test_build_requests_session_retry_as_bool():\n    session = build_requests_session(retry=True)\n    assert isinstance(session, Session)\n    assert isinstance(session.adapters[\"http://\"], HTTPAdapter)\n    assert isinstance(session.adapters[\"https://\"], HTTPAdapter)\n\ndef test_build_requests_session_retry_as_int():\n    session = build_requests_session(retry=5)\n    assert isinstance(session, Session)\n    adapter = session.adapters[\"http://\"]\n    assert isinstance(adapter, HTTPAdapter)\n    assert adapter.max_retries.total == 5\n\ndef test_build_requests_session_retry_as_retry_instance():\n    retry_instance = Retry(total=3)\n    session = build_requests_session(retry=retry_instance)\n    assert isinstance(session, Session)\n    adapter = session.adapters[\"http://\"]\n    assert isinstance(adapter, HTTPAdapter)\n    assert adapter.max_retries.total == 3\n\ndef test_build_requests_session_invalid_retry():\n    with pytest.raises(ValueError, match=\"retry should be a bool, int or Retry instance.\"):\n        build_requests_session(retry=\"invalid\")\n\ndef test_build_requests_session_raise_for_status(monkeypatch):\n    class MockResponse:\n        def raise_for_status(self):\n            raise RetryError(\"Mocked error\")\n\n    session = build_requests_session(raise_for_status=True)\n    assert isinstance(session, Session)\n    assert \"response\" in session.hooks\n    with pytest.raises(RetryError, match=\"Mocked error\"):\n        for hook in session.hooks[\"response\"]:\n            hook(MockResponse())\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292266,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 429,
+    "prompt_tokens": 1051,
+    "total_tokens": 1480,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:51 semantic_release/hvcs.py:399-426 ----
+{
+  "id": "chatcmpl-AvbVyyN6eBcoyJU0HDXjx6Ehr4CDx",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nimport gitlab\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gl = mocker.patch('gitlab.Gitlab', autospec=True)\n    mock_instance = mock_gl.return_value\n    mock_instance.auth.return_value = None\n    return mock_instance\n\ndef test_post_release_changelog_success(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is True\n\ndef test_post_release_changelog_tag_not_found(mock_gitlab):\n    mock_project = MagicMock()\n    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    assert result is False\n\ndef test_post_release_changelog_update_error(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292266,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 493,
+    "prompt_tokens": 1482,
+    "total_tokens": 1975,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:51 semantic_release/hvcs.py:429-439 ----
+Too many attempts, giving up
+---- 2025-01-31T02:57:51 semantic_release/hvcs.py:348-355 ----
+{
+  "id": "chatcmpl-AvbW1nusU1FsH27fBd2v7vFrRHY6X",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef clear_env(monkeypatch):\n    # Clear environment variables to avoid state pollution\n    monkeypatch.delenv(\"CI_SERVER_HOST\", raising=False)\n    yield\n    monkeypatch.undo()\n\n@pytest.fixture\ndef clear_config(mocker):\n    # Mock the config.get method to avoid state pollution\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    yield\n    mocker.stopall()\n\ndef test_gitlab_domain_from_config(mocker, clear_env):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=\"custom.gitlab.com\")\n    assert Gitlab.domain() == \"custom.gitlab.com\"\n\ndef test_gitlab_domain_from_env(monkeypatch, mocker, clear_config):\n    mocker.patch(\"semantic_release.hvcs.config.get\", return_value=None)\n    monkeypatch.setenv(\"CI_SERVER_HOST\", \"env.gitlab.com\", prepend=False)\n    assert Gitlab.domain() == \"env.gitlab.com\"\n\ndef test_gitlab_domain_default(clear_env, clear_config):\n    assert Gitlab.domain() == \"gitlab.com\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292269,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 247,
+    "prompt_tokens": 1105,
+    "total_tokens": 1352,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:53 semantic_release/hvcs.py:67-87 ----
+{
+  "id": "chatcmpl-AvbW1nOZtN5A3eTcVUQQevy87I71L",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom requests.auth import AuthBase\nfrom requests.models import Request, PreparedRequest\n\nclass TokenAuth(AuthBase):\n    \"\"\"\n    requests Authentication for token based authorization\n    \"\"\"\n\n    def __init__(self, token):\n        self.token = token\n\n    def __eq__(self, other):\n        return all(\n            [\n                self.token == getattr(other, \"token\", None),\n            ]\n        )\n\n    def __ne__(self, other):\n        return not self == other\n\n    def __call__(self, r):\n        r.headers[\"Authorization\"] = f\"token {self.token}\"\n        return r\n\ndef test_token_auth_eq():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token123\")\n    auth3 = TokenAuth(\"token456\")\n    assert auth1 == auth2\n    assert auth1 != auth3\n\ndef test_token_auth_ne():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = TokenAuth(\"token456\")\n    assert auth1 != auth2\n\ndef test_token_auth_call():\n    auth = TokenAuth(\"token123\")\n    request = PreparedRequest()\n    request.prepare(method='GET', url='http://example.com')\n    prepared_request = auth(request)\n    assert prepared_request.headers[\"Authorization\"] == \"token token123\"\n\ndef test_token_auth_eq_false():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = object()\n    assert auth1 != auth2\n\ndef test_token_auth_ne_true():\n    auth1 = TokenAuth(\"token123\")\n    auth2 = object()\n    assert auth1 != auth2\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292269,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 335,
+    "prompt_tokens": 986,
+    "total_tokens": 1321,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:53 semantic_release/helpers.py:16-39 ----
+..............................                                           [100%]
+
+---- 2025-01-31T02:57:53 semantic_release/helpers.py:16-39 ----
+Saved as /output/coverup-tests/test_coverup_44.py
+
+---- 2025-01-31T02:57:53 semantic_release/hvcs.py:399-426 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/hvcs.py, does not achieve full coverage:\nwhen tested, lines 413-426 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            class Gitlab(Base):\n                @classmethod\n                @LoggedFunction(logger)\n                def post_release_changelog(\n                    cls, owner: str, repo: str, version: str, changelog: str\n                ) -> bool:\n                    \"\"\"Post release changelog\n            \n                    :param owner: The owner namespace of the repository\n                    :param repo: The repository name\n                    :param version: The version number\n                    :param changelog: The release notes for this version\n            \n                    :return: The status of the request\n                    \"\"\"\n       413:         ref = \"v\" + version\n       414:         gl = gitlab.Gitlab(Gitlab.api_url(), private_token=Gitlab.token())\n       415:         gl.auth()\n       416:         try:\n       417:             tag = gl.projects.get(owner + \"/\" + repo).tags.get(ref)\n       418:             tag.set_release_description(changelog)\n       419:         except gitlab.exceptions.GitlabGetError:\n       420:             logger.debug(f\"Tag {ref} was not found for project {owner}/{repo}\")\n       421:             return False\n       422:         except gitlab.exceptions.GitlabUpdateError:\n       423:             logger.debug(f\"Failed to update tag {ref} for project {owner}/{repo}\")\n       424:             return False\n            \n       426:         return True\n\n```\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nimport gitlab\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gl = mocker.patch('gitlab.Gitlab')\n    mock_instance = mock_gl.return_value\n    mock_instance.auth.return_value = None\n    return mock_instance\n\ndef test_post_release_changelog_success(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is True\n\ndef test_post_release_changelog_tag_not_found(mock_gitlab):\n    mock_project = MagicMock()\n    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    assert result is False\n\ndef test_post_release_changelog_update_error(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is False\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmocker = <pytest_mock.plugin.MockerFixture object at 0x7ffbc12a5390>\n\n    @pytest.fixture\n    def mock_gitlab(mocker):\n>       mock_gl = mocker.patch('gitlab.Gitlab')\n\ncoverup-tests/tmp_test_ui22hi_g.py:8: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__\n    return self._start_patch(\n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch\n    mocked: MockType = p.start()\n/usr/local/lib/python3.10/unittest/mock.py:1585: in start\n    result = self.__enter__()\n/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__\n    original, local = self.get_original()\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <unittest.mock._patch object at 0x7ffbc12a40a0>\n\n    def get_original(self):\n        target = self.getter()\n        name = self.attribute\n    \n        original = DEFAULT\n        local = False\n    \n        try:\n            original = target.__dict__[name]\n        except (AttributeError, KeyError):\n            original = getattr(target, name, DEFAULT)\n        else:\n            local = True\n    \n        if name in _builtins and isinstance(target, ModuleType):\n            self.create = True\n    \n        if not self.create and original is DEFAULT:\n>           raise AttributeError(\n                \"%s does not have the attribute %r\" % (target, name)\n            )\nE           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'\n\n/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError\n"
+    },
+    {
+      "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nimport gitlab\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gl = mocker.patch('gitlab.Gitlab', autospec=True)\n    mock_instance = mock_gl.return_value\n    mock_instance.auth.return_value = None\n    return mock_instance\n\ndef test_post_release_changelog_success(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is True\n\ndef test_post_release_changelog_tag_not_found(mock_gitlab):\n    mock_project = MagicMock()\n    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    assert result is False\n\ndef test_post_release_changelog_update_error(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is False\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmocker = <pytest_mock.plugin.MockerFixture object at 0x7f5e8196b970>\n\n    @pytest.fixture\n    def mock_gitlab(mocker):\n>       mock_gl = mocker.patch('gitlab.Gitlab', autospec=True)\n\ncoverup-tests/tmp_test_qagpskiv.py:8: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:440: in __call__\n    return self._start_patch(\n/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:258: in _start_patch\n    mocked: MockType = p.start()\n/usr/local/lib/python3.10/unittest/mock.py:1585: in start\n    result = self.__enter__()\n/usr/local/lib/python3.10/unittest/mock.py:1437: in __enter__\n    original, local = self.get_original()\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <unittest.mock._patch object at 0x7f5e819680d0>\n\n    def get_original(self):\n        target = self.getter()\n        name = self.attribute\n    \n        original = DEFAULT\n        local = False\n    \n        try:\n            original = target.__dict__[name]\n        except (AttributeError, KeyError):\n            original = getattr(target, name, DEFAULT)\n        else:\n            local = True\n    \n        if name in _builtins and isinstance(target, ModuleType):\n            self.create = True\n    \n        if not self.create and original is DEFAULT:\n>           raise AttributeError(\n                \"%s does not have the attribute %r\" % (target, name)\n            )\nE           AttributeError: <module 'gitlab' from '/usr/local/lib/python3.10/site-packages/gitlab/__init__.py'> does not have the attribute 'Gitlab'\n\n/usr/local/lib/python3.10/unittest/mock.py:1410: AttributeError\n"
+    }
+  ]
+}
+---- 2025-01-31T02:57:53 semantic_release/hvcs.py:348-355 ----
+Too many attempts, giving up
+---- 2025-01-31T02:57:53 semantic_release/hvcs.py:373-397 ----
+{
+  "id": "chatcmpl-AvbVzLuIyPkMWJLTWViiUCVrPdnsb",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import MagicMock, patch\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gitlab_instance = mocker.patch('semantic_release.hvcs.gitlab')\n    mock_gitlab_instance.Gitlab.api_url.return_value = 'https://gitlab.com/api/v4'\n    mock_gitlab_instance.Gitlab.token.return_value = 'fake_token'\n    return mock_gitlab_instance\n\ndef test_check_build_status_success(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.Gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"success\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is True\n\ndef test_check_build_status_pending(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.Gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"pending\", \"name\": \"job1\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is False\n\ndef test_check_build_status_failed(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.Gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"failed\", \"allow_failure\": False, \"name\": \"job1\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is False\n\ndef test_check_build_status_skipped(mock_gitlab):\n    mock_gitlab_instance = mock_gitlab.Gitlab.return_value\n    mock_gitlab_instance.auth.return_value = None\n    mock_project = MagicMock()\n    mock_commit = MagicMock()\n    mock_statuses = MagicMock()\n    mock_statuses.list.return_value = [{\"status\": \"skipped\"}]\n    mock_commit.statuses = mock_statuses\n    mock_project.commits.get.return_value = mock_commit\n    mock_gitlab_instance.projects.get.return_value = mock_project\n\n    result = Gitlab.check_build_status('owner', 'repo', 'ref')\n    assert result is True\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292267,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 647,
+    "prompt_tokens": 1642,
+    "total_tokens": 2289,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:54 semantic_release/hvcs.py:198-219 ----
+{
+  "id": "chatcmpl-AvbW25qRCfgTnYPpAIlhO3v9E2xOd",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, Mock\nfrom requests import HTTPError\nfrom semantic_release.hvcs import Github\n\n@pytest.fixture\ndef mock_github_session(monkeypatch):\n    mock_session = Mock()\n    monkeypatch.setattr(Github, 'session', lambda: mock_session)\n    return mock_session\n\ndef test_get_release_success(mock_github_session):\n    mock_response = Mock()\n    mock_response.json.return_value = {\"id\": 123}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id == 123\n\ndef test_get_release_not_found(mock_github_session):\n    mock_response = Mock()\n    mock_response.status_code = 404\n    mock_response.json.return_value = {}\n    mock_github_session.get.return_value = mock_response\n\n    release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n    assert release_id is None\n\ndef test_get_release_http_error(mock_github_session, caplog):\n    mock_response = Mock()\n    mock_response.raise_for_status.side_effect = HTTPError(response=Mock(status_code=500))\n    mock_github_session.get.return_value = mock_response\n\n    with caplog.at_level('DEBUG'):\n        release_id = Github.get_release(\"owner\", \"repo\", \"tag\")\n        assert release_id is None\n        assert \"Get release by tag on Github has failed\" in caplog.text\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292270,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 304,
+    "prompt_tokens": 1351,
+    "total_tokens": 1655,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:55 semantic_release/hvcs.py:67-87 ----
+.........................                                                [100%]
+
+---- 2025-01-31T02:57:55 semantic_release/hvcs.py:67-87 ----
+Too many attempts, giving up
+---- 2025-01-31T02:57:56 semantic_release/hvcs.py:373-397 ----
+....................                                                     [100%]
+
+---- 2025-01-31T02:57:56 semantic_release/hvcs.py:373-397 ----
+Saved as /output/coverup-tests/test_coverup_45.py
+
+---- 2025-01-31T02:57:56 semantic_release/ci_checks.py:118-138 ----
+{
+  "id": "chatcmpl-AvbW1nnhgibSAUPGRmDIwUGr7WP6k",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom unittest import mock\nfrom semantic_release.ci_checks import check\n\ndef test_check_bitbucket(monkeypatch):\n    # Set up the environment variable to simulate Bitbucket environment\n    monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n\n    # Mock the bitbucket function to verify it gets called\n    from semantic_release.ci_checks import bitbucket\n    mock_bitbucket = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.bitbucket\", mock_bitbucket)\n\n    # Call the check function\n    check(\"master\")\n\n    # Assert that the bitbucket function was called with the correct branch\n    mock_bitbucket.assert_called_once_with(\"master\")\n\n    # Clean up the environment variable\n    monkeypatch.delenv(\"BITBUCKET_BUILD_NUMBER\")\n\n# Additional tests for other CI environments to ensure full coverage\ndef test_check_travis(monkeypatch):\n    monkeypatch.setenv(\"TRAVIS\", \"true\")\n    from semantic_release.ci_checks import travis\n    mock_travis = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.travis\", mock_travis)\n    check(\"master\")\n    mock_travis.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"TRAVIS\")\n\ndef test_check_semaphore(monkeypatch):\n    monkeypatch.setenv(\"SEMAPHORE\", \"true\")\n    from semantic_release.ci_checks import semaphore\n    mock_semaphore = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.semaphore\", mock_semaphore)\n    check(\"master\")\n    mock_semaphore.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"SEMAPHORE\")\n\ndef test_check_frigg(monkeypatch):\n    monkeypatch.setenv(\"FRIGG\", \"true\")\n    from semantic_release.ci_checks import frigg\n    mock_frigg = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.frigg\", mock_frigg)\n    check(\"master\")\n    mock_frigg.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"FRIGG\")\n\ndef test_check_circle(monkeypatch):\n    monkeypatch.setenv(\"CIRCLECI\", \"true\")\n    from semantic_release.ci_checks import circle\n    mock_circle = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.circle\", mock_circle)\n    check(\"master\")\n    mock_circle.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"CIRCLECI\")\n\ndef test_check_gitlab(monkeypatch):\n    monkeypatch.setenv(\"GITLAB_CI\", \"true\")\n    from semantic_release.ci_checks import gitlab\n    mock_gitlab = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.gitlab\", mock_gitlab)\n    check(\"master\")\n    mock_gitlab.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"GITLAB_CI\")\n\ndef test_check_jenkins(monkeypatch):\n    monkeypatch.setenv(\"JENKINS_URL\", \"http://jenkins.example.com\")\n    from semantic_release.ci_checks import jenkins\n    mock_jenkins = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.jenkins\", mock_jenkins)\n    check(\"master\")\n    mock_jenkins.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"JENKINS_URL\")\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292269,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 715,
+    "prompt_tokens": 1394,
+    "total_tokens": 2109,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:56 semantic_release/hvcs.py:198-219 ----
+Too many attempts, giving up
+---- 2025-01-31T02:57:58 semantic_release/hvcs.py:399-426 ----
+{
+  "id": "chatcmpl-AvbW5ao9aCwqzsiNVXZ2a2Myk9mr8",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom unittest.mock import patch, MagicMock\nimport gitlab\nfrom semantic_release.hvcs import Gitlab\n\n@pytest.fixture\ndef mock_gitlab(mocker):\n    mock_gl = mocker.patch('semantic_release.hvcs.gitlab.Gitlab', autospec=True)\n    mock_instance = mock_gl.return_value\n    mock_instance.auth.return_value = None\n    return mock_instance\n\ndef test_post_release_changelog_success(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is True\n\ndef test_post_release_changelog_tag_not_found(mock_gitlab):\n    mock_project = MagicMock()\n    mock_project.tags.get.side_effect = gitlab.exceptions.GitlabGetError\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    assert result is False\n\ndef test_post_release_changelog_update_error(mock_gitlab):\n    mock_project = MagicMock()\n    mock_tag = MagicMock()\n    mock_tag.set_release_description.side_effect = gitlab.exceptions.GitlabUpdateError\n    mock_project.tags.get.return_value = mock_tag\n    mock_gitlab.projects.get.return_value = mock_project\n\n    result = Gitlab.post_release_changelog('owner', 'repo', '1.0.0', 'changelog')\n\n    mock_gitlab.auth.assert_called_once()\n    mock_gitlab.projects.get.assert_called_once_with('owner/repo')\n    mock_project.tags.get.assert_called_once_with('v1.0.0')\n    mock_tag.set_release_description.assert_called_once_with('changelog')\n    assert result is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292273,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 498,
+    "prompt_tokens": 2485,
+    "total_tokens": 2983,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:57:58 semantic_release/ci_checks.py:118-138 ----
+...................................                                      [100%]
+
+---- 2025-01-31T02:57:58 semantic_release/ci_checks.py:118-138 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from semantic_release/ci_checks.py, does not achieve full coverage:\nwhen tested, branch 137->exit does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def check(branch: str = \"master\"):\n                \"\"\"\n                Detects the current CI environment, if any, and performs necessary\n                environment checks.\n            \n                :param branch: The branch that should be the current branch.\n                \"\"\"\n                if os.environ.get(\"TRAVIS\") == \"true\":\n                    travis(branch)\n                elif os.environ.get(\"SEMAPHORE\") == \"true\":\n                    semaphore(branch)\n                elif os.environ.get(\"FRIGG\") == \"true\":\n                    frigg(branch)\n                elif os.environ.get(\"CIRCLECI\") == \"true\":\n                    circle(branch)\n                elif os.environ.get(\"GITLAB_CI\") == \"true\":\n                    gitlab(branch)\n                elif os.environ.get(\"JENKINS_URL\") is not None:\n                    jenkins(branch)\n       137:     elif \"BITBUCKET_BUILD_NUMBER\" in os.environ:\n                    bitbucket(branch)\n\n```\n"
+    },
+    {
+      "content": "```python\nimport os\nimport pytest\nfrom semantic_release.ci_checks import check\n\ndef test_check_bitbucket(monkeypatch):\n    # Set up the environment variable to simulate Bitbucket environment\n    monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n\n    # Mock the bitbucket function to verify it gets called\n    from semantic_release.ci_checks import bitbucket\n    mock_bitbucket = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.bitbucket\", mock_bitbucket)\n\n    # Call the check function\n    check(\"master\")\n\n    # Assert that the bitbucket function was called with the correct branch\n    mock_bitbucket.assert_called_once_with(\"master\")\n\n    # Clean up the environment variable\n    monkeypatch.delenv(\"BITBUCKET_BUILD_NUMBER\")\n\n# Additional tests for other CI environments to ensure full coverage\ndef test_check_travis(monkeypatch):\n    monkeypatch.setenv(\"TRAVIS\", \"true\")\n    from semantic_release.ci_checks import travis\n    mock_travis = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.travis\", mock_travis)\n    check(\"master\")\n    mock_travis.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"TRAVIS\")\n\ndef test_check_semaphore(monkeypatch):\n    monkeypatch.setenv(\"SEMAPHORE\", \"true\")\n    from semantic_release.ci_checks import semaphore\n    mock_semaphore = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.semaphore\", mock_semaphore)\n    check(\"master\")\n    mock_semaphore.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"SEMAPHORE\")\n\ndef test_check_frigg(monkeypatch):\n    monkeypatch.setenv(\"FRIGG\", \"true\")\n    from semantic_release.ci_checks import frigg\n    mock_frigg = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.frigg\", mock_frigg)\n    check(\"master\")\n    mock_frigg.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"FRIGG\")\n\ndef test_check_circle(monkeypatch):\n    monkeypatch.setenv(\"CIRCLECI\", \"true\")\n    from semantic_release.ci_checks import circle\n    mock_circle = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.circle\", mock_circle)\n    check(\"master\")\n    mock_circle.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"CIRCLECI\")\n\ndef test_check_gitlab(monkeypatch):\n    monkeypatch.setenv(\"GITLAB_CI\", \"true\")\n    from semantic_release.ci_checks import gitlab\n    mock_gitlab = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.gitlab\", mock_gitlab)\n    check(\"master\")\n    mock_gitlab.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"GITLAB_CI\")\n\ndef test_check_jenkins(monkeypatch):\n    monkeypatch.setenv(\"JENKINS_URL\", \"http://jenkins.example.com\")\n    from semantic_release.ci_checks import jenkins\n    mock_jenkins = pytest.mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.jenkins\", mock_jenkins)\n    check(\"master\")\n    mock_jenkins.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"JENKINS_URL\")\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "Executing the test yields an error, shown below.\nModify or rewrite the test to correct it; respond only with the complete Python code in backticks.\n\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f9c5b02bf10>\n\n    def test_check_bitbucket(monkeypatch):\n        # Set up the environment variable to simulate Bitbucket environment\n        monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n    \n        # Mock the bitbucket function to verify it gets called\n        from semantic_release.ci_checks import bitbucket\n>       mock_bitbucket = pytest.mock.Mock()\n\ncoverup-tests/tmp_test_8a_eea29.py:11: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nname = 'mock'\n\n    def __getattr__(name: str) -> object:\n        if name == \"Instance\":\n            # The import emits a deprecation warning.\n            from _pytest.python import Instance\n    \n            return Instance\n>       raise AttributeError(f\"module {__name__} has no attribute {name}\")\nE       AttributeError: module pytest has no attribute mock\n\n/usr/local/lib/python3.10/site-packages/pytest/__init__.py:165: AttributeError\n"
+    },
+    {
+      "content": "```python\nimport os\nimport pytest\nfrom unittest import mock\nfrom semantic_release.ci_checks import check\n\ndef test_check_bitbucket(monkeypatch):\n    # Set up the environment variable to simulate Bitbucket environment\n    monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n\n    # Mock the bitbucket function to verify it gets called\n    from semantic_release.ci_checks import bitbucket\n    mock_bitbucket = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.bitbucket\", mock_bitbucket)\n\n    # Call the check function\n    check(\"master\")\n\n    # Assert that the bitbucket function was called with the correct branch\n    mock_bitbucket.assert_called_once_with(\"master\")\n\n    # Clean up the environment variable\n    monkeypatch.delenv(\"BITBUCKET_BUILD_NUMBER\")\n\n# Additional tests for other CI environments to ensure full coverage\ndef test_check_travis(monkeypatch):\n    monkeypatch.setenv(\"TRAVIS\", \"true\")\n    from semantic_release.ci_checks import travis\n    mock_travis = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.travis\", mock_travis)\n    check(\"master\")\n    mock_travis.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"TRAVIS\")\n\ndef test_check_semaphore(monkeypatch):\n    monkeypatch.setenv(\"SEMAPHORE\", \"true\")\n    from semantic_release.ci_checks import semaphore\n    mock_semaphore = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.semaphore\", mock_semaphore)\n    check(\"master\")\n    mock_semaphore.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"SEMAPHORE\")\n\ndef test_check_frigg(monkeypatch):\n    monkeypatch.setenv(\"FRIGG\", \"true\")\n    from semantic_release.ci_checks import frigg\n    mock_frigg = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.frigg\", mock_frigg)\n    check(\"master\")\n    mock_frigg.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"FRIGG\")\n\ndef test_check_circle(monkeypatch):\n    monkeypatch.setenv(\"CIRCLECI\", \"true\")\n    from semantic_release.ci_checks import circle\n    mock_circle = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.circle\", mock_circle)\n    check(\"master\")\n    mock_circle.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"CIRCLECI\")\n\ndef test_check_gitlab(monkeypatch):\n    monkeypatch.setenv(\"GITLAB_CI\", \"true\")\n    from semantic_release.ci_checks import gitlab\n    mock_gitlab = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.gitlab\", mock_gitlab)\n    check(\"master\")\n    mock_gitlab.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"GITLAB_CI\")\n\ndef test_check_jenkins(monkeypatch):\n    monkeypatch.setenv(\"JENKINS_URL\", \"http://jenkins.example.com\")\n    from semantic_release.ci_checks import jenkins\n    mock_jenkins = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.jenkins\", mock_jenkins)\n    check(\"master\")\n    mock_jenkins.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"JENKINS_URL\")\n```",
+      "role": "assistant",
+      "tool_calls": null,
+      "function_call": null
+    },
+    {
+      "role": "user",
+      "content": "The tests still lack coverage: branch 137->exit does not execute.\nModify it to correct that; respond only with the complete Python code in backticks.\n"
+    }
+  ]
+}
+---- 2025-01-31T02:58:00 semantic_release/hvcs.py:399-426 ----
+Too many attempts, giving up
+---- 2025-01-31T02:58:06 semantic_release/ci_checks.py:118-138 ----
+{
+  "id": "chatcmpl-AvbWBOj4iztfuFB00UYyxz5vP5JNm",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport pytest\nfrom unittest import mock\nfrom semantic_release.ci_checks import check\n\ndef test_check_bitbucket(monkeypatch):\n    # Set up the environment variable to simulate Bitbucket environment\n    monkeypatch.setenv(\"BITBUCKET_BUILD_NUMBER\", \"123\")\n\n    # Mock the bitbucket function to verify it gets called\n    from semantic_release.ci_checks import bitbucket\n    mock_bitbucket = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.bitbucket\", mock_bitbucket)\n\n    # Call the check function\n    check(\"master\")\n\n    # Assert that the bitbucket function was called with the correct branch\n    mock_bitbucket.assert_called_once_with(\"master\")\n\n    # Clean up the environment variable\n    monkeypatch.delenv(\"BITBUCKET_BUILD_NUMBER\", raising=False)\n\n# Additional tests for other CI environments to ensure full coverage\ndef test_check_travis(monkeypatch):\n    monkeypatch.setenv(\"TRAVIS\", \"true\")\n    from semantic_release.ci_checks import travis\n    mock_travis = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.travis\", mock_travis)\n    check(\"master\")\n    mock_travis.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"TRAVIS\", raising=False)\n\ndef test_check_semaphore(monkeypatch):\n    monkeypatch.setenv(\"SEMAPHORE\", \"true\")\n    from semantic_release.ci_checks import semaphore\n    mock_semaphore = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.semaphore\", mock_semaphore)\n    check(\"master\")\n    mock_semaphore.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"SEMAPHORE\", raising=False)\n\ndef test_check_frigg(monkeypatch):\n    monkeypatch.setenv(\"FRIGG\", \"true\")\n    from semantic_release.ci_checks import frigg\n    mock_frigg = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.frigg\", mock_frigg)\n    check(\"master\")\n    mock_frigg.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"FRIGG\", raising=False)\n\ndef test_check_circle(monkeypatch):\n    monkeypatch.setenv(\"CIRCLECI\", \"true\")\n    from semantic_release.ci_checks import circle\n    mock_circle = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.circle\", mock_circle)\n    check(\"master\")\n    mock_circle.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"CIRCLECI\", raising=False)\n\ndef test_check_gitlab(monkeypatch):\n    monkeypatch.setenv(\"GITLAB_CI\", \"true\")\n    from semantic_release.ci_checks import gitlab\n    mock_gitlab = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.gitlab\", mock_gitlab)\n    check(\"master\")\n    mock_gitlab.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"GITLAB_CI\", raising=False)\n\ndef test_check_jenkins(monkeypatch):\n    monkeypatch.setenv(\"JENKINS_URL\", \"http://jenkins.example.com\")\n    from semantic_release.ci_checks import jenkins\n    mock_jenkins = mock.Mock()\n    monkeypatch.setattr(\"semantic_release.ci_checks.jenkins\", mock_jenkins)\n    check(\"master\")\n    mock_jenkins.assert_called_once_with(\"master\")\n    monkeypatch.delenv(\"JENKINS_URL\", raising=False)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738292279,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 736,
+    "prompt_tokens": 2148,
+    "total_tokens": 2884,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-31T02:58:08 semantic_release/ci_checks.py:118-138 ----
+...................................                                      [100%]
+
+---- 2025-01-31T02:58:08 semantic_release/ci_checks.py:118-138 ----
+Too many attempts, giving up

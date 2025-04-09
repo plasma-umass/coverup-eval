@@ -1,0 +1,1797 @@
+---- 2025-01-29T19:26:14 startup ----
+Command: /usr/local/bin/coverup --model gpt-4o-2024-05-13 --max-attempts 3 --isolate-tests --prompt-family gpt-v2-no-error-fixing --install-missing-modules --write-requirements-to missing-modules.txt --repeat-tests 5 --source-dir ./cookiecutter --tests-dir coverup-tests --save-coverage-to coverage --pytest-args  --rootdir . -c /dev/null --log-file coverup-log-2 --checkpoint coverup-ckpt.json cookiecutter/find.py cookiecutter/prompt.py cookiecutter/replay.py cookiecutter/repository.py cookiecutter/zipfile.py
+---- 2025-01-29T19:26:17 cookiecutter/zipfile.py:13-112 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/zipfile.py, does not achieve full coverage:\nwhen tested, lines 27-112 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import os\n            import tempfile\n            from zipfile import BadZipFile, ZipFile\n            import requests\n            from cookiecutter.exceptions import InvalidZipRepository\n            from cookiecutter.prompt import read_repo_password\n            from cookiecutter.utils import make_sure_path_exists, prompt_and_delete\n            def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):\n                \"\"\"Download and unpack a zipfile at a given URI.\n            \n                This will download the zipfile to the cookiecutter repository,\n                and unpack into a temporary directory.\n            \n                :param zip_uri: The URI for the zipfile.\n                :param is_url: Is the zip URI a URL or a file?\n                :param clone_to_dir: The cookiecutter repository directory\n                    to put the archive into.\n                :param no_input: Suppress any prompts\n                :param password: The password to use when unpacking the repository.\n                \"\"\"\n                # Ensure that clone_to_dir exists\n        27:     clone_to_dir = os.path.expanduser(clone_to_dir)\n        28:     make_sure_path_exists(clone_to_dir)\n            \n        30:     if is_url:\n                    # Build the name of the cached zipfile,\n                    # and prompt to delete if it already exists.\n        33:         identifier = zip_uri.rsplit('/', 1)[1]\n        34:         zip_path = os.path.join(clone_to_dir, identifier)\n            \n        36:         if os.path.exists(zip_path):\n        37:             download = prompt_and_delete(zip_path, no_input=no_input)\n                    else:\n        39:             download = True\n            \n        41:         if download:\n                        # (Re) download the zipfile\n        43:             r = requests.get(zip_uri, stream=True)\n        44:             with open(zip_path, 'wb') as f:\n        45:                 for chunk in r.iter_content(chunk_size=1024):\n        46:                     if chunk:  # filter out keep-alive new chunks\n        47:                         f.write(chunk)\n                else:\n                    # Just use the local zipfile as-is.\n        50:         zip_path = os.path.abspath(zip_uri)\n            \n                # Now unpack the repository. The zipfile will be unpacked\n                # into a temporary directory\n        54:     try:\n        55:         zip_file = ZipFile(zip_path)\n            \n        57:         if len(zip_file.namelist()) == 0:\n        58:             raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))\n            \n                    # The first record in the zipfile should be the directory entry for\n                    # the archive. If it isn't a directory, there's a problem.\n        62:         first_filename = zip_file.namelist()[0]\n        63:         if not first_filename.endswith('/'):\n        64:             raise InvalidZipRepository(\n        65:                 'Zip repository {} does not include '\n        66:                 'a top-level directory'.format(zip_uri)\n                        )\n            \n                    # Construct the final target directory\n        70:         project_name = first_filename[:-1]\n        71:         unzip_base = tempfile.mkdtemp()\n        72:         unzip_path = os.path.join(unzip_base, project_name)\n            \n                    # Extract the zip file into the temporary directory\n        75:         try:\n        76:             zip_file.extractall(path=unzip_base)\n        77:         except RuntimeError:\n                        # File is password protected; try to get a password from the\n                        # environment; if that doesn't work, ask the user.\n        80:             if password is not None:\n        81:                 try:\n        82:                     zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))\n        83:                 except RuntimeError:\n        84:                     raise InvalidZipRepository(\n        85:                         'Invalid password provided for protected repository'\n                                )\n        87:             elif no_input:\n        88:                 raise InvalidZipRepository(\n        89:                     'Unable to unlock password protected repository'\n                            )\n                        else:\n        92:                 retry = 0\n        93:                 while retry is not None:\n        94:                     try:\n        95:                         password = read_repo_password('Repo password')\n        96:                         zip_file.extractall(\n        97:                             path=unzip_base, pwd=password.encode('utf-8')\n                                    )\n        99:                         retry = None\n       100:                     except RuntimeError:\n       101:                         retry += 1\n       102:                         if retry == 3:\n       103:                             raise InvalidZipRepository(\n       104:                                 'Invalid password provided for protected repository'\n                                        )\n            \n       107:     except BadZipFile:\n       108:         raise InvalidZipRepository(\n       109:             'Zip repository {} is not a valid zip archive:'.format(zip_uri)\n                    )\n            \n       112:     return unzip_path\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:17 cookiecutter/prompt.py:171-229 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, lines 177-229 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            from collections import OrderedDict\n            from jinja2.exceptions import UndefinedError\n            from cookiecutter.environment import StrictEnvironment\n            from cookiecutter.exceptions import UndefinedVariableInTemplate\n            def prompt_for_config(context, no_input=False):\n                \"\"\"Prompt user to enter a new config.\n            \n                :param dict context: Source for field names and sample values.\n                :param no_input: Prompt the user at command line for manual configuration?\n                \"\"\"\n       177:     cookiecutter_dict = OrderedDict([])\n       178:     env = StrictEnvironment(context=context)\n            \n                # First pass: Handle simple and raw variables, plus choices.\n                # These must be done first because the dictionaries keys and\n                # values might refer to them.\n       183:     for key, raw in context['cookiecutter'].items():\n       184:         if key.startswith('_') and not key.startswith('__'):\n       185:             cookiecutter_dict[key] = raw\n       186:             continue\n       187:         elif key.startswith('__'):\n       188:             cookiecutter_dict[key] = render_variable(env, raw, cookiecutter_dict)\n       189:             continue\n            \n       191:         try:\n       192:             if isinstance(raw, list):\n                            # We are dealing with a choice variable\n       194:                 val = prompt_choice_for_config(\n       195:                     cookiecutter_dict, env, key, raw, no_input\n                            )\n       197:                 cookiecutter_dict[key] = val\n       198:             elif not isinstance(raw, dict):\n                            # We are dealing with a regular variable\n       200:                 val = render_variable(env, raw, cookiecutter_dict)\n            \n       202:                 if not no_input:\n       203:                     val = read_user_variable(key, val)\n            \n       205:                 cookiecutter_dict[key] = val\n       206:         except UndefinedError as err:\n       207:             msg = \"Unable to render variable '{}'\".format(key)\n       208:             raise UndefinedVariableInTemplate(msg, err, context)\n            \n                # Second pass; handle the dictionaries.\n       211:     for key, raw in context['cookiecutter'].items():\n                    # Skip private type dicts not ot be rendered.\n       213:         if key.startswith('_') and not key.startswith('__'):\n       214:             continue\n            \n       216:         try:\n       217:             if isinstance(raw, dict):\n                            # We are dealing with a dict variable\n       219:                 val = render_variable(env, raw, cookiecutter_dict)\n            \n       221:                 if not no_input and not key.startswith('__'):\n       222:                     val = read_user_dict(key, val)\n            \n       224:                 cookiecutter_dict[key] = val\n       225:         except UndefinedError as err:\n       226:             msg = \"Unable to render variable '{}'\".format(key)\n       227:             raise UndefinedVariableInTemplate(msg, err, context)\n            \n       229:     return cookiecutter_dict\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:17 cookiecutter/prompt.py:122-156 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, lines 139-156 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def render_variable(env, raw, cookiecutter_dict):\n                \"\"\"Render the next variable to be displayed in the user prompt.\n            \n                Inside the prompting taken from the cookiecutter.json file, this renders\n                the next variable. For example, if a project_name is \"Peanut Butter\n                Cookie\", the repo_name could be be rendered with:\n            \n                    `{{ cookiecutter.project_name.replace(\" \", \"_\") }}`.\n            \n                This is then presented to the user as the default.\n            \n                :param Environment env: A Jinja2 Environment object.\n                :param raw: The next value to be prompted for by the user.\n                :param dict cookiecutter_dict: The current context as it's gradually\n                    being populated with variables.\n                :return: The rendered value for the default variable.\n                \"\"\"\n       139:     if raw is None:\n       140:         return None\n       141:     elif isinstance(raw, dict):\n       142:         return {\n       143:             render_variable(env, k, cookiecutter_dict): render_variable(\n       144:                 env, v, cookiecutter_dict\n                        )\n       146:             for k, v in raw.items()\n                    }\n       148:     elif isinstance(raw, list):\n       149:         return [render_variable(env, v, cookiecutter_dict) for v in raw]\n       150:     elif not isinstance(raw, str):\n       151:         raw = str(raw)\n            \n       153:     template = env.from_string(raw)\n            \n       155:     rendered_template = template.render(cookiecutter=cookiecutter_dict)\n       156:     return rendered_template\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:17 cookiecutter/replay.py:19-36 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/replay.py, does not achieve full coverage:\nwhen tested, lines 21-36 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import json\n            from cookiecutter.utils import make_sure_path_exists\n            def dump(replay_dir, template_name, context):\n                \"\"\"Write json data to file.\"\"\"\n        21:     if not make_sure_path_exists(replay_dir):\n        22:         raise IOError('Unable to create replay dir at {}'.format(replay_dir))\n            \n        24:     if not isinstance(template_name, str):\n        25:         raise TypeError('Template name is required to be of type str')\n            \n        27:     if not isinstance(context, dict):\n        28:         raise TypeError('Context is required to be of type dict')\n            \n        30:     if 'cookiecutter' not in context:\n        31:         raise ValueError('Context is required to contain a cookiecutter key')\n            \n        33:     replay_file = get_file_name(replay_dir, template_name)\n            \n        35:     with open(replay_file, 'w') as outfile:\n        36:         json.dump(context, outfile, indent=2)\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:17 cookiecutter/prompt.py:99-119 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, lines 107-119 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import click\n            def read_user_dict(var_name, default_value):\n                \"\"\"Prompt the user to provide a dictionary of data.\n            \n                :param str var_name: Variable as specified in the context\n                :param default_value: Value that will be returned if no input is provided\n                :return: A Python dictionary to use in the context.\n                \"\"\"\n                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt\n       107:     if not isinstance(default_value, dict):\n       108:         raise TypeError\n            \n       110:     default_display = 'default'\n            \n       112:     user_value = click.prompt(\n       113:         var_name, default=default_display, type=click.STRING, value_proc=process_json\n                )\n            \n       116:     if user_value == default_display:\n                    # Return the given default w/o any processing\n       118:         return default_value\n       119:     return user_value\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:17 cookiecutter/prompt.py:22-32 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, line 32 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import click\n            def read_user_yes_no(question, default_value):\n                \"\"\"Prompt the user to reply with 'yes' or 'no' (or equivalent values).\n            \n                Note:\n                  Possible choices are 'true', '1', 'yes', 'y' or 'false', '0', 'no', 'n'\n            \n                :param str question: Question to the user\n                :param default_value: Value that will be returned if no input happens\n                \"\"\"\n                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt\n        32:     return click.prompt(question, default=default_value, type=click.BOOL)\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:17 cookiecutter/repository.py:21-23 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/repository.py, does not achieve full coverage:\nwhen tested, line 23 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_repo_url(value):\n                \"\"\"Return True if value is a repository URL.\"\"\"\n        23:     return bool(REPO_REGEX.match(value))\n\n```\n"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:18 cookiecutter/prompt.py:122-156 ----
+{
+  "id": "chatcmpl-Av7zWjFnph0RuDwDUiyeYKZxUIBnq",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"render_variable\"}",
+              "name": "get_info"
+            },
+            "id": "call_Gb7AwvNlxZHWMdr9NtoSfpdX",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 32,
+    "prompt_tokens": 621,
+    "total_tokens": 653,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:18 cookiecutter/prompt.py:122-156 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, lines 139-156 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def render_variable(env, raw, cookiecutter_dict):\n                \"\"\"Render the next variable to be displayed in the user prompt.\n            \n                Inside the prompting taken from the cookiecutter.json file, this renders\n                the next variable. For example, if a project_name is \"Peanut Butter\n                Cookie\", the repo_name could be be rendered with:\n            \n                    `{{ cookiecutter.project_name.replace(\" \", \"_\") }}`.\n            \n                This is then presented to the user as the default.\n            \n                :param Environment env: A Jinja2 Environment object.\n                :param raw: The next value to be prompted for by the user.\n                :param dict cookiecutter_dict: The current context as it's gradually\n                    being populated with variables.\n                :return: The rendered value for the default variable.\n                \"\"\"\n       139:     if raw is None:\n       140:         return None\n       141:     elif isinstance(raw, dict):\n       142:         return {\n       143:             render_variable(env, k, cookiecutter_dict): render_variable(\n       144:                 env, v, cookiecutter_dict\n                        )\n       146:             for k, v in raw.items()\n                    }\n       148:     elif isinstance(raw, list):\n       149:         return [render_variable(env, v, cookiecutter_dict) for v in raw]\n       150:     elif not isinstance(raw, str):\n       151:         raw = str(raw)\n            \n       153:     template = env.from_string(raw)\n            \n       155:     rendered_template = template.render(cookiecutter=cookiecutter_dict)\n       156:     return rendered_template\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"render_variable\"}",
+            "name": "get_info"
+          },
+          "id": "call_Gb7AwvNlxZHWMdr9NtoSfpdX",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_Gb7AwvNlxZHWMdr9NtoSfpdX",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\ndef render_variable(env, raw, cookiecutter_dict):\n    \"\"\"Render the next variable to be displayed in the user prompt.\n\n    Inside the prompting taken from the cookiecutter.json file, this renders\n    the next variable. For example, if a project_name is \"Peanut Butter\n    Cookie\", the repo_name could be be rendered with:\n\n        `{{ cookiecutter.project_name.replace(\" \", \"_\") }}`.\n\n    This is then presented to the user as the default.\n\n    :param Environment env: A Jinja2 Environment object.\n    :param raw: The next value to be prompted for by the user.\n    :param dict cookiecutter_dict: The current context as it's gradually\n        being populated with variables.\n    :return: The rendered value for the default variable.\n    \"\"\"\n    if raw is None:\n        return None\n    elif isinstance(raw, dict):\n        return {render_variable(env, k, cookiecutter_dict): render_variable(env, v, cookiecutter_dict) for (k, v) in raw.items()}\n    elif isinstance(raw, list):\n        return [render_variable(env, v, cookiecutter_dict) for v in raw]\n    elif not isinstance(raw, str):\n        raw = str(raw)\n    template = env.from_string(raw)\n    rendered_template = template.render(cookiecutter=cookiecutter_dict)\n    return rendered_template\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:18 cookiecutter/prompt.py:99-119 ----
+{
+  "id": "chatcmpl-Av7zWOq4mu1o7B80EdShTmjTO3Oq9",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"read_user_dict\"}",
+              "name": "get_info"
+            },
+            "id": "call_XajEGKiSoiczTNljPyHNcvzV",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 33,
+    "prompt_tokens": 475,
+    "total_tokens": 508,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:18 cookiecutter/prompt.py:99-119 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, lines 107-119 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import click\n            def read_user_dict(var_name, default_value):\n                \"\"\"Prompt the user to provide a dictionary of data.\n            \n                :param str var_name: Variable as specified in the context\n                :param default_value: Value that will be returned if no input is provided\n                :return: A Python dictionary to use in the context.\n                \"\"\"\n                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt\n       107:     if not isinstance(default_value, dict):\n       108:         raise TypeError\n            \n       110:     default_display = 'default'\n            \n       112:     user_value = click.prompt(\n       113:         var_name, default=default_display, type=click.STRING, value_proc=process_json\n                )\n            \n       116:     if user_value == default_display:\n                    # Return the given default w/o any processing\n       118:         return default_value\n       119:     return user_value\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"read_user_dict\"}",
+            "name": "get_info"
+          },
+          "id": "call_XajEGKiSoiczTNljPyHNcvzV",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_XajEGKiSoiczTNljPyHNcvzV",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport click\n\ndef read_user_dict(var_name, default_value):\n    \"\"\"Prompt the user to provide a dictionary of data.\n\n    :param str var_name: Variable as specified in the context\n    :param default_value: Value that will be returned if no input is provided\n    :return: A Python dictionary to use in the context.\n    \"\"\"\n    if not isinstance(default_value, dict):\n        raise TypeError\n    default_display = 'default'\n    user_value = click.prompt(var_name, default=default_display, type=click.STRING, value_proc=process_json)\n    if user_value == default_display:\n        return default_value\n    return user_value\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:18 cookiecutter/repository.py:21-23 ----
+{
+  "id": "chatcmpl-Av7zWLx2H4DjcvilNG0aEYGwKBQcK",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"is_repo_url\"}",
+              "name": "get_info"
+            },
+            "id": "call_yPJjiGP4qM7mx1J8IDq03AT4",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"REPO_REGEX\"}",
+              "name": "get_info"
+            },
+            "id": "call_Cr7OsBeVDcPp5gfBoS8GSpYh",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 49,
+    "prompt_tokens": 296,
+    "total_tokens": 345,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:18 cookiecutter/repository.py:21-23 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/repository.py, does not achieve full coverage:\nwhen tested, line 23 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            def is_repo_url(value):\n                \"\"\"Return True if value is a repository URL.\"\"\"\n        23:     return bool(REPO_REGEX.match(value))\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"is_repo_url\"}",
+            "name": "get_info"
+          },
+          "id": "call_yPJjiGP4qM7mx1J8IDq03AT4",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"REPO_REGEX\"}",
+            "name": "get_info"
+          },
+          "id": "call_Cr7OsBeVDcPp5gfBoS8GSpYh",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_yPJjiGP4qM7mx1J8IDq03AT4",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\ndef is_repo_url(value):\n    \"\"\"Return True if value is a repository URL.\"\"\"\n    return bool(REPO_REGEX.match(value))\n```"
+    },
+    {
+      "tool_call_id": "call_Cr7OsBeVDcPp5gfBoS8GSpYh",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport re\nREPO_REGEX = re.compile('\\n# something like git:// ssh:// file:// etc.\\n((((git|hg)\\\\+)?(git|ssh|file|https?):(//)?)\\n |                                      # or\\n (\\\\w+@[\\\\w\\\\.]+)                          # something like user@...\\n)\\n', re.VERBOSE)\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:19 cookiecutter/prompt.py:22-32 ----
+{
+  "id": "chatcmpl-Av7zWxQXpTX9NFaVAST11xg1JxP9g",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"cookiecutter.prompt.read_user_yes_no\"}",
+              "name": "get_info"
+            },
+            "id": "call_w1TeOc81q56QfhrrCHyglhtg",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"click.prompt\"}",
+              "name": "get_info"
+            },
+            "id": "call_L3nABrCOW6Kv4b94RUzQITHg",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 53,
+    "prompt_tokens": 405,
+    "total_tokens": 458,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:19 cookiecutter/prompt.py:22-32 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, line 32 does not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import click\n            def read_user_yes_no(question, default_value):\n                \"\"\"Prompt the user to reply with 'yes' or 'no' (or equivalent values).\n            \n                Note:\n                  Possible choices are 'true', '1', 'yes', 'y' or 'false', '0', 'no', 'n'\n            \n                :param str question: Question to the user\n                :param default_value: Value that will be returned if no input happens\n                \"\"\"\n                # Please see https://click.palletsprojects.com/en/7.x/api/#click.prompt\n        32:     return click.prompt(question, default=default_value, type=click.BOOL)\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"cookiecutter.prompt.read_user_yes_no\"}",
+            "name": "get_info"
+          },
+          "id": "call_w1TeOc81q56QfhrrCHyglhtg",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"click.prompt\"}",
+            "name": "get_info"
+          },
+          "id": "call_L3nABrCOW6Kv4b94RUzQITHg",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_w1TeOc81q56QfhrrCHyglhtg",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport click\n\ndef read_user_yes_no(question, default_value):\n    \"\"\"Prompt the user to reply with 'yes' or 'no' (or equivalent values).\n\n    Note:\n      Possible choices are 'true', '1', 'yes', 'y' or 'false', '0', 'no', 'n'\n\n    :param str question: Question to the user\n    :param default_value: Value that will be returned if no input happens\n    \"\"\"\n    return click.prompt(question, default=default_value, type=click.BOOL)\n```"
+    },
+    {
+      "tool_call_id": "call_L3nABrCOW6Kv4b94RUzQITHg",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\nin cookiecutter/prompt.py:\n```python\nimport click\n```\n\nin site-packages/click/__init__.py:\n```python\nfrom .termui import prompt as prompt\n```\n\nin site-packages/click/termui.py:\n```python\nimport typing as t\nfrom gettext import gettext as _\nfrom site-packages.click.exceptions import Abort\nfrom site-packages.click.exceptions import UsageError\nfrom site-packages.click.types import convert_type\nfrom site-packages.click.types import ParamType\nfrom site-packages.click.utils import echo\n\ndef prompt(text: str, default: t.Optional[t.Any]=None, hide_input: bool=False, confirmation_prompt: t.Union[bool, str]=False, type: t.Optional[t.Union[ParamType, t.Any]]=None, value_proc: t.Optional[t.Callable[[str], t.Any]]=None, prompt_suffix: str=': ', show_default: bool=True, err: bool=False, show_choices: bool=True) -> t.Any:\n    \"\"\"Prompts a user for input.  This is a convenience function that can\n    be used to prompt a user for input later.\n\n    If the user aborts the input by sending an interrupt signal, this\n    function will catch it and raise a :exc:`Abort` exception.\n\n    :param text: the text to show for the prompt.\n    :param default: the default value to use if no input happens.  If this\n                    is not given it will prompt until it's aborted.\n    :param hide_input: if this is set to true then the input value will\n                       be hidden.\n    :param confirmation_prompt: Prompt a second time to confirm the\n        value. Can be set to a string instead of ``True`` to customize\n        the message.\n    :param type: the type to use to check the value against.\n    :param value_proc: if this parameter is provided it's a function that\n                       is invoked instead of the type conversion to\n                       convert a value.\n    :param prompt_suffix: a suffix that should be added to the prompt.\n    :param show_default: shows or hides the default value in the prompt.\n    :param err: if set to true the file defaults to ``stderr`` instead of\n                ``stdout``, the same as with echo.\n    :param show_choices: Show or hide choices if the passed type is a Choice.\n                         For example if type is a Choice of either day or week,\n                         show_choices is true and text is \"Group by\" then the\n                         prompt will be \"Group by (day, week): \".\n\n    .. versionadded:: 8.0\n        ``confirmation_prompt`` can be a custom string.\n\n    .. versionadded:: 7.0\n        Added the ``show_choices`` parameter.\n\n    .. versionadded:: 6.0\n        Added unicode support for cmd.exe on Windows.\n\n    .. versionadded:: 4.0\n        Added the `err` parameter.\n\n    \"\"\"\n\n    def prompt_func(text: str) -> str:\n        f = hidden_prompt_func if hide_input else visible_prompt_func\n        try:\n            echo(text.rstrip(' '), nl=False, err=err)\n            return f(' ')\n        except (KeyboardInterrupt, EOFError):\n            if hide_input:\n                echo(None, err=err)\n            raise Abort() from None\n    if value_proc is None:\n        value_proc = convert_type(type, default)\n    prompt = _build_prompt(text, prompt_suffix, show_default, default, show_choices, type)\n    if confirmation_prompt:\n        if confirmation_prompt is True:\n            confirmation_prompt = _('Repeat for confirmation')\n        confirmation_prompt = _build_prompt(confirmation_prompt, prompt_suffix)\n    while True:\n        while True:\n            value = prompt_func(prompt)\n            if value:\n                break\n            elif default is not None:\n                value = default\n                break\n        try:\n            result = value_proc(value)\n        except UsageError as e:\n            if hide_input:\n                echo(_('Error: The value you entered was invalid.'), err=err)\n            else:\n                echo(_('Error: {e.message}').format(e=e), err=err)\n            continue\n        if not confirmation_prompt:\n            return result\n        while True:\n            value2 = prompt_func(confirmation_prompt)\n            is_empty = not value and (not value2)\n            if value2 or is_empty:\n                break\n        if value == value2:\n            return result\n        echo(_('Error: The two entered values do not match.'), err=err)\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:19 cookiecutter/replay.py:19-36 ----
+{
+  "id": "chatcmpl-Av7zWEq87xT9TZiYTOsf5Q9z3xGh7",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"cookiecutter.replay.dump\"}",
+              "name": "get_info"
+            },
+            "id": "call_3gIA1HwL8rtHXLVBbvgItwmk",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"cookiecutter.replay.get_file_name\"}",
+              "name": "get_info"
+            },
+            "id": "call_KpzmMnyaIjVxCMRt5avLblgX",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 57,
+    "prompt_tokens": 492,
+    "total_tokens": 549,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:19 cookiecutter/replay.py:19-36 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/replay.py, does not achieve full coverage:\nwhen tested, lines 21-36 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import json\n            from cookiecutter.utils import make_sure_path_exists\n            def dump(replay_dir, template_name, context):\n                \"\"\"Write json data to file.\"\"\"\n        21:     if not make_sure_path_exists(replay_dir):\n        22:         raise IOError('Unable to create replay dir at {}'.format(replay_dir))\n            \n        24:     if not isinstance(template_name, str):\n        25:         raise TypeError('Template name is required to be of type str')\n            \n        27:     if not isinstance(context, dict):\n        28:         raise TypeError('Context is required to be of type dict')\n            \n        30:     if 'cookiecutter' not in context:\n        31:         raise ValueError('Context is required to contain a cookiecutter key')\n            \n        33:     replay_file = get_file_name(replay_dir, template_name)\n            \n        35:     with open(replay_file, 'w') as outfile:\n        36:         json.dump(context, outfile, indent=2)\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"cookiecutter.replay.dump\"}",
+            "name": "get_info"
+          },
+          "id": "call_3gIA1HwL8rtHXLVBbvgItwmk",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"cookiecutter.replay.get_file_name\"}",
+            "name": "get_info"
+          },
+          "id": "call_KpzmMnyaIjVxCMRt5avLblgX",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_3gIA1HwL8rtHXLVBbvgItwmk",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport json\nfrom cookiecutter.utils import make_sure_path_exists\n\ndef dump(replay_dir, template_name, context):\n    \"\"\"Write json data to file.\"\"\"\n    if not make_sure_path_exists(replay_dir):\n        raise IOError('Unable to create replay dir at {}'.format(replay_dir))\n    if not isinstance(template_name, str):\n        raise TypeError('Template name is required to be of type str')\n    if not isinstance(context, dict):\n        raise TypeError('Context is required to be of type dict')\n    if 'cookiecutter' not in context:\n        raise ValueError('Context is required to contain a cookiecutter key')\n    replay_file = get_file_name(replay_dir, template_name)\n    with open(replay_file, 'w') as outfile:\n        json.dump(context, outfile, indent=2)\n```"
+    },
+    {
+      "tool_call_id": "call_KpzmMnyaIjVxCMRt5avLblgX",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport os\n\ndef get_file_name(replay_dir, template_name):\n    \"\"\"Get the name of file.\"\"\"\n    suffix = '.json' if not template_name.endswith('.json') else ''\n    file_name = '{}{}'.format(template_name, suffix)\n    return os.path.join(replay_dir, file_name)\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:20 cookiecutter/prompt.py:171-229 ----
+{
+  "id": "chatcmpl-Av7zWewNUWQj7mVCJSvKMswUUWc5o",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"prompt_for_config\"}",
+              "name": "get_info"
+            },
+            "id": "call_Vtjm1o2ULSdfrFFtjPdSyy9F",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"StrictEnvironment\"}",
+              "name": "get_info"
+            },
+            "id": "call_26VXmkdCtBNYEHmAQLk0Etet",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"UndefinedVariableInTemplate\"}",
+              "name": "get_info"
+            },
+            "id": "call_LqoY2vlWYk6ilIeV5DXyhWVC",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"render_variable\"}",
+              "name": "get_info"
+            },
+            "id": "call_BAWv64VX9lyIhztDdQzevIac",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"prompt_choice_for_config\"}",
+              "name": "get_info"
+            },
+            "id": "call_sJGTcnJS6u0BryNvgMYEU3IP",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"read_user_variable\"}",
+              "name": "get_info"
+            },
+            "id": "call_Dwyy40IaMrJEDlJAZgCwvDRM",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"read_user_dict\"}",
+              "name": "get_info"
+            },
+            "id": "call_WXnVdHSsUk0lLFICyz0iEV9P",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 129,
+    "prompt_tokens": 925,
+    "total_tokens": 1054,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:20 cookiecutter/prompt.py:171-229 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/prompt.py, does not achieve full coverage:\nwhen tested, lines 177-229 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            from collections import OrderedDict\n            from jinja2.exceptions import UndefinedError\n            from cookiecutter.environment import StrictEnvironment\n            from cookiecutter.exceptions import UndefinedVariableInTemplate\n            def prompt_for_config(context, no_input=False):\n                \"\"\"Prompt user to enter a new config.\n            \n                :param dict context: Source for field names and sample values.\n                :param no_input: Prompt the user at command line for manual configuration?\n                \"\"\"\n       177:     cookiecutter_dict = OrderedDict([])\n       178:     env = StrictEnvironment(context=context)\n            \n                # First pass: Handle simple and raw variables, plus choices.\n                # These must be done first because the dictionaries keys and\n                # values might refer to them.\n       183:     for key, raw in context['cookiecutter'].items():\n       184:         if key.startswith('_') and not key.startswith('__'):\n       185:             cookiecutter_dict[key] = raw\n       186:             continue\n       187:         elif key.startswith('__'):\n       188:             cookiecutter_dict[key] = render_variable(env, raw, cookiecutter_dict)\n       189:             continue\n            \n       191:         try:\n       192:             if isinstance(raw, list):\n                            # We are dealing with a choice variable\n       194:                 val = prompt_choice_for_config(\n       195:                     cookiecutter_dict, env, key, raw, no_input\n                            )\n       197:                 cookiecutter_dict[key] = val\n       198:             elif not isinstance(raw, dict):\n                            # We are dealing with a regular variable\n       200:                 val = render_variable(env, raw, cookiecutter_dict)\n            \n       202:                 if not no_input:\n       203:                     val = read_user_variable(key, val)\n            \n       205:                 cookiecutter_dict[key] = val\n       206:         except UndefinedError as err:\n       207:             msg = \"Unable to render variable '{}'\".format(key)\n       208:             raise UndefinedVariableInTemplate(msg, err, context)\n            \n                # Second pass; handle the dictionaries.\n       211:     for key, raw in context['cookiecutter'].items():\n                    # Skip private type dicts not ot be rendered.\n       213:         if key.startswith('_') and not key.startswith('__'):\n       214:             continue\n            \n       216:         try:\n       217:             if isinstance(raw, dict):\n                            # We are dealing with a dict variable\n       219:                 val = render_variable(env, raw, cookiecutter_dict)\n            \n       221:                 if not no_input and not key.startswith('__'):\n       222:                     val = read_user_dict(key, val)\n            \n       224:                 cookiecutter_dict[key] = val\n       225:         except UndefinedError as err:\n       226:             msg = \"Unable to render variable '{}'\".format(key)\n       227:             raise UndefinedVariableInTemplate(msg, err, context)\n            \n       229:     return cookiecutter_dict\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"prompt_for_config\"}",
+            "name": "get_info"
+          },
+          "id": "call_Vtjm1o2ULSdfrFFtjPdSyy9F",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"StrictEnvironment\"}",
+            "name": "get_info"
+          },
+          "id": "call_26VXmkdCtBNYEHmAQLk0Etet",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"UndefinedVariableInTemplate\"}",
+            "name": "get_info"
+          },
+          "id": "call_LqoY2vlWYk6ilIeV5DXyhWVC",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"render_variable\"}",
+            "name": "get_info"
+          },
+          "id": "call_BAWv64VX9lyIhztDdQzevIac",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"prompt_choice_for_config\"}",
+            "name": "get_info"
+          },
+          "id": "call_sJGTcnJS6u0BryNvgMYEU3IP",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"read_user_variable\"}",
+            "name": "get_info"
+          },
+          "id": "call_Dwyy40IaMrJEDlJAZgCwvDRM",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"read_user_dict\"}",
+            "name": "get_info"
+          },
+          "id": "call_WXnVdHSsUk0lLFICyz0iEV9P",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_Vtjm1o2ULSdfrFFtjPdSyy9F",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nfrom collections import OrderedDict\nfrom jinja2.exceptions import UndefinedError\nfrom cookiecutter.environment import StrictEnvironment\nfrom cookiecutter.exceptions import UndefinedVariableInTemplate\n\ndef prompt_for_config(context, no_input=False):\n    \"\"\"Prompt user to enter a new config.\n\n    :param dict context: Source for field names and sample values.\n    :param no_input: Prompt the user at command line for manual configuration?\n    \"\"\"\n    cookiecutter_dict = OrderedDict([])\n    env = StrictEnvironment(context=context)\n    for (key, raw) in context['cookiecutter'].items():\n        if key.startswith('_') and (not key.startswith('__')):\n            cookiecutter_dict[key] = raw\n            continue\n        elif key.startswith('__'):\n            cookiecutter_dict[key] = render_variable(env, raw, cookiecutter_dict)\n            continue\n        try:\n            if isinstance(raw, list):\n                val = prompt_choice_for_config(cookiecutter_dict, env, key, raw, no_input)\n                cookiecutter_dict[key] = val\n            elif not isinstance(raw, dict):\n                val = render_variable(env, raw, cookiecutter_dict)\n                if not no_input:\n                    val = read_user_variable(key, val)\n                cookiecutter_dict[key] = val\n        except UndefinedError as err:\n            msg = \"Unable to render variable '{}'\".format(key)\n            raise UndefinedVariableInTemplate(msg, err, context)\n    for (key, raw) in context['cookiecutter'].items():\n        if key.startswith('_') and (not key.startswith('__')):\n            continue\n        try:\n            if isinstance(raw, dict):\n                val = render_variable(env, raw, cookiecutter_dict)\n                if not no_input and (not key.startswith('__')):\n                    val = read_user_dict(key, val)\n                cookiecutter_dict[key] = val\n        except UndefinedError as err:\n            msg = \"Unable to render variable '{}'\".format(key)\n            raise UndefinedVariableInTemplate(msg, err, context)\n    return cookiecutter_dict\n```"
+    },
+    {
+      "tool_call_id": "call_26VXmkdCtBNYEHmAQLk0Etet",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\nin cookiecutter/environment.py:\n```python\nfrom jinja2 import Environment, StrictUndefined\n\nclass StrictEnvironment(ExtensionLoaderMixin, Environment):\n    \"\"\"Create strict Jinja2 environment.\n\n    Jinja2 environment will raise error on undefined variable in template-\n    rendering context.\n    \"\"\"\n\n    def __init__(self, **kwargs):\n        \"\"\"Set the standard Cookiecutter StrictEnvironment.\n\n        Also loading extensions defined in cookiecutter.json's _extensions key.\n        \"\"\"\n        super(StrictEnvironment, self).__init__(undefined=StrictUndefined, **kwargs)\n```"
+    },
+    {
+      "tool_call_id": "call_LqoY2vlWYk6ilIeV5DXyhWVC",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\nin cookiecutter/exceptions.py:\n```python\nclass UndefinedVariableInTemplate(CookiecutterException):\n    \"\"\"\n    Exception for out-of-scope variables.\n\n    Raised when a template uses a variable which is not defined in the\n    context.\n    \"\"\"\n\n    def __init__(self, message, error, context):\n        \"\"\"Exception for out-of-scope variables.\"\"\"\n        self.message = message\n        self.error = error\n        self.context = context\n\n    def __str__(self):\n        ...\n```"
+    },
+    {
+      "tool_call_id": "call_BAWv64VX9lyIhztDdQzevIac",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\ndef render_variable(env, raw, cookiecutter_dict):\n    \"\"\"Render the next variable to be displayed in the user prompt.\n\n    Inside the prompting taken from the cookiecutter.json file, this renders\n    the next variable. For example, if a project_name is \"Peanut Butter\n    Cookie\", the repo_name could be be rendered with:\n\n        `{{ cookiecutter.project_name.replace(\" \", \"_\") }}`.\n\n    This is then presented to the user as the default.\n\n    :param Environment env: A Jinja2 Environment object.\n    :param raw: The next value to be prompted for by the user.\n    :param dict cookiecutter_dict: The current context as it's gradually\n        being populated with variables.\n    :return: The rendered value for the default variable.\n    \"\"\"\n    if raw is None:\n        return None\n    elif isinstance(raw, dict):\n        return {render_variable(env, k, cookiecutter_dict): render_variable(env, v, cookiecutter_dict) for (k, v) in raw.items()}\n    elif isinstance(raw, list):\n        return [render_variable(env, v, cookiecutter_dict) for v in raw]\n    elif not isinstance(raw, str):\n        raw = str(raw)\n    template = env.from_string(raw)\n    rendered_template = template.render(cookiecutter=cookiecutter_dict)\n    return rendered_template\n```"
+    },
+    {
+      "tool_call_id": "call_sJGTcnJS6u0BryNvgMYEU3IP",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\ndef prompt_choice_for_config(cookiecutter_dict, env, key, options, no_input):\n    \"\"\"Prompt user with a set of options to choose from.\n\n    Each of the possible choices is rendered beforehand.\n    \"\"\"\n    rendered_options = [render_variable(env, raw, cookiecutter_dict) for raw in options]\n    if no_input:\n        return rendered_options[0]\n    return read_user_choice(key, rendered_options)\n```"
+    },
+    {
+      "tool_call_id": "call_Dwyy40IaMrJEDlJAZgCwvDRM",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport click\n\ndef read_user_variable(var_name, default_value):\n    \"\"\"Prompt user for variable and return the entered value or given default.\n\n    :param str var_name: Variable of the context to query the user\n    :param default_value: Value that will be returned if no input happens\n    \"\"\"\n    return click.prompt(var_name, default=default_value)\n```"
+    },
+    {
+      "tool_call_id": "call_WXnVdHSsUk0lLFICyz0iEV9P",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport click\n\ndef read_user_dict(var_name, default_value):\n    \"\"\"Prompt the user to provide a dictionary of data.\n\n    :param str var_name: Variable as specified in the context\n    :param default_value: Value that will be returned if no input is provided\n    :return: A Python dictionary to use in the context.\n    \"\"\"\n    if not isinstance(default_value, dict):\n        raise TypeError\n    default_display = 'default'\n    user_value = click.prompt(var_name, default=default_display, type=click.STRING, value_proc=process_json)\n    if user_value == default_display:\n        return default_value\n    return user_value\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:21 cookiecutter/zipfile.py:13-112 ----
+{
+  "id": "chatcmpl-Av7zWXzvBmn8lLEk7FpnJWSjjPz6a",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"name\": \"cookiecutter.utils.make_sure_path_exists\"}",
+              "name": "get_info"
+            },
+            "id": "call_IdbAOCl5DaucgtJTLzrIE2yG",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"cookiecutter.prompt.read_repo_password\"}",
+              "name": "get_info"
+            },
+            "id": "call_Iz0PED9tLgEox5OEa0ALyK8f",
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"name\": \"cookiecutter.utils.prompt_and_delete\"}",
+              "name": "get_info"
+            },
+            "id": "call_6EfIcumpLHQbP9Cmv6Qxf1co",
+            "type": "function"
+          }
+        ],
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 79,
+    "prompt_tokens": 1348,
+    "total_tokens": 1427,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:21 cookiecutter/zipfile.py:13-112 ----
+{
+  "model": "gpt-4o-2024-05-13",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "\nYou are an expert Python test-driven developer.\nThe code below, extracted from cookiecutter/zipfile.py, does not achieve full coverage:\nwhen tested, lines 27-112 do not execute.\nCreate new pytest test functions that execute all missing lines and branches, always making\nsure that each test is correct and indeed improves coverage.\nUse the get_info tool function as necessary.\nAlways send entire Python test scripts when proposing a new test or correcting one you\npreviously proposed.\nBe sure to include assertions in the test that verify any applicable postconditions.\nPlease also make VERY SURE to clean up after the test, so as to avoid state pollution;\nuse 'monkeypatch' or 'pytest-mock' if appropriate.\nWrite as little top-level code as possible, and in particular do not include any top-level code\ncalling into pytest.main or the test itself.\nRespond ONLY with the Python code enclosed in backticks, without any explanation.\n```python\n            import os\n            import tempfile\n            from zipfile import BadZipFile, ZipFile\n            import requests\n            from cookiecutter.exceptions import InvalidZipRepository\n            from cookiecutter.prompt import read_repo_password\n            from cookiecutter.utils import make_sure_path_exists, prompt_and_delete\n            def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):\n                \"\"\"Download and unpack a zipfile at a given URI.\n            \n                This will download the zipfile to the cookiecutter repository,\n                and unpack into a temporary directory.\n            \n                :param zip_uri: The URI for the zipfile.\n                :param is_url: Is the zip URI a URL or a file?\n                :param clone_to_dir: The cookiecutter repository directory\n                    to put the archive into.\n                :param no_input: Suppress any prompts\n                :param password: The password to use when unpacking the repository.\n                \"\"\"\n                # Ensure that clone_to_dir exists\n        27:     clone_to_dir = os.path.expanduser(clone_to_dir)\n        28:     make_sure_path_exists(clone_to_dir)\n            \n        30:     if is_url:\n                    # Build the name of the cached zipfile,\n                    # and prompt to delete if it already exists.\n        33:         identifier = zip_uri.rsplit('/', 1)[1]\n        34:         zip_path = os.path.join(clone_to_dir, identifier)\n            \n        36:         if os.path.exists(zip_path):\n        37:             download = prompt_and_delete(zip_path, no_input=no_input)\n                    else:\n        39:             download = True\n            \n        41:         if download:\n                        # (Re) download the zipfile\n        43:             r = requests.get(zip_uri, stream=True)\n        44:             with open(zip_path, 'wb') as f:\n        45:                 for chunk in r.iter_content(chunk_size=1024):\n        46:                     if chunk:  # filter out keep-alive new chunks\n        47:                         f.write(chunk)\n                else:\n                    # Just use the local zipfile as-is.\n        50:         zip_path = os.path.abspath(zip_uri)\n            \n                # Now unpack the repository. The zipfile will be unpacked\n                # into a temporary directory\n        54:     try:\n        55:         zip_file = ZipFile(zip_path)\n            \n        57:         if len(zip_file.namelist()) == 0:\n        58:             raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))\n            \n                    # The first record in the zipfile should be the directory entry for\n                    # the archive. If it isn't a directory, there's a problem.\n        62:         first_filename = zip_file.namelist()[0]\n        63:         if not first_filename.endswith('/'):\n        64:             raise InvalidZipRepository(\n        65:                 'Zip repository {} does not include '\n        66:                 'a top-level directory'.format(zip_uri)\n                        )\n            \n                    # Construct the final target directory\n        70:         project_name = first_filename[:-1]\n        71:         unzip_base = tempfile.mkdtemp()\n        72:         unzip_path = os.path.join(unzip_base, project_name)\n            \n                    # Extract the zip file into the temporary directory\n        75:         try:\n        76:             zip_file.extractall(path=unzip_base)\n        77:         except RuntimeError:\n                        # File is password protected; try to get a password from the\n                        # environment; if that doesn't work, ask the user.\n        80:             if password is not None:\n        81:                 try:\n        82:                     zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))\n        83:                 except RuntimeError:\n        84:                     raise InvalidZipRepository(\n        85:                         'Invalid password provided for protected repository'\n                                )\n        87:             elif no_input:\n        88:                 raise InvalidZipRepository(\n        89:                     'Unable to unlock password protected repository'\n                            )\n                        else:\n        92:                 retry = 0\n        93:                 while retry is not None:\n        94:                     try:\n        95:                         password = read_repo_password('Repo password')\n        96:                         zip_file.extractall(\n        97:                             path=unzip_base, pwd=password.encode('utf-8')\n                                    )\n        99:                         retry = None\n       100:                     except RuntimeError:\n       101:                         retry += 1\n       102:                         if retry == 3:\n       103:                             raise InvalidZipRepository(\n       104:                                 'Invalid password provided for protected repository'\n                                        )\n            \n       107:     except BadZipFile:\n       108:         raise InvalidZipRepository(\n       109:             'Zip repository {} is not a valid zip archive:'.format(zip_uri)\n                    )\n            \n       112:     return unzip_path\n\n```\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": "{\"name\": \"cookiecutter.utils.make_sure_path_exists\"}",
+            "name": "get_info"
+          },
+          "id": "call_IdbAOCl5DaucgtJTLzrIE2yG",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"cookiecutter.prompt.read_repo_password\"}",
+            "name": "get_info"
+          },
+          "id": "call_Iz0PED9tLgEox5OEa0ALyK8f",
+          "type": "function"
+        },
+        {
+          "function": {
+            "arguments": "{\"name\": \"cookiecutter.utils.prompt_and_delete\"}",
+            "name": "get_info"
+          },
+          "id": "call_6EfIcumpLHQbP9Cmv6Qxf1co",
+          "type": "function"
+        }
+      ],
+      "function_call": null
+    },
+    {
+      "tool_call_id": "call_IdbAOCl5DaucgtJTLzrIE2yG",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport os\n\ndef make_sure_path_exists(path):\n    \"\"\"Ensure that a directory exists.\n\n    :param path: A directory path.\n    \"\"\"\n    logger.debug('Making sure path exists: %s', path)\n    try:\n        os.makedirs(path)\n        logger.debug('Created directory at: %s', path)\n    except OSError as exception:\n        if exception.errno != errno.EEXIST:\n            return False\n    return True\n```"
+    },
+    {
+      "tool_call_id": "call_Iz0PED9tLgEox5OEa0ALyK8f",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\ndef read_repo_password(question):\n    \"\"\"Prompt the user to enter a password.\n\n    :param str question: Question to the user\n    \"\"\"\n    return click.prompt(question, hide_input=True)\n```"
+    },
+    {
+      "tool_call_id": "call_6EfIcumpLHQbP9Cmv6Qxf1co",
+      "role": "tool",
+      "name": "get_info",
+      "content": "\"...\" below indicates omitted code.\n\n```python\nimport os\n\ndef prompt_and_delete(path, no_input=False):\n    \"\"\"\n    Ask user if it's okay to delete the previously-downloaded file/directory.\n\n    If yes, delete it. If no, checks to see if the old version should be\n    reused. If yes, it's reused; otherwise, Cookiecutter exits.\n\n    :param path: Previously downloaded zipfile.\n    :param no_input: Suppress prompt to delete repo and just delete it.\n    :return: True if the content was deleted\n    \"\"\"\n    if no_input:\n        ok_to_delete = True\n    else:\n        question = \"You've downloaded {} before. Is it okay to delete and re-download it?\".format(path)\n        ok_to_delete = read_user_yes_no(question, 'yes')\n    if ok_to_delete:\n        if os.path.isdir(path):\n            rmtree(path)\n        else:\n            os.remove(path)\n        return True\n    else:\n        ok_to_reuse = read_user_yes_no('Do you want to re-use the existing version?', 'yes')\n        if ok_to_reuse:\n            return False\n        sys.exit()\n```"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_info",
+        "description": "Returns information about a symbol.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "class, function or method name, as in 'f' for function f or 'C.foo' for method foo in class C."
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  ]
+}
+---- 2025-01-29T19:26:21 cookiecutter/prompt.py:122-156 ----
+{
+  "id": "chatcmpl-Av7zWfOdhdTA4YEA4S18lvZwoEalz",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom jinja2 import Environment\nfrom cookiecutter.prompt import render_variable\n\n@pytest.fixture\ndef jinja_env():\n    return Environment()\n\ndef test_render_variable_none(jinja_env):\n    assert render_variable(jinja_env, None, {}) is None\n\ndef test_render_variable_dict(jinja_env):\n    raw = {\"key\": \"value\"}\n    cookiecutter_dict = {}\n    result = render_variable(jinja_env, raw, cookiecutter_dict)\n    assert result == {\"key\": \"value\"}\n\ndef test_render_variable_list(jinja_env):\n    raw = [\"value1\", \"value2\"]\n    cookiecutter_dict = {}\n    result = render_variable(jinja_env, raw, cookiecutter_dict)\n    assert result == [\"value1\", \"value2\"]\n\ndef test_render_variable_non_str(jinja_env):\n    raw = 123\n    cookiecutter_dict = {}\n    result = render_variable(jinja_env, raw, cookiecutter_dict)\n    assert result == \"123\"\n\ndef test_render_variable_template(jinja_env):\n    raw = \"{{ cookiecutter.project_name.replace(' ', '_') }}\"\n    cookiecutter_dict = {\"project_name\": \"Peanut Butter Cookie\"}\n    result = render_variable(jinja_env, raw, cookiecutter_dict)\n    assert result == \"Peanut_Butter_Cookie\"\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 280,
+    "prompt_tokens": 940,
+    "total_tokens": 1220,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:22 cookiecutter/prompt.py:99-119 ----
+{
+  "id": "chatcmpl-Av7zWdWElVOF1uBGH6akVMLbTb6KH",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport click\nfrom click.testing import CliRunner\nfrom unittest.mock import patch\nfrom cookiecutter.prompt import read_user_dict\n\ndef process_json(value):\n    # Dummy implementation for process_json\n    return value\n\ndef test_read_user_dict_with_non_dict_default():\n    with pytest.raises(TypeError):\n        read_user_dict(\"Enter data\", \"not a dict\")\n\ndef test_read_user_dict_with_default_value(monkeypatch):\n    default_value = {\"key\": \"value\"}\n    \n    def mock_prompt(*args, **kwargs):\n        return 'default'\n    \n    monkeypatch.setattr(click, 'prompt', mock_prompt)\n    \n    result = read_user_dict(\"Enter data\", default_value)\n    assert result == default_value\n\ndef test_read_user_dict_with_user_input(monkeypatch):\n    default_value = {\"key\": \"value\"}\n    user_input = '{\"new_key\": \"new_value\"}'\n    \n    def mock_prompt(*args, **kwargs):\n        return user_input\n    \n    monkeypatch.setattr(click, 'prompt', mock_prompt)\n    \n    result = read_user_dict(\"Enter data\", default_value)\n    assert result == user_input\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178778,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 240,
+    "prompt_tokens": 645,
+    "total_tokens": 885,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:22 cookiecutter/prompt.py:22-32 ----
+{
+  "id": "chatcmpl-Av7zXBI3kMDKGW36RVLT64yfKZDH3",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport click\nfrom click.testing import CliRunner\nfrom cookiecutter.prompt import read_user_yes_no\n\ndef test_read_user_yes_no_default_yes(monkeypatch):\n    runner = CliRunner()\n\n    def mock_prompt(*args, **kwargs):\n        return True\n\n    monkeypatch.setattr(click, 'prompt', mock_prompt)\n    result = read_user_yes_no(\"Do you want to continue?\", True)\n    assert result is True\n\ndef test_read_user_yes_no_default_no(monkeypatch):\n    runner = CliRunner()\n\n    def mock_prompt(*args, **kwargs):\n        return False\n\n    monkeypatch.setattr(click, 'prompt', mock_prompt)\n    result = read_user_yes_no(\"Do you want to continue?\", False)\n    assert result is False\n\ndef test_read_user_yes_no_user_input_yes(monkeypatch):\n    runner = CliRunner()\n\n    def mock_prompt(*args, **kwargs):\n        return True\n\n    monkeypatch.setattr(click, 'prompt', mock_prompt)\n    result = read_user_yes_no(\"Do you want to continue?\", None)\n    assert result is True\n\ndef test_read_user_yes_no_user_input_no(monkeypatch):\n    runner = CliRunner()\n\n    def mock_prompt(*args, **kwargs):\n        return False\n\n    monkeypatch.setattr(click, 'prompt', mock_prompt)\n    result = read_user_yes_no(\"Do you want to continue?\", None)\n    assert result is False\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178779,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_c88a6c8e51",
+  "usage": {
+    "completion_tokens": 300,
+    "prompt_tokens": 1641,
+    "total_tokens": 1941,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:24 cookiecutter/prompt.py:122-156 ----
+.........................                                                [100%]
+
+---- 2025-01-29T19:26:24 cookiecutter/prompt.py:122-156 ----
+Saved as /output/coverup-tests/test_coverup_13.py
+
+---- 2025-01-29T19:26:24 cookiecutter/prompt.py:99-119 ----
+...............                                                          [100%]
+
+---- 2025-01-29T19:26:24 cookiecutter/prompt.py:99-119 ----
+Saved as /output/coverup-tests/test_coverup_14.py
+
+---- 2025-01-29T19:26:24 cookiecutter/prompt.py:22-32 ----
+....................                                                     [100%]
+
+---- 2025-01-29T19:26:24 cookiecutter/prompt.py:22-32 ----
+Saved as /output/coverup-tests/test_coverup_15.py
+
+---- 2025-01-29T19:26:25 cookiecutter/repository.py:21-23 ----
+{
+  "id": "chatcmpl-Av7zXBa96EPFu9ll5JEg0VRB6ZSOt",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nimport re\nfrom unittest.mock import patch\n\n# Assuming the is_repo_url function and REPO_REGEX are defined in the module `repository`\nfrom repository import is_repo_url, REPO_REGEX\n\ndef test_is_repo_url_with_valid_url():\n    valid_urls = [\n        \"git://github.com/user/repo.git\",\n        \"ssh://github.com/user/repo.git\",\n        \"file:///path/to/repo\",\n        \"https://github.com/user/repo.git\",\n        \"user@github.com:user/repo.git\"\n    ]\n    for url in valid_urls:\n        assert is_repo_url(url) is True\n\ndef test_is_repo_url_with_invalid_url():\n    invalid_urls = [\n        \"not_a_repo_url\",\n        \"ftp://github.com/user/repo.git\",\n        \"http://github.com/user/repo.git\",\n        \"user_at_github.com:user/repo.git\"\n    ]\n    for url in invalid_urls:\n        assert is_repo_url(url) is False\n\ndef test_is_repo_url_with_empty_string():\n    assert is_repo_url(\"\") is False\n\ndef test_is_repo_url_with_none():\n    assert is_repo_url(None) is False\n\n@pytest.fixture(autouse=True)\ndef run_around_tests(monkeypatch):\n    # Setup: patch REPO_REGEX to ensure it matches the expected pattern\n    original_regex = REPO_REGEX\n    monkeypatch.setattr(\"repository.REPO_REGEX\", re.compile(\n        r\"\"\"\n        # something like git:// ssh:// file:// etc.\n        ((((git|hg)\\+)?(git|ssh|file|https?):(//)?)\n         |                                      # or\n         (\\w+@[\\w\\.]+)                          # something like user@...\n        )\n        \"\"\", re.VERBOSE))\n    yield\n    # Teardown: restore the original REPO_REGEX\n    monkeypatch.setattr(\"repository.REPO_REGEX\", original_regex)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178779,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 396,
+    "prompt_tokens": 503,
+    "total_tokens": 899,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:25 cookiecutter/repository.py:21-23 ----
+Missing modules repository
+---- 2025-01-29T19:26:26 cookiecutter/repository.py:21-23 ----
+Unable to install module repository:
+ERROR: Could not find a version that satisfies the requirement repository (from versions: none)
+ERROR: No matching distribution found for repository
+WARNING: You are using pip version 21.2.4; however, version 25.0 is available.
+You should consider upgrading via the '/usr/local/bin/python -m pip install --upgrade pip' command.
+
+---- 2025-01-29T19:26:26 cookiecutter/replay.py:19-36 ----
+{
+  "id": "chatcmpl-Av7zXgtZbRIwCUdmxlqqzvCKpgYaF",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport json\nimport pytest\nfrom unittest.mock import patch, mock_open\nfrom cookiecutter.replay import dump\n\n@pytest.fixture\ndef mock_make_sure_path_exists():\n    with patch('cookiecutter.replay.make_sure_path_exists') as mock_func:\n        yield mock_func\n\n@pytest.fixture\ndef mock_get_file_name():\n    with patch('cookiecutter.replay.get_file_name') as mock_func:\n        yield mock_func\n\ndef test_dump_creates_replay_dir(mock_make_sure_path_exists, mock_get_file_name):\n    mock_make_sure_path_exists.return_value = False\n    with pytest.raises(IOError):\n        dump('invalid_dir', 'template', {'cookiecutter': {}})\n\ndef test_dump_template_name_type_error(mock_make_sure_path_exists, mock_get_file_name):\n    mock_make_sure_path_exists.return_value = True\n    with pytest.raises(TypeError):\n        dump('valid_dir', 123, {'cookiecutter': {}})\n\ndef test_dump_context_type_error(mock_make_sure_path_exists, mock_get_file_name):\n    mock_make_sure_path_exists.return_value = True\n    with pytest.raises(TypeError):\n        dump('valid_dir', 'template', 'not_a_dict')\n\ndef test_dump_context_missing_cookiecutter_key(mock_make_sure_path_exists, mock_get_file_name):\n    mock_make_sure_path_exists.return_value = True\n    with pytest.raises(ValueError):\n        dump('valid_dir', 'template', {})\n\ndef test_dump_success(mock_make_sure_path_exists, mock_get_file_name):\n    mock_make_sure_path_exists.return_value = True\n    mock_get_file_name.return_value = 'valid_dir/template.json'\n    m = mock_open()\n    with patch('builtins.open', m):\n        dump('valid_dir', 'template', {'cookiecutter': {}})\n    m.assert_called_once_with('valid_dir/template.json', 'w')\n    handle = m()\n    handle.write.assert_called_once_with(json.dumps({'cookiecutter': {}}, indent=2))\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178779,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 426,
+    "prompt_tokens": 862,
+    "total_tokens": 1288,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:28 cookiecutter/replay.py:19-36 ----
+Test failed:
+
+__wrapped_mock_method__ = <function NonCallableMock.assert_called_once_with at 0x7f5f86af8310>
+args = (<MagicMock name='open().write' id='140048250795488'>, '{\n  "cookiecutter": {}\n}')
+kwargs = {}, __tracebackhide__ = True
+msg = 'Expected \'write\' to be called once. Called 7 times.\nCalls: [call(\'{\'),\n call(\'\\n  \'),\n call(\'"cookiecutter...\n  "cooki...ter": {}\\n}\',)\n  At index 0 diff: \'}\' != \'{\\n  "cookiecutter": {}\\n}\'\n  Use -v to get more diff'
+__mock_self = <MagicMock name='open().write' id='140048250795488'>
+actual_args = ('}',), actual_kwargs = {}
+introspection = '\nArgs:\nassert (\'}\',) == (\'{\\n  "cooki...ter": {}\\n}\',)\n  At index 0 diff: \'}\' != \'{\\n  "cookiecutter": {}\\n}\'\n  Use -v to get more diff'
+@py_assert2 = ('{\n  "cookiecutter": {}\n}',), @py_assert1 = None
+@py_format4 = '(\'}\',) == (\'{\\n  "cooki...ter": {}\\n}\',)\n~At index 0 diff: \'}\' != \'{\\n  "cookiecutter": {}\\n}\'\n~Use -v to get more diff'
+
+    def assert_wrapper(
+        __wrapped_mock_method__: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        __tracebackhide__ = True
+        try:
+>           __wrapped_mock_method__(*args, **kwargs)
+
+/usr/local/lib/python3.10/site-packages/pytest_mock/plugin.py:480: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <MagicMock name='open().write' id='140048250795488'>
+args = ('{\n  "cookiecutter": {}\n}',), kwargs = {}
+msg = 'Expected \'write\' to be called once. Called 7 times.\nCalls: [call(\'{\'),\n call(\'\\n  \'),\n call(\'"cookiecutter"\'),\n call(\': \'),\n call(\'{}\'),\n call(\'\\n\'),\n call(\'}\')].'
+
+    def assert_called_once_with(self, /, *args, **kwargs):
+        """assert that the mock was called exactly once and that that call was
+        with the specified arguments."""
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to be called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'write' to be called once. Called 7 times.
+E           Calls: [call('{'),
+E            call('\n  '),
+E            call('"cookiecutter"'),
+E            call(': '),
+E            call('{}'),
+E            call('\n'),
+E            call('}')].
+
+/usr/local/lib/python3.10/unittest/mock.py:930: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+mock_make_sure_path_exists = <MagicMock name='make_sure_path_exists' id='140048259547040'>
+mock_get_file_name = <MagicMock name='get_file_name' id='140048267245984'>
+
+    def test_dump_success(mock_make_sure_path_exists, mock_get_file_name):
+        mock_make_sure_path_exists.return_value = True
+        mock_get_file_name.return_value = 'valid_dir/template.json'
+        m = mock_open()
+        with patch('builtins.open', m):
+            dump('valid_dir', 'template', {'cookiecutter': {}})
+        m.assert_called_once_with('valid_dir/template.json', 'w')
+        handle = m()
+>       handle.write.assert_called_once_with(json.dumps({'cookiecutter': {}}, indent=2))
+E       AssertionError: Expected 'write' to be called once. Called 7 times.
+E       Calls: [call('{'),
+E        call('\n  '),
+E        call('"cookiecutter"'),
+E        call(': '),
+E        call('{}'),
+E        call('\n'),
+E        call('}')].
+E       
+E       pytest introspection follows:
+E       
+E       Args:
+E       assert ('}',) == ('{\n  "cooki...ter": {}\n}',)
+E         At index 0 diff: '}' != '{\n  "cookiecutter": {}\n}'
+E         Use -v to get more diff
+
+coverup-tests/tmp_test_vuuz8a9t.py:45: AssertionError
+
+---- 2025-01-29T19:26:29 cookiecutter/prompt.py:171-229 ----
+{
+  "id": "chatcmpl-Av7zYgJ4TSffTm8FfjrVzUFN0KSPE",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport pytest\nfrom collections import OrderedDict\nfrom jinja2.exceptions import UndefinedError\nfrom cookiecutter.environment import StrictEnvironment\nfrom cookiecutter.exceptions import UndefinedVariableInTemplate\nfrom cookiecutter.prompt import prompt_for_config\nfrom cookiecutter.prompt import render_variable, prompt_choice_for_config, read_user_variable, read_user_dict\n\n@pytest.fixture\ndef mock_env(mocker):\n    return mocker.patch('cookiecutter.prompt.StrictEnvironment')\n\n@pytest.fixture\ndef mock_render_variable(mocker):\n    return mocker.patch('cookiecutter.prompt.render_variable')\n\n@pytest.fixture\ndef mock_prompt_choice_for_config(mocker):\n    return mocker.patch('cookiecutter.prompt.prompt_choice_for_config')\n\n@pytest.fixture\ndef mock_read_user_variable(mocker):\n    return mocker.patch('cookiecutter.prompt.read_user_variable')\n\n@pytest.fixture\ndef mock_read_user_dict(mocker):\n    return mocker.patch('cookiecutter.prompt.read_user_dict')\n\ndef test_prompt_for_config_handles_private_variables(mock_env):\n    context = {\n        'cookiecutter': {\n            '_private_var': 'private_value',\n            '__double_private_var': 'double_private_value'\n        }\n    }\n    result = prompt_for_config(context)\n    assert result['_private_var'] == 'private_value'\n    assert result['__double_private_var'] == 'double_private_value'\n\ndef test_prompt_for_config_handles_choice_variables(mock_env, mock_prompt_choice_for_config):\n    context = {\n        'cookiecutter': {\n            'choice_var': ['option1', 'option2']\n        }\n    }\n    mock_prompt_choice_for_config.return_value = 'option1'\n    result = prompt_for_config(context)\n    assert result['choice_var'] == 'option1'\n\ndef test_prompt_for_config_handles_regular_variables(mock_env, mock_render_variable, mock_read_user_variable):\n    context = {\n        'cookiecutter': {\n            'regular_var': 'default_value'\n        }\n    }\n    mock_render_variable.return_value = 'rendered_value'\n    mock_read_user_variable.return_value = 'user_value'\n    result = prompt_for_config(context)\n    assert result['regular_var'] == 'user_value'\n\ndef test_prompt_for_config_handles_dict_variables(mock_env, mock_render_variable, mock_read_user_dict):\n    context = {\n        'cookiecutter': {\n            'dict_var': {'key': 'value'}\n        }\n    }\n    mock_render_variable.return_value = {'key': 'rendered_value'}\n    mock_read_user_dict.return_value = {'key': 'user_value'}\n    result = prompt_for_config(context)\n    assert result['dict_var'] == {'key': 'user_value'}\n\ndef test_prompt_for_config_raises_undefined_variable_in_template(mock_env, mock_render_variable):\n    context = {\n        'cookiecutter': {\n            'undefined_var': '{{ cookiecutter.undefined }}'\n        }\n    }\n    mock_render_variable.side_effect = UndefinedError\n    with pytest.raises(UndefinedVariableInTemplate):\n        prompt_for_config(context)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178780,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 616,
+    "prompt_tokens": 2559,
+    "total_tokens": 3175,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:30 cookiecutter/prompt.py:171-229 ----
+Test failed:
+
+mock_env = <MagicMock name='StrictEnvironment' id='140045489160096'>
+
+    def test_prompt_for_config_handles_private_variables(mock_env):
+        context = {
+            'cookiecutter': {
+                '_private_var': 'private_value',
+                '__double_private_var': 'double_private_value'
+            }
+        }
+        result = prompt_for_config(context)
+        assert result['_private_var'] == 'private_value'
+>       assert result['__double_private_var'] == 'double_private_value'
+E       AssertionError: assert <MagicMock name='StrictEnvironment().from_string().render()' id='140045478993040'> == 'double_private_value'
+
+coverup-tests/tmp_test_b4mgasid.py:38: AssertionError
+
+---- 2025-01-29T19:26:33 cookiecutter/zipfile.py:13-112 ----
+{
+  "id": "chatcmpl-Av7zZdpPwZipfAsEAb3Tu7awWdERr",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "```python\nimport os\nimport tempfile\nimport pytest\nimport requests\nfrom zipfile import ZipFile, BadZipFile\nfrom unittest import mock\nfrom cookiecutter.exceptions import InvalidZipRepository\nfrom cookiecutter.zipfile import unzip\n\n@pytest.fixture\ndef mock_make_sure_path_exists(monkeypatch):\n    def mock_mkdir(path):\n        return True\n    monkeypatch.setattr('cookiecutter.utils.make_sure_path_exists', mock_mkdir)\n\n@pytest.fixture\ndef mock_prompt_and_delete(monkeypatch):\n    def mock_prompt(path, no_input):\n        return True\n    monkeypatch.setattr('cookiecutter.utils.prompt_and_delete', mock_prompt)\n\n@pytest.fixture\ndef mock_read_repo_password(monkeypatch):\n    def mock_password(question):\n        return \"password\"\n    monkeypatch.setattr('cookiecutter.prompt.read_repo_password', mock_password)\n\n@pytest.fixture\ndef mock_requests_get(monkeypatch):\n    class MockResponse:\n        def __init__(self, content):\n            self.content = content\n            self.iter_content = lambda chunk_size: [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]\n    def mock_get(url, stream=True):\n        return MockResponse(b\"Test content\")\n    monkeypatch.setattr(requests, 'get', mock_get)\n\ndef test_unzip_url(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get):\n    zip_uri = \"http://example.com/test.zip\"\n    is_url = True\n    clone_to_dir = tempfile.mkdtemp()\n    try:\n        result = unzip(zip_uri, is_url, clone_to_dir)\n        assert os.path.exists(result)\n    finally:\n        if os.path.exists(clone_to_dir):\n            os.rmdir(clone_to_dir)\n\ndef test_unzip_local_file(mock_make_sure_path_exists):\n    with tempfile.NamedTemporaryFile(suffix=\".zip\", delete=False) as tmp_file:\n        with ZipFile(tmp_file, 'w') as zipf:\n            zipf.writestr('testfile.txt', 'This is a test file')\n        zip_uri = tmp_file.name\n    is_url = False\n    clone_to_dir = tempfile.mkdtemp()\n    try:\n        result = unzip(zip_uri, is_url, clone_to_dir)\n        assert os.path.exists(result)\n    finally:\n        if os.path.exists(clone_to_dir):\n            os.rmdir(clone_to_dir)\n        if os.path.exists(zip_uri):\n            os.remove(zip_uri)\n\ndef test_unzip_invalid_zip(mock_make_sure_path_exists):\n    with tempfile.NamedTemporaryFile(suffix=\".zip\", delete=False) as tmp_file:\n        tmp_file.write(b\"Not a zip file\")\n        zip_uri = tmp_file.name\n    is_url = False\n    clone_to_dir = tempfile.mkdtemp()\n    try:\n        with pytest.raises(InvalidZipRepository):\n            unzip(zip_uri, is_url, clone_to_dir)\n    finally:\n        if os.path.exists(clone_to_dir):\n            os.rmdir(clone_to_dir)\n        if os.path.exists(zip_uri):\n            os.remove(zip_uri)\n\ndef test_unzip_password_protected(mock_make_sure_path_exists, mock_read_repo_password):\n    with tempfile.NamedTemporaryFile(suffix=\".zip\", delete=False) as tmp_file:\n        with ZipFile(tmp_file, 'w') as zipf:\n            zipf.setpassword(b\"password\")\n            zipf.writestr('testfile.txt', 'This is a test file')\n        zip_uri = tmp_file.name\n    is_url = False\n    clone_to_dir = tempfile.mkdtemp()\n    try:\n        result = unzip(zip_uri, is_url, clone_to_dir, password=\"password\")\n        assert os.path.exists(result)\n    finally:\n        if os.path.exists(clone_to_dir):\n            os.rmdir(clone_to_dir)\n        if os.path.exists(zip_uri):\n            os.remove(zip_uri)\n```",
+        "role": "assistant",
+        "tool_calls": null,
+        "function_call": null
+      }
+    }
+  ],
+  "created": 1738178781,
+  "model": "gpt-4o-2024-05-13",
+  "object": "chat.completion",
+  "system_fingerprint": "fp_14131b9034",
+  "usage": {
+    "completion_tokens": 807,
+    "prompt_tokens": 1902,
+    "total_tokens": 2709,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "service_tier": "default"
+}
+---- 2025-01-29T19:26:35 cookiecutter/zipfile.py:13-112 ----
+Test failed:
+
+zip_uri = 'http://example.com/test.zip', is_url = True
+clone_to_dir = '/tmp/tmpr2smhj_5', no_input = False, password = None
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+>           zip_file = ZipFile(zip_path)
+
+cookiecutter/zipfile.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>, file = '/tmp/tmpr2smhj_5/test.zip'
+mode = 'r', compression = 0, allowZip64 = True, compresslevel = None
+
+    def __init__(self, file, mode="r", compression=ZIP_STORED, allowZip64=True,
+                 compresslevel=None, *, strict_timestamps=True):
+        """Open the ZIP file with mode read 'r', write 'w', exclusive create 'x',
+        or append 'a'."""
+        if mode not in ('r', 'w', 'x', 'a'):
+            raise ValueError("ZipFile requires mode 'r', 'w', 'x', or 'a'")
+    
+        _check_compression(compression)
+    
+        self._allowZip64 = allowZip64
+        self._didModify = False
+        self.debug = 0  # Level of printing: 0 through 3
+        self.NameToInfo = {}    # Find file info given name
+        self.filelist = []      # List of ZipInfo instances for archive
+        self.compression = compression  # Method of compression
+        self.compresslevel = compresslevel
+        self.mode = mode
+        self.pwd = None
+        self._comment = b''
+        self._strict_timestamps = strict_timestamps
+    
+        # Check if we were passed a file-like object
+        if isinstance(file, os.PathLike):
+            file = os.fspath(file)
+        if isinstance(file, str):
+            # No, it's a filename
+            self._filePassed = 0
+            self.filename = file
+            modeDict = {'r' : 'rb', 'w': 'w+b', 'x': 'x+b', 'a' : 'r+b',
+                        'r+b': 'w+b', 'w+b': 'wb', 'x+b': 'xb'}
+            filemode = modeDict[mode]
+            while True:
+                try:
+                    self.fp = io.open(file, filemode)
+                except OSError:
+                    if filemode in modeDict:
+                        filemode = modeDict[filemode]
+                        continue
+                    raise
+                break
+        else:
+            self._filePassed = 1
+            self.fp = file
+            self.filename = getattr(file, 'name', None)
+        self._fileRefCnt = 1
+        self._lock = threading.RLock()
+        self._seekable = True
+        self._writing = False
+    
+        try:
+            if mode == 'r':
+>               self._RealGetContents()
+
+/usr/local/lib/python3.10/zipfile.py:1258: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <zipfile.ZipFile [closed]>
+
+    def _RealGetContents(self):
+        """Read in the table of contents for the ZIP file."""
+        fp = self.fp
+        try:
+            endrec = _EndRecData(fp)
+        except OSError:
+            raise BadZipFile("File is not a zip file")
+        if not endrec:
+>           raise BadZipFile("File is not a zip file")
+E           zipfile.BadZipFile: File is not a zip file
+
+/usr/local/lib/python3.10/zipfile.py:1325: BadZipFile
+
+During handling of the above exception, another exception occurred:
+
+mock_make_sure_path_exists = None, mock_prompt_and_delete = None
+mock_requests_get = None
+
+    def test_unzip_url(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get):
+        zip_uri = "http://example.com/test.zip"
+        is_url = True
+        clone_to_dir = tempfile.mkdtemp()
+        try:
+>           result = unzip(zip_uri, is_url, clone_to_dir)
+
+coverup-tests/tmp_test_be_y4ldd.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_uri = 'http://example.com/test.zip', is_url = True
+clone_to_dir = '/tmp/tmpr2smhj_5', no_input = False, password = None
+
+    def unzip(zip_uri, is_url, clone_to_dir='.', no_input=False, password=None):
+        """Download and unpack a zipfile at a given URI.
+    
+        This will download the zipfile to the cookiecutter repository,
+        and unpack into a temporary directory.
+    
+        :param zip_uri: The URI for the zipfile.
+        :param is_url: Is the zip URI a URL or a file?
+        :param clone_to_dir: The cookiecutter repository directory
+            to put the archive into.
+        :param no_input: Suppress any prompts
+        :param password: The password to use when unpacking the repository.
+        """
+        # Ensure that clone_to_dir exists
+        clone_to_dir = os.path.expanduser(clone_to_dir)
+        make_sure_path_exists(clone_to_dir)
+    
+        if is_url:
+            # Build the name of the cached zipfile,
+            # and prompt to delete if it already exists.
+            identifier = zip_uri.rsplit('/', 1)[1]
+            zip_path = os.path.join(clone_to_dir, identifier)
+    
+            if os.path.exists(zip_path):
+                download = prompt_and_delete(zip_path, no_input=no_input)
+            else:
+                download = True
+    
+            if download:
+                # (Re) download the zipfile
+                r = requests.get(zip_uri, stream=True)
+                with open(zip_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+        else:
+            # Just use the local zipfile as-is.
+            zip_path = os.path.abspath(zip_uri)
+    
+        # Now unpack the repository. The zipfile will be unpacked
+        # into a temporary directory
+        try:
+            zip_file = ZipFile(zip_path)
+    
+            if len(zip_file.namelist()) == 0:
+                raise InvalidZipRepository('Zip repository {} is empty'.format(zip_uri))
+    
+            # The first record in the zipfile should be the directory entry for
+            # the archive. If it isn't a directory, there's a problem.
+            first_filename = zip_file.namelist()[0]
+            if not first_filename.endswith('/'):
+                raise InvalidZipRepository(
+                    'Zip repository {} does not include '
+                    'a top-level directory'.format(zip_uri)
+                )
+    
+            # Construct the final target directory
+            project_name = first_filename[:-1]
+            unzip_base = tempfile.mkdtemp()
+            unzip_path = os.path.join(unzip_base, project_name)
+    
+            # Extract the zip file into the temporary directory
+            try:
+                zip_file.extractall(path=unzip_base)
+            except RuntimeError:
+                # File is password protected; try to get a password from the
+                # environment; if that doesn't work, ask the user.
+                if password is not None:
+                    try:
+                        zip_file.extractall(path=unzip_base, pwd=password.encode('utf-8'))
+                    except RuntimeError:
+                        raise InvalidZipRepository(
+                            'Invalid password provided for protected repository'
+                        )
+                elif no_input:
+                    raise InvalidZipRepository(
+                        'Unable to unlock password protected repository'
+                    )
+                else:
+                    retry = 0
+                    while retry is not None:
+                        try:
+                            password = read_repo_password('Repo password')
+                            zip_file.extractall(
+                                path=unzip_base, pwd=password.encode('utf-8')
+                            )
+                            retry = None
+                        except RuntimeError:
+                            retry += 1
+                            if retry == 3:
+                                raise InvalidZipRepository(
+                                    'Invalid password provided for protected repository'
+                                )
+    
+        except BadZipFile:
+>           raise InvalidZipRepository(
+                'Zip repository {} is not a valid zip archive:'.format(zip_uri)
+            )
+E           cookiecutter.exceptions.InvalidZipRepository: Zip repository http://example.com/test.zip is not a valid zip archive:
+
+cookiecutter/zipfile.py:108: InvalidZipRepository
+
+During handling of the above exception, another exception occurred:
+
+mock_make_sure_path_exists = None, mock_prompt_and_delete = None
+mock_requests_get = None
+
+    def test_unzip_url(mock_make_sure_path_exists, mock_prompt_and_delete, mock_requests_get):
+        zip_uri = "http://example.com/test.zip"
+        is_url = True
+        clone_to_dir = tempfile.mkdtemp()
+        try:
+            result = unzip(zip_uri, is_url, clone_to_dir)
+            assert os.path.exists(result)
+        finally:
+            if os.path.exists(clone_to_dir):
+>               os.rmdir(clone_to_dir)
+E               OSError: [Errno 39] Directory not empty: '/tmp/tmpr2smhj_5'
+
+coverup-tests/tmp_test_be_y4ldd.py:47: OSError
+

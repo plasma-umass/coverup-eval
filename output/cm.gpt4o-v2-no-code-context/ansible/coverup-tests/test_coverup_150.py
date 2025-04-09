@@ -1,0 +1,58 @@
+# file: lib/ansible/module_utils/facts/network/linux.py:47-62
+# asked: {"lines": [47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62], "branches": [[50, 51], [50, 52], [56, 57], [56, 58]]}
+# gained: {"lines": [47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62], "branches": [[50, 51], [50, 52], [56, 57], [56, 58]]}
+
+import pytest
+from unittest.mock import MagicMock, patch
+
+# Assuming the LinuxNetwork class is imported from ansible/module_utils/facts/network/linux.py
+from ansible.module_utils.facts.network.linux import LinuxNetwork
+
+@pytest.fixture
+def linux_network():
+    return LinuxNetwork(module=MagicMock())
+
+def test_populate_no_ip_path(linux_network):
+    linux_network.module.get_bin_path = MagicMock(return_value=None)
+    result = linux_network.populate()
+    assert result == {}
+
+def test_populate_with_ip_path(linux_network):
+    ip_path = '/sbin/ip'
+    linux_network.module.get_bin_path = MagicMock(return_value=ip_path)
+    linux_network.get_default_interfaces = MagicMock(return_value=('eth0', 'eth1'))
+    linux_network.get_interfaces_info = MagicMock(return_value=(
+        {'eth0': {'some': 'info'}, 'eth1': {'some': 'info'}},
+        {'all_ipv4_addresses': ['192.168.1.1'], 'all_ipv6_addresses': ['fe80::1']}
+    ))
+
+    result = linux_network.populate()
+
+    assert 'interfaces' in result
+    assert 'eth0' in result
+    assert 'eth1' in result
+    assert result['default_ipv4'] == 'eth0'
+    assert result['default_ipv6'] == 'eth1'
+    assert result['all_ipv4_addresses'] == ['192.168.1.1']
+    assert result['all_ipv6_addresses'] == ['fe80::1']
+
+@pytest.mark.parametrize("default_ipv4, default_ipv6, interfaces, ips", [
+    ('eth0', 'eth1', {'eth0': {'some': 'info'}, 'eth1': {'some': 'info'}}, {'all_ipv4_addresses': ['192.168.1.1'], 'all_ipv6_addresses': ['fe80::1']}),
+    ('eth2', 'eth3', {'eth2': {'some': 'info'}, 'eth3': {'some': 'info'}}, {'all_ipv4_addresses': ['10.0.0.1'], 'all_ipv6_addresses': ['fe80::2']}),
+])
+def test_populate_various_cases(linux_network, default_ipv4, default_ipv6, interfaces, ips):
+    ip_path = '/sbin/ip'
+    linux_network.module.get_bin_path = MagicMock(return_value=ip_path)
+    linux_network.get_default_interfaces = MagicMock(return_value=(default_ipv4, default_ipv6))
+    linux_network.get_interfaces_info = MagicMock(return_value=(interfaces, ips))
+
+    result = linux_network.populate()
+
+    assert 'interfaces' in result
+    for iface in interfaces:
+        assert iface in result
+        assert result[iface] == interfaces[iface]
+    assert result['default_ipv4'] == default_ipv4
+    assert result['default_ipv6'] == default_ipv6
+    assert result['all_ipv4_addresses'] == ips['all_ipv4_addresses']
+    assert result['all_ipv6_addresses'] == ips['all_ipv6_addresses']

@@ -1,0 +1,15 @@
+# file: pypara/monetary.py:783-793
+# asked: {"lines": [793], "branches": []}
+# gained: {"lines": [793], "branches": []}
+
+import pytest
+from pypara.monetary import Price
+
+def test_price_as_boolean_not_implemented():
+    class TestPrice(Price):
+        pass
+
+    test_price = TestPrice()
+    
+    with pytest.raises(NotImplementedError):
+        test_price.as_boolean()

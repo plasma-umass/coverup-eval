@@ -1,0 +1,11 @@
+# file: typesystem/tokenize/tokens.py:18-19
+# asked: {"lines": [18, 19], "branches": []}
+# gained: {"lines": [18, 19], "branches": []}
+
+import pytest
+from typesystem.tokenize.tokens import Token
+
+def test_get_child_token_raises_not_implemented_error():
+    token = Token(value="test", start_index=0, end_index=1)
+    with pytest.raises(NotImplementedError):
+        token._get_child_token("some_key")

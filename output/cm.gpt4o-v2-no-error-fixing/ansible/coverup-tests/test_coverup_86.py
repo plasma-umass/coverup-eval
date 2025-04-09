@@ -1,0 +1,32 @@
+# file: lib/ansible/module_utils/common/arg_spec.py:94-140
+# asked: {"lines": [94, 95, 96, 97, 98, 99, 127, 128, 129, 130, 131, 132, 133, 135, 136, 137, 138, 140], "branches": [[135, 0], [135, 136], [137, 138], [137, 140]]}
+# gained: {"lines": [94, 95, 96, 97, 98, 99, 127, 128, 129, 130, 131, 132, 133, 135, 136, 137, 138, 140], "branches": [[135, 0], [135, 136], [137, 138], [137, 140]]}
+
+import pytest
+from ansible.module_utils.common.arg_spec import ArgumentSpecValidator
+
+def test_argument_spec_validator_init_with_aliases():
+    argument_spec = {
+        'param1': {'type': 'str', 'aliases': ['p1', 'param_one']},
+        'param2': {'type': 'int'}
+    }
+    validator = ArgumentSpecValidator(argument_spec)
+    
+    assert 'param1 (p1, param_one)' in validator._valid_parameter_names
+    assert 'param2' in validator._valid_parameter_names
+
+def test_argument_spec_validator_init_without_aliases():
+    argument_spec = {
+        'param1': {'type': 'str'},
+        'param2': {'type': 'int'}
+    }
+    validator = ArgumentSpecValidator(argument_spec)
+    
+    assert 'param1' in validator._valid_parameter_names
+    assert 'param2' in validator._valid_parameter_names
+
+def test_argument_spec_validator_init_with_empty_spec():
+    argument_spec = {}
+    validator = ArgumentSpecValidator(argument_spec)
+    
+    assert len(validator._valid_parameter_names) == 0

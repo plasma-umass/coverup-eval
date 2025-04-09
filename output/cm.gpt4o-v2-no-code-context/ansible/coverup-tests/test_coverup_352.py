@@ -1,0 +1,22 @@
+# file: lib/ansible/module_utils/compat/version.py:158-167
+# asked: {"lines": [158, 159, 160, 162, 164, 165, 167], "branches": [[159, 160], [159, 162], [164, 165], [164, 167]]}
+# gained: {"lines": [158, 159, 160, 162, 164, 165, 167], "branches": [[159, 160], [159, 162], [164, 165], [164, 167]]}
+
+import pytest
+from ansible.module_utils.compat.version import StrictVersion
+
+def test_strict_version_str_no_patch():
+    version = StrictVersion('1.2')
+    assert str(version) == '1.2'
+
+def test_strict_version_str_with_patch():
+    version = StrictVersion('1.2.3')
+    assert str(version) == '1.2.3'
+
+def test_strict_version_str_with_prerelease():
+    version = StrictVersion('1.2.3a1')
+    assert str(version) == '1.2.3a1'
+
+def test_strict_version_str_no_patch_with_prerelease():
+    version = StrictVersion('1.2a1')
+    assert str(version) == '1.2a1'

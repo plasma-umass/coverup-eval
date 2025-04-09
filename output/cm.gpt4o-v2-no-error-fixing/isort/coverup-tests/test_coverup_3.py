@@ -1,0 +1,14 @@
+# file: isort/exceptions.py:63-71
+# asked: {"lines": [63, 64, 66, 67, 68, 70], "branches": []}
+# gained: {"lines": [63, 64, 66, 67, 68, 70], "branches": []}
+
+import pytest
+from isort.exceptions import FileSkipSetting
+
+def test_FileSkipSetting():
+    file_path = "test_file.py"
+    exception = FileSkipSetting(file_path)
+    
+    assert isinstance(exception, FileSkipSetting)
+    assert str(exception) == f"{file_path} was skipped as it's listed in 'skip' setting or matches a glob in 'skip_glob' setting"
+    assert exception.file_path == file_path

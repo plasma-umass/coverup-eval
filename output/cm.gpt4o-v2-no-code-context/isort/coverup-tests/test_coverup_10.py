@@ -1,0 +1,23 @@
+# file: isort/exceptions.py:46-51
+# asked: {"lines": [46, 47, 49, 50, 51], "branches": []}
+# gained: {"lines": [46, 47, 49], "branches": []}
+
+import pytest
+from isort.exceptions import ISortError
+
+class FileSkipped(ISortError):
+    """Should be raised when a file is skipped for any reason"""
+    
+    def __init__(self, message: str, file_path: str):
+        super().__init__(message)
+        self.file_path = file_path
+
+def test_file_skipped_exception():
+    message = "File was skipped"
+    file_path = "/path/to/skipped/file"
+    
+    exception = FileSkipped(message, file_path)
+    
+    assert isinstance(exception, FileSkipped)
+    assert str(exception) == message
+    assert exception.file_path == file_path

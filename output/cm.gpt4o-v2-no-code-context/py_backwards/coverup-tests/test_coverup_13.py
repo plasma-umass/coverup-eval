@@ -1,0 +1,25 @@
+# file: py_backwards/conf.py:12-14
+# asked: {"lines": [12, 13, 14], "branches": [[13, 0], [13, 14]]}
+# gained: {"lines": [12, 13, 14], "branches": [[13, 0], [13, 14]]}
+
+import pytest
+from argparse import Namespace
+from py_backwards import conf
+
+def test_init_settings_debug_true(monkeypatch):
+    class MockSettings:
+        debug = False
+
+    monkeypatch.setattr(conf, 'settings', MockSettings)
+    args = Namespace(debug=True)
+    conf.init_settings(args)
+    assert conf.settings.debug is True
+
+def test_init_settings_debug_false(monkeypatch):
+    class MockSettings:
+        debug = False
+
+    monkeypatch.setattr(conf, 'settings', MockSettings)
+    args = Namespace(debug=False)
+    conf.init_settings(args)
+    assert conf.settings.debug is False
