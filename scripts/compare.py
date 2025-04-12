@@ -18,10 +18,11 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['cm', 'good', '1_0', 'mutap'], default='cm',
+    ap.add_argument('--suite', choices=['cm', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
-    ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use for the first CoverUp')
+    ap.add_argument('--config', type=str, default='gpt4o-v2',
+                    help='specify a configuration to use for the first CoverUp')
 
     def other_system(value):
         coda_choices = [f'codamosa-{r}' for r in ['codex', 'gpt4', 'gpt4o']]
