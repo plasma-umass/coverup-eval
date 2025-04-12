@@ -24,7 +24,7 @@ def parse_args():
     ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use for the first CoverUp')
 
     def other_system(value):
-        coda_choices = [f'codamosa-{r}' for r in ['codex', 'codex-isolated', 'gpt4', 'gpt4-isolated', 'gpt4o']]
+        coda_choices = [f'codamosa-{r}' for r in ['codex', 'gpt4', 'gpt4o']]
         if not (value.startswith('coverup-') or value.startswith('mutap-') or value in coda_choices):
             raise argparse.ArgumentTypeError(f'invalid choice: select {", ".join(coda_choices)} or coverup-..config..')
         return value
@@ -194,21 +194,22 @@ def load_codamosa(suite, coda_config):
     # list of per-file summaries
     data = defaultdict(list)
 
-    for f in config_output_dir.iterdir():
-        m = re.match('(.*?)-\d+', f.name)
-        module = m.group(1)
-        file = module.replace('.','/') + ".py"
+    for m in suite['modules']:
+        module = m['name']
 
-        with f.open() as jsonf:
-            try:
-                cov = json.load(jsonf)
-            except json.decoder.JSONDecodeError as e:
-                print(f"*** Error reading {str(f)}: {e}")
-                continue
+        for f in config_output_dir.glob(f"{module}-*.json"):
+            file = module.replace('.','/') + ".py"
 
-        assert file in cov['files']
-        if file in cov['files']:
-            data[module].append(cov['files'][file]['summary'])
+            with f.open() as jsonf:
+                try:
+                    cov = json.load(jsonf)
+                except json.decoder.JSONDecodeError as e:
+                    print(f"*** Error reading {str(f)}: {e}")
+                    continue
+
+            assert file in cov['files']
+            if file in cov['files']:
+                data[module].append(cov['files'][file]['summary'])
 
     return {
         "name": f"CodaMosa ({coda_config})",
@@ -276,8 +277,22 @@ if __name__ == "__main__":
     else:
         datasets.append(load_coverup(suite, second_config, args.ckpt))
 
-#    module_names = sorted(datasets[0]['data'].keys() | datasets[1]['data'].keys())
-    module_names = sorted(datasets[0]['data'].keys() & datasets[1]['data'].keys())
+    module_names = set(datasets[0]['data'].keys() | datasets[1]['data'].keys())
+#    module_names = sorted(datasets[0]['data'].keys() & datasets[1]['data'].keys())
+    if (missing_in_0 := module_names - datasets[0]['data'].keys()):
+        print(f"Dataset lacks some modules: {missing_in_0}")
+        sys.exit(1)
+
+    if (missing_in_1 := module_names - datasets[1]['data'].keys()):
+        for module in missing_in_1:
+            print(f"Apparent test generation failure for {module}")
+            ds_0 = datasets[0]['data'][module][0]
+            datasets[1]['data'][module].append({
+                'covered_lines': 0,
+                'covered_branches': 0,
+                'missing_lines': ds_0['covered_lines'] + ds_0['missing_lines'],
+                'missing_branches': ds_0['covered_branches'] + ds_0['missing_branches'],
+            })
 
     # compute lines+branches coverage for easy access
     coverage_lb = []
@@ -410,6 +425,7 @@ if __name__ == "__main__":
 
         first_system = None
 
+        table_rows = []
         for ds in datasets:
             name = ds['name']
             dataset = ds['data']
@@ -423,29 +439,23 @@ if __name__ == "__main__":
             numbers_1 = []
             numbers_2 = []
 
-            print("")
-            for metrics in [['lines'], ['branches'], ['lines','branches']]:
-                label = '+'.join(metrics)
-                short_label = '+'.join(m[0] for m in metrics)
-
-                data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in module_names]
-                data = [d for d in data if d is not None]
-
-                print(f"{name + ' ' + short_label + ':':30} {len(data):3} benchmarks, {mean(data):.1f}% mean, " +\
-                      f"{median(data):.1f}% median, {min(data):.1f}% min, {max(data):.1f}% max, " +\
-                      f"{sum(c==100 for c in data)} @ 100%")
-
-                numbers_2.append(median(data))
+            row = [name]
 
             for metrics in [['lines'], ['branches'], ['lines','branches']]:
-                short_label = '+'.join(m[0] for m in metrics)
                 covered = sum(sample[f'covered_{metric}'] for metric in metrics for m in module_names for sample in dataset[m])
                 total = covered + sum(sample[f'missing_{metric}'] for metric in metrics for m in module_names for sample in dataset[m])
 
-                pct = f"{100*covered/total:.1f}%  " if total>0 else ""
-                print(f"   overall {short_label+':':6} {pct}({covered}/{total})")
-
+                row.append(f"{100*covered/total:.1f}")
                 numbers_1.append(100*covered/total)
+
+            for metrics in [['lines'], ['branches'], ['lines','branches']]:
+                data = [mean_of(cover_pct(sample, metrics) for sample in dataset[m]) for m in module_names]
+                data = [d for d in data if d is not None]
+
+                row.append(f"{median(data):.1f}")
+                numbers_2.append(median(data))
+
+            table_rows.append(row)
 
             if args.latex:
                 print()
@@ -454,10 +464,13 @@ if __name__ == "__main__":
                     print(' & '.join([f"\\pct{{{b-a:.1f}}}" for a, b in zip(first_system, numbers_1 + numbers_2)]), "\\\\")
 
             if args.array:
-                print(f"'{name}': {numbers_1 + numbers_2}")
+                print(f"'{name}': {[round(n,1) for n in numbers_1 + numbers_2]}")
 
             if not first_system:
                 first_system = numbers_1 + numbers_2
+
+        print()
+        print(tabulate(table_rows, headers=["generator", "overall l %", "overall b %", "overall l+b %", "per-mod l %", "per-mod b %", "per-mod l+b %"]))
 
         better_count = sum([v > 0 for v in cov_delta])
         worse_count = sum([v < 0 for v in cov_delta])
