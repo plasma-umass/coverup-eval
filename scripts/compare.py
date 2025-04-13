@@ -30,7 +30,7 @@ def parse_args():
             raise argparse.ArgumentTypeError(f'invalid choice: select {", ".join(coda_choices)} or coverup-..config..')
         return value
 
-    ap.add_argument('--compare-to', '--to', type=other_system, default='codamosa-gpt4',
+    ap.add_argument('--compare-to', '--to', type=other_system, default='codamosa-gpt4o',
                     help='select what to compare to')
 
     ap.add_argument('--ckpt', type=str,
