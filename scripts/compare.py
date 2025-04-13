@@ -26,8 +26,14 @@ def parse_args():
 
     def other_system(value):
         coda_choices = [f'codamosa-{r}' for r in ['codex', 'gpt4', 'gpt4o']]
-        if not (value.startswith('coverup-') or value.startswith('mutap-') or value in coda_choices):
-            raise argparse.ArgumentTypeError(f'invalid choice: select {", ".join(coda_choices)} or coverup-..config..')
+        mutap_choices = [f'mutap-{r}' for r in [
+            'Codex_few_augmented_test',
+            'Codex_zero_augmented_test',
+            'gpt4o_few_augmented_test',
+            'gpt4o_zero_augmented_test',
+        ]]
+        if not (value.startswith('coverup-') or value in coda_choices + mutap_choices):
+            raise argparse.ArgumentTypeError(f'invalid choice: select coverup-..config.. or {", ".join(coda_choices + mutap_choices)}')
         return value
 
     ap.add_argument('--compare-to', '--to', type=other_system, default='codamosa-gpt4o',
@@ -172,7 +178,8 @@ def load_mutap(suite, config = None):
         file = [n for n in cov['files'] if Path(n).name == 'm.py']
         assert len(file) < 2
 
-        assert file, f"m.py missing in {cov_file}"
+        if not (config_output_dir / f"{m_num}.failure").exists():
+            assert file, f"m.py missing in {cov_file}"
         if file:
             file = file[0]
             data[m_name].append(cov['files'][file]['summary'])
