@@ -27,10 +27,10 @@ def parse_args():
     def other_system(value):
         coda_choices = [f'codamosa-{r}' for r in ['codex', 'gpt4', 'gpt4o']]
         mutap_choices = [f'mutap-{r}' for r in [
-            'Codex_few_augmented_test',
-            'Codex_zero_augmented_test',
-            'gpt4o_few_augmented_test',
-            'gpt4o_zero_augmented_test',
+            'Codex_few',
+            'Codex_zero',
+            'gpt4o_few',
+            'gpt4o_zero',
         ]]
         if not (value.startswith('coverup-') or value in coda_choices + mutap_choices):
             raise argparse.ArgumentTypeError(f'invalid choice: select coverup-..config.. or {", ".join(coda_choices + mutap_choices)}')
@@ -154,11 +154,12 @@ def load_coverup(suite, config, ckpt):
     }
 
 
-def load_mutap(suite, config = None):
+def load_mutap(suite, config):
     # per-module dictonary -> list of [coverage 'summary']
     data = defaultdict(list)
+    assert config
 
-    config_output_dir = mutap_output / (config if config else 'Codex_few_augmented')
+    config_output_dir = mutap_output / f"{config}_augmented_test"
 
     if not config_output_dir.exists():
         print(f"Cannot load data: directory {config_output_dir} missing")
