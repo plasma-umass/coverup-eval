@@ -5,7 +5,7 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', '1_0', 'mutap'], default='good',
+    ap.add_argument('--suite', choices=['cm', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
     ap.add_argument('--skip-package', action='append', default=[], help='skip given package')
@@ -37,4 +37,4 @@ for pkg_top, pkg in suite.items():
 
         functions += count_functions(file.read_text())
 
-print(f"{functions} functions, {lines} lines in {files} files.")
+print(f"Suite {args.suite} has {functions} functions, {lines} lines in {files} files.")
