@@ -147,3 +147,41 @@ This directory contains the original CodaMosa replication data, as well as other
 ```
     python3 scripts/eval_coverup.py --config your-new-model >coverup-your-new-model.log 2>&1 &
 ```
+
+## Replicating Results
+> [!NOTE]
+> XXX add note about cost and time XXX
+> XXX add note that steps are rough XXX
+
+### Running CoverUp:
+- enter OpenAI key in `config/common.sh`; see `config/common.EXAMPLE.sh` for an example.
+- for each configuration C in `gpt4o-v2`, `gpt4o-v2-ablated`,  ... (see `config/gpt4o-v2*`), execute, replacing C:
+  - remove existing output: `rm -rf output/cm.C`
+  - run CoverUp: `python3 scripts/eval_coverup.py --config C`
+- run CoverUp on suite PY (known as "1_0" in the repository):
+  - remove existing output: `rm -rf output/1_0.gpt4o-v2`
+  - run CoverUp: `python3 scripts/eval_coverup.py --config gpt4o-v2 --suite 1_0`
+- run CoverUp on suite MT (known as "mutap" in the repository):
+  - remove existing output: `rm -rf output/mutap.gpt4o-v2`
+  - run CoverUp: `python3 scripts/eval_coverup.py --config gpt4o-v2 --suite mutap`
+
+### Running CodaMosa:
+- execute `source config/common.sh` to load the OpenAI key (from above) as an environment variable
+- `pushd codamosa/replication`
+- delete previous results: `rm -rf output-* gpt4*-coda`
+- run CodaMosa using GPT-4o: `python3 run_codamosa.py`
+- measure coverage for CodaMosa (gpt4o): `python3 eval_codamosa.py --codamosa-results gpt4o`
+- measure coverage for CodaMosa (codex): `python3 eval_codamosa.py --codamosa-results codex`
+- `popd`
+
+### Running MuTAP:
+- if not already done, execute `source config/common.sh` to load the OpenAI key (from above) as an environment variable
+- remove old results: `rm -rf MuTAP-results/*`
+- `pushd MuTAP`
+- run MuTAP: `bash run.sh`
+- measure coverage for MuTAP with Codex: `python3 eval.py --llm Codex --run ../MuTAP-results`
+- measure coverage for MuTAP with gpt4o: `python3 eval.py --llm gpt4o --run ../MuTAP-results`
+- `popd`
+
+### Extracting Results
+TODO
