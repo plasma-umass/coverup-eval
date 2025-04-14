@@ -1,46 +1,118 @@
 # CoverUp Replication Package
-This artifact accompanies the [FSE'25](https://conf.researchr.org/home/fse-2025) accepted paper,
-"CoverUp: Effective High Coverage Test Generation for Python"
-by Juan Altmayer Pizzorno <jpizzorno@cs.umass.edu> and Emery D. Berger <emery@cs.umass.edu>.
+This artifact accompanies the [FSE'25](https://conf.researchr.org/home/fse-2025) accepted paper
 
-## Table of Contents
-- README.md (this document) contains general and usage information for this artifact;
-- [LICENSE] describes distribution rights;
+Juan Altmayer Pizzorno and Emery D. Berger. 2025. <b>CoverUp: Effective High Coverage Test Generation for Python.</b> <em>Proc. ACM Softw. Eng. 2</em>, FSE, Article FSE128 (July 2025), 23 pages. https://doi.org/10.1145/3729398.
+
+It contains materials used in the evaluation of CoverUp, including modified versions of other packages and experimental results.
+If you are only looking to use CoverUp, please see its [repository on GitHub](https://github.com/plasma-umass/coverup) instead.
+
+## License
+The [Apache license](LICENSE) applies to all CoverUp materials as well as the author's modifications;
+See CodaMosa, Pynguin (on which CodaMosa is based), and MuTAP for their respective licenses.
 
 ## Requirements
-CoverUp has its own [repository on GitHub](https://github.com/plasma-umass/coverup);
-If you are only looking to use it, please follow the instructions on that repository.
-
-The evaluation scripts require Python 3.10+.
-Running CoverUp on the evaluation suites requires Docker; all instructions assume a Linux system.
+Python3.10+ and, to run CoverUp or CodaMosa on the CM or PY suites, a Linux system with Docker.
+See [requirements.txt](requirements.txt) for Python module requirements.
 
 ## Obtaining a Local Copy
+This repository includes [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
+When cloning it, you should pass in the `--recurse-submodules` option, as in:
 ```
     git clone --recurse-submodules git@github.com:plasma-umass/coverup-eval
     cd coverup-eval
 ```
 
-# Understanding Configurations and Suites
-CoverUp's evaluation compares it to CodaMosa and MuTAP
-TODO explain configurations, suites, etc.
+## Guide to Files and Directories
+The main directories are:
+- [coverup](coverup): a submodule copy of CoverUp;
+- [codamosa](codamosa):
+a submodule fork of [CodaMosa](https://github.com/microsoft/codamosa), modified to use OpenAI's chat API.
+Also contains original CodaMosa replication data, the CM and PY benchmark suites, and new configuration and experimental results;
+- [MuTAP](MuTAP):
+a submodule fork of [MuTAP](https://github.com/ExpertiseModel/MuTAP), modified to use OpenAI's chat API.
+- [config](config): various CoverUp configurations used in evaluation;
+- [docker](docker): Docker image, based on that of CodaMosa, used for evaluating CoverUp;
+- [output](output): CoverUp experimental results;
+- [scripts](scripts): various small programs used to run CoverUp and extract results;
+- [MuTAP-benchmarks](MuTAP-benchmarks):
+the MT benchmark suite, extracted from MuTAP and reorganized as modules to facilitate use with CoverUp;
+- [MuTAP-results](MuTAP-results):
+coverage results from running MuTAP-generated tests;
+- [cache](cache): cache directory used by some scripts to speed up execution.
 
-## Viewing Results
-- Use `scripts/compare.py` to compare CoverUp results to a second system.
-The first system must always be CoverUp, but you can select its configuration with `--config`.
-Specify the system to compare against using `--to` and the evaluation suite with `--suite`.
+### config
+This directory contains configuration shell scripts that provide options for the various CoverUp runs.
+For example, the main CoverUp results used `gpt4o-v2`, which selects (a specific version of) the GPT-4o model and uses CoverUp's "v2" prompt.
+The fully ablated results used instead the `gpt4o-v2-ablated` configuration, etc.
 
-- check the results, for example, with
+The script `common.sh` is used with all configurations, and is useful, for example, for providing an API key;
+`common.EXAMPLE.sh` provides an example.
+
+### scripts
+There are various programs in `scripts`:
+- `compare.py`: compares coverage results (used in RQ1, RQ2 and RQ5).
+It always compares CoverUp results to those of another system, which may be CodaMosa, MuTAP or CoverUp itself.
+Usage examples:
 ```
-    python3 scripts/compare.py --config your-new-model
+python3 scripts/compare.py --to codamosa-gpt4o                 # or codamosa-codex
+python3 scripts/compare.py --to coverup-gpt4o-v2-ablated
+python3 scripts/compare.py --suite mutap --to mutap-Codex_zero # or mutap-gp4o_zero, etc.
+python3 scripts/compare.py --suite 1_0                         # "1_0" is suite PY
 ```
+- `cost.py`: estimates cost of running (used in RQ4).
+Usage examples:
+```
+python3 scripts/cost.py --config gpt4o-v2-ablated
+python3 scripts/cost.py --system codamosa --config gpt4o
+```
+- `time.py`: estimates running time for CoverUp (used in RQ4).
+Usage example:
+```
+python3 scripts/cost.py --config gpt4o-v2-ablated
+```
+- `sequences.py`: evaluates execution sequences (used in RQ3).
+Usage example:
+```
+python3 scripts/sequences.py --config gpt4o-v2
+```
+- `eval_coverup.py`: runs CoverUp in a docker container.
+Before running this script, load the image from `docker/coverup-runner.tar.bz2` into Docker.
+Usage example:
+```
+python3 scripts/eval_coverup --config my-new-config
+```
+- `run_coverup.sh`: runs CoverUp in the container when started by `eval_coverup.py`.
+- `get_test_coverage.sh`: used by `eval_coverup.py` to measure per-test coverage.
 
-`compare.py` compares two systems.
-It assumes that the first one is CoverUp (with GPT-4o),
-but you can change that one's configuration using `--config`.
-By default, it compares `--to codamosa-gpt4o`,
-but you can have it compare to any `coverup-...` where `...` is the configuration name.
+- `function-by-run.py`: computes the test functions that are effective in increasing coverage added per run (used in RQ5).
+Usage example:
+```
+python3 scripts/function-by-run.py gpt4o-v2 gpt4o-v2-no-coverage
+```
+- `suite-stats.py`: counts the number of functions, lines and files in one of our benchmark suites.
 
-## Running CoverUp's Evaluation on a New (or Existing) Configuration
+### `codamosa/replication`
+This directory contains the original CodaMosa replication data, as well as other files for CoverUp.
+
+- `config-args/gpt4o`: contains the CodaMosa configuration for running with GPT-4o;
+- `docker-images/gpt4-coda-runner.tar.bz2`: Docker image used to run CodaMosa;
+- `docker-images/slipcover-runner.tar.bz2`: Docker image used to run CodaMosa tests, measuring coverage;
+- `run_codamosa.py`: script to execute CodaMosa on its "good" modules, a superset of suite CM;
+- `eval_codamosa.py`: script to run CodaMosa tests, measuring covege;
+- `run_coda_tests.sh`: used by `eval_codamosa.py`;
+- `get_1_0_modules.sh`: used to create suite PY;
+- `gen_1_0_modules.sh`: used to create suite PY;
+- `test-apps`: modules used to benchmark CodaMosa and CoverUp;
+- `test-apps/good_modules.csv`: a set of modules used to evalute CodaMosa;
+- `test-apps/cm_modules.csv`: defines suite CM;
+- `test-apps/1_0_modules.csv`: defines suite PY;
+- `gpt4-coda`: output from running CodaMosa with GPT-4 (not used on the paper);
+- `gpt4o-coda`: output from running CodaMosa with GPT-4o (Codamosa (gpt4o));
+- `output-codex`: coverage measurements for Codamosa (codex);
+- `output-gpt4`: coverage measurements for Codamosa on GPT-4 (not used on the paper);
+- `output-gpt4o`: coverage measurements for Codamosa (gpt4o);
+
+## Running CoverUp's Evaluation on a New Configuration
 - Set up pip cache (to speed up module installations)
 ```
     mkdir pip-cache
@@ -53,12 +125,13 @@ but you can have it compare to any `coverup-...` where `...` is the configuratio
     docker load <docker/coverup-runner.tar
 ```
 
-- Add any keys needed (from OpenAI or elsewhere) to `config/common.sh` or `your-new-model.sh` below. `config/common.sh` is always included and is in `.gitignore` to help avoid checking it in by mistake.
+- Add any keys needed (from OpenAI or elsewhere) to `config/common.sh` or `your-new-model.sh` below.
+`config/common.sh` is always included and is in `.gitignore` to help avoid checking it in by mistake.
 ```
     vim config/common.sh
 ```
 
-- Create a new configuration. This will be a new file; see `config/default.sh` for an example
+- Create a new configuration. This will be a new file; see `config/gpt4o-v2.sh` for an example
 ```
     echo COVERUP_ARGS=\"--model your-new-model\" > config/your-new-model.sh
 ```
