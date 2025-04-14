@@ -2,6 +2,7 @@ from pathlib import Path
 import json
 from coverup.logreader import parse_log_raw
 from sequences import get_coverup_logs
+from compare import load_suite
 import re
 import litellm
 from tqdm import tqdm
@@ -10,18 +11,12 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['cm', 'good', '1_0', 'mutap'], default='cm',
+    ap.add_argument('--suite', choices=['cm', '1_0'], default='cm',
                     help='suite of modules to compare')
 
-    ap.add_argument('--coda', default=False,
-                    action=argparse.BooleanOptionalAction,
-                    help='show likely CodaMosa costs')
+    ap.add_argument('--system', choices=['coverup', 'codamosa'], default='coverup', required=False)
+    ap.add_argument('--config', type=str, default='gpt4o-v2', required=False)
 
-    ap.add_argument('--mutap', default=False,
-                    action=argparse.BooleanOptionalAction,
-                    help='show MuTAP costs')
-
-    ap.add_argument('--config', type=str, default='gpt4o-v2', help='specify a (non-default) configuration to use')
     return ap.parse_args()
 
 
@@ -39,22 +34,6 @@ def coverup_log(log_content: str):
                 completion_tokens += j['usage']['completion_tokens']
             else:
                 prompts += 1
-
-    return (model, prompts, completions, prompt_tokens, completion_tokens)
-
-
-def mutap_log(log_content: str):
-    model = None
-    prompts = completions = prompt_tokens = completion_tokens = 0
-
-    for line in log_content.splitlines():
-        j = json.loads(line)
-        if 'choices' in j:
-            completions += 1
-            prompts += 1
-            model = j['model']
-            prompt_tokens += j['usage']['prompt_tokens']
-            completion_tokens += j['usage']['completion_tokens']
 
     return (model, prompts, completions, prompt_tokens, completion_tokens)
 
@@ -88,38 +67,40 @@ def coda_completions(model:str, content: str):
 def count_beans():
     args = parse_args()
 
+    print(f"Estimating cost for {args.system} {args.config}")
+
     model = None
     total_prompts = 0
     total_completions = 0
     total_prompt_tokens = 0
     total_completion_tokens = 0
 
-    if args.coda or args.mutap:
-        if args.coda:
-            path = Path('codamosa/replication') / f"{args.config}-coda"
-            glob = "*/llm_prompts.txt"
-        else:
-            path = Path('MuTAP-results') / args.config
-            glob = "completions.jsonl"
+    if args.system == 'codamosa':
+        suite_base_modules = {m['base_module'] for m in load_suite(args.suite)['modules']}
+
+        path = Path('codamosa/replication') / f"{args.config}-coda"
+        glob = "*/llm_prompts.txt"
 
         if not path.exists():
             print(f"{path} doesn't exist")
             return
 
-        files = ((f, f.relative_to(path)) for f in path.glob(glob))
+        files = (
+            (f, f.relative_to(path))
+            for f in path.glob(glob)
+            if str(f.parts[3]).split('.')[0] in suite_base_modules
+        )
     else:
         files = get_coverup_logs(args.suite, args.config)
 
     for file, rel in tqdm(sorted(files)):
-        if args.coda:
+        if args.system == "codamosa":
             model, prompts, prompt_tokens = coda_prompts(file.read_text())
 
             file = file.parent / "llm_completions.txt"
             completions, completion_tokens = coda_completions(model, file.read_text())
 
             rel = rel.parent
-        elif args.mutap:
-            model, prompts, completions, prompt_tokens, completion_tokens = mutap_log(file.read_text())
         else:
             model, prompts, completions, prompt_tokens, completion_tokens = coverup_log(file.read_text())
 
