@@ -20,7 +20,7 @@ def parse_args():
                     action=argparse.BooleanOptionalAction,
                     help=f'only print out the command(s), but don\'t execute them')
 
-    ap.add_argument('--suite', choices=['good', 'cm', '1_0', 'mutap'], default='cm',
+    ap.add_argument('--suite', choices=['cm', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
     ap.add_argument('--skip-package', action='append', default=[], help='skip given package')
