@@ -1,7 +1,7 @@
 # CoverUp Replication Package
 This artifact accompanies the [FSE'25](https://conf.researchr.org/home/fse-2025) accepted paper
 
-Juan Altmayer Pizzorno and Emery D. Berger. 2025. <b>CoverUp: Effective High Coverage Test Generation for Python.</b> <em>Proc. ACM Softw. Eng. 2</em>, FSE, Article FSE128 (July 2025), 23 pages. https://doi.org/10.1145/3729398.
+Juan Altmayer Pizzorno and Emery D. Berger. 2025. [CoverUp: Effective High Coverage Test Generation for Python](CoverUp.pdf). <em>Proc. ACM Softw. Eng. 2</em>, FSE, Article FSE128 (July 2025), 23 pages. https://doi.org/10.1145/3729398.
 
 It contains materials used in the evaluation of CoverUp, including modified versions of other packages and experimental results.
 If you are only looking to use CoverUp, please see its [repository on GitHub](https://github.com/plasma-umass/coverup) instead.
