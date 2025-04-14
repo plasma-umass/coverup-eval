@@ -12,7 +12,7 @@ def parse_args():
     import argparse
     ap = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    ap.add_argument('--suite', choices=['good', 'cm', '1_0', 'mutap'], default='cm',
+    ap.add_argument('--suite', choices=['cm', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
     ap.add_argument('config', type=str, help='specify a configuration to use')
@@ -44,7 +44,7 @@ def scan_logs(config, args):
                 m = re.search(r'/(test_coverup_\d+.py)', seq[-1][2])
                 test_ckpt[(mod, m.group(1))] = ckpt
 
-    print(f"{config} {rejected=}")
+#    print(f"{config} {rejected=}")
 
     return {
         'rejected': rejected,
@@ -136,15 +136,15 @@ def compute(coverage, args):
 
 
 def load_or_gather(config, args):
-    coverage_json = Path(f"func-coverage-{config}.json")
+    import gzip
+    coverage_json = Path(f"cache/func-coverage-{config}.json.gz")
 
     if coverage_json.exists():
         print(f"reading {coverage_json}...")
-        with coverage_json.open("r") as f:
+        with gzip.open(coverage_json, "r") as f:
             coverage = json.load(f)
     else:
         path = Path('output') / (args.suite + (f".{config}" if config else ""))
-        print(f"{path=}")
         if not path.exists() and args.suite == 'cm':
             path = Path('output') / ('good' + (f".{config}" if config else ""))
 
@@ -152,7 +152,7 @@ def load_or_gather(config, args):
             'name': config,
             'data': gather_coverage(path, args.suite)
         }
-        with coverage_json.open("w") as f:
+        with gzip.open(coverage_json, "wt") as f:
             json.dump(coverage, f)
 
     return coverage
@@ -171,6 +171,3 @@ if __name__ == "__main__":
     cov2 = load_or_gather(args.compare_to, args)
     cov2.update(log2)
     compute(cov2, args)
-
-
-#    make_comparison(cov1, cov2, "useless.png")
