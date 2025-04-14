@@ -4,6 +4,7 @@ from collections import defaultdict
 import json
 from coverup.logreader import parse_log, TERMINAL_EVENTS
 from compare import load_suite
+from tqdm import tqdm
 
 
 def parse_args():
@@ -13,7 +14,8 @@ def parse_args():
     ap.add_argument('--suite', choices=['cm', 'good', '1_0', 'mutap'], default='cm',
                     help='suite of modules to compare')
 
-    ap.add_argument('--config', type=str, help='specify a (non-default) configuration to use')
+    ap.add_argument('--config', type=str, default='gpt4o-v2', help='specify a (non-default) configuration to use')
+
 
     ap.add_argument('--show', type=str,
                     help='print out instances of a given sequence')
@@ -44,6 +46,7 @@ def get_coverup_logs(suite, config):
     for file in path.glob("*/coverup-log-*"):
         rel = file.relative_to(path)
         if rel.parts[0] not in base_modules:
+            print(f"Skipping {rel}")
             continue
 
         yield file, rel
@@ -86,7 +89,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     seq_count = defaultdict(int)
-    for file, rel in sorted(get_coverup_logs(args.suite, args.config)):
+    for file, rel in tqdm(list(get_coverup_logs(args.suite, args.config))):
         if args.skip and args.skip in str(file):
             continue
 
@@ -94,7 +97,7 @@ if __name__ == '__main__':
             print(f"Skipping {file}")
             continue
 
-        print(rel)
+#        print(rel)
 
         for seg, seq, _ in get_sequences(file.read_text(), check_c_p_equivalence=args.check_c_p):
             if args.show and args.show == seq:
@@ -114,52 +117,55 @@ if __name__ == '__main__':
 #    print(tabulate(mktable(seq_count), headers=["seq", "count", "%"]))
 
 # P and C seqs
-    for start in (('P','p'), ('C',)):
-        p_count = defaultdict(int)
-        for seq, count in seq_count.items():
-            if seq[0] in start:
-                seq = start[0] + seq[1:] # p -> P
-                if seq[-1] in ('-', 'T', 'M'):
-                    seq = seq[0] + '..' + seq[-1]
-                p_count[seq] += count
-        print('')
-        print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
+#    for start in (('P','p'), ('C',)):
+#        p_count = defaultdict(int)
+#        for seq, count in seq_count.items():
+#            if seq[0] in start:
+#                seq = start[0] + seq[1:] # p -> P
+#                if seq[-1] in ('-', 'T', 'M'):
+#                    seq = seq[0] + '..' + seq[-1]
+#                p_count[seq] += count
+#        print('')
+#        print(tabulate(mktable(p_count), headers=["seq", "count", "%"]))
 
 # final states
     end_count = defaultdict(int)
     for seq, count in seq_count.items():
+        # When installing missing modules, M isn't a terminal state;
+        # don't let it be interpreted as another retry.
+        seq = seq.replace("M", "")
         if seq[-1] == 'G':
             end_count[('.' * (len(seq)-1)) + 'G'] += count
 
     print('')
     print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
-    end_count = defaultdict(int)
-    for seq, count in seq_count.items():
-        if seq[-1] == 'G':
-            end_count[seq[0] + ('.' * (len(seq)-2)) + 'G'] += count
-
-    print('')
-    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
-
-    end_count = defaultdict(int)
-    for seq, count in seq_count.items():
-        if seq[-1] == '*':
-            seq = seq[:-1]
-
-        if seq[-1] in ('F', 'G', 'M'):
-            end_count["~" + seq[-1]] += count
-        else:
-            end_count["." + seq[1:]] += count
-
-    print('')
-    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
-
-    end_count = defaultdict(int)
-    for seq, count in seq_count.items():
-        end_count[('~' + seq[-1])] += count
-    print('')
-    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
+#    end_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if seq[-1] == 'G':
+#            end_count[seq[0] + ('.' * (len(seq)-2)) + 'G'] += count
+#
+#    print('')
+#    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
+#
+#    end_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        if seq[-1] == '*':
+#            seq = seq[:-1]
+#
+#        if seq[-1] in ('F', 'G', 'M'):
+#            end_count["~" + seq[-1]] += count
+#        else:
+#            end_count["." + seq[1:]] += count
+#
+#    print('')
+#    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
+#
+#    end_count = defaultdict(int)
+#    for seq, count in seq_count.items():
+#        end_count[('~' + seq[-1])] += count
+#    print('')
+#    print(tabulate(mktable(end_count), headers=["seq", "count", "%"]))
 
 ## coverage prompts
 #    cov_count = defaultdict(int)
