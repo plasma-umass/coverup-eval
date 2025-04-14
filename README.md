@@ -12,6 +12,7 @@ See CodaMosa, Pynguin (on which CodaMosa is based), and MuTAP for their respecti
 
 ## Requirements
 Python3.10+ and, to run CoverUp or CodaMosa on the CM or PY suites, a Linux system with Docker.
+To run MuTAP or evaluate on the MT suite, Python 3.9.
 See [requirements.txt](requirements.txt) for Python module requirements.
 
 ## Obtaining a Local Copy
