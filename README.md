@@ -94,6 +94,7 @@ python3 scripts/function-by-run.py gpt4o-v2 gpt4o-v2-no-coverage
 ### `codamosa/replication`
 This directory contains the original CodaMosa replication data, as well as other files for CoverUp.
 
+- `codamosa-dataset`: original CodaMosa experimental results, copied from https://github.com/microsoft/codamosa-dataset
 - `config-args/gpt4o`: contains the CodaMosa configuration for running with GPT-4o;
 - `docker-images/gpt4-coda-runner.tar.bz2`: Docker image used to run CodaMosa;
 - `docker-images/slipcover-runner.tar.bz2`: Docker image used to run CodaMosa tests, measuring coverage;
