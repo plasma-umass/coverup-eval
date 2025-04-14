@@ -286,7 +286,6 @@ if __name__ == "__main__":
         datasets.append(load_coverup(suite, second_config, args.ckpt))
 
     module_names = set(datasets[0]['data'].keys() | datasets[1]['data'].keys())
-#    module_names = sorted(datasets[0]['data'].keys() & datasets[1]['data'].keys())
     if (missing_in_0 := module_names - datasets[0]['data'].keys()):
         print(f"Dataset lacks some modules: {missing_in_0}")
         sys.exit(1)
@@ -301,6 +300,8 @@ if __name__ == "__main__":
                 'missing_lines': ds_0['covered_lines'] + ds_0['missing_lines'],
                 'missing_branches': ds_0['covered_branches'] + ds_0['missing_branches'],
             })
+
+    module_names = sorted(module_names)
 
     # compute lines+branches coverage for easy access
     coverage_lb = []
