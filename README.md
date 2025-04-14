@@ -16,7 +16,7 @@ See [requirements.txt](requirements.txt) for Python module requirements.
 
 ## Obtaining a Local Copy
 This repository includes [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
-When cloning it, you should pass in the `--recurse-submodules` option, as in:
+When cloning it, you should pass in the `--recurse-submodules` option:
 ```
     git clone --recurse-submodules git@github.com:plasma-umass/coverup-eval
     cd coverup-eval
@@ -45,13 +45,13 @@ This directory contains configuration shell scripts that provide options for the
 For example, the main CoverUp results used `gpt4o-v2`, which selects (a specific version of) the GPT-4o model and uses CoverUp's "v2" prompt.
 The fully ablated results used instead the `gpt4o-v2-ablated` configuration, etc.
 
-The script `common.sh` is used with all configurations, and is useful, for example, for providing an API key;
+The script `common.sh` is used with all configurations and is useful, for example, for providing an API key;
 `common.EXAMPLE.sh` provides an example.
 
 ### scripts
 There are various programs in `scripts`:
-- `compare.py`: compares coverage results (used in RQ1, RQ2 and RQ5).
-It always compares CoverUp results to those of another system, which may be CodaMosa, MuTAP or CoverUp itself.
+- `compare.py`: compares coverage results (used in RQ1, RQ2, and RQ5).
+It always compares CoverUp results to those of another system, which may be CodaMosa, MuTAP, or CoverUp itself.
 Usage examples:
 ```
 python3 scripts/compare.py --to codamosa-gpt4o                 # or codamosa-codex
@@ -89,7 +89,7 @@ Usage example:
 ```
 python3 scripts/function-by-run.py gpt4o-v2 gpt4o-v2-no-coverage
 ```
-- `suite-stats.py`: counts the number of functions, lines and files in one of our benchmark suites.
+- `suite-stats.py`: counts the number of functions, lines, and files in one of our benchmark suites.
 
 ### `codamosa/replication`
 This directory contains the original CodaMosa replication data, as well as other files for CoverUp.
@@ -103,13 +103,13 @@ This directory contains the original CodaMosa replication data, as well as other
 - `get_1_0_modules.sh`: used to create suite PY;
 - `gen_1_0_modules.sh`: used to create suite PY;
 - `test-apps`: modules used to benchmark CodaMosa and CoverUp;
-- `test-apps/good_modules.csv`: a set of modules used to evalute CodaMosa;
+- `test-apps/good_modules.csv`: a set of modules used to evaluate CodaMosa;
 - `test-apps/cm_modules.csv`: defines suite CM;
 - `test-apps/1_0_modules.csv`: defines suite PY;
-- `gpt4-coda`: output from running CodaMosa with GPT-4 (not used on the paper);
+- `gpt4-coda`: output from running CodaMosa with GPT-4 (not used in the paper);
 - `gpt4o-coda`: output from running CodaMosa with GPT-4o (Codamosa (gpt4o));
 - `output-codex`: coverage measurements for Codamosa (codex);
-- `output-gpt4`: coverage measurements for Codamosa on GPT-4 (not used on the paper);
+- `output-gpt4`: coverage measurements for Codamosa on GPT-4 (not used in the paper);
 - `output-gpt4o`: coverage measurements for Codamosa (gpt4o);
 
 ## Running CoverUp's Evaluation on a New Configuration
