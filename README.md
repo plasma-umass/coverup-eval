@@ -154,7 +154,7 @@ The steps below describe, roughly, how to replicate the results in the paper.
 > [!NOTE]
 > At the time of writing, running CoverUp, CodaMosa, and MuTAP, as described below, is very costly (in the order of thousands of dollars in OpenAI fees).
 
-### Running CoverUp:
+### Running CoverUp
 - enter OpenAI key in `config/common.sh`; see `config/common.EXAMPLE.sh` for an example.
 - for each configuration C in `gpt4o-v2`, `gpt4o-v2-ablated`,  ... (see `config/gpt4o-v2*`), execute, replacing C:
   - remove existing output: `rm -rf output/cm.C`
@@ -166,7 +166,7 @@ The steps below describe, roughly, how to replicate the results in the paper.
   - remove existing output: `rm -rf output/mutap.gpt4o-v2`
   - run CoverUp: `python3 scripts/eval_coverup.py --config gpt4o-v2 --suite mutap`
 
-### Running CodaMosa:
+### Running CodaMosa
 - execute `source config/common.sh` to load the OpenAI key (from above) as an environment variable
 - `pushd codamosa/replication`
 - delete previous results: `rm -rf output-* gpt4*-coda`
@@ -175,7 +175,7 @@ The steps below describe, roughly, how to replicate the results in the paper.
 - measure coverage for CodaMosa (codex): `python3 eval_codamosa.py --codamosa-results codex`
 - `popd`
 
-### Running MuTAP:
+### Running MuTAP
 - if not already done, execute `source config/common.sh` to load the OpenAI key (from above) as an environment variable
 - remove old results: `rm -rf MuTAP-results/*`
 - `pushd MuTAP`
