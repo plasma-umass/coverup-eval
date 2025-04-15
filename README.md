@@ -152,7 +152,7 @@ This directory contains the original CodaMosa replication data, as well as other
 The steps below describe, roughly, how to replicate the results in the paper.
 
 > [!NOTE]
-> At the time of writing, running CoverUp, CodaMosa, and MuTAP, as described below, is very costly (in the order of thousands of dollars).
+> At the time of writing, running CoverUp, CodaMosa, and MuTAP, as described below, is very costly (in the order of thousands of dollars in OpenAI fees).
 
 ### Running CoverUp:
 - enter OpenAI key in `config/common.sh`; see `config/common.EXAMPLE.sh` for an example.
