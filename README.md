@@ -149,9 +149,10 @@ This directory contains the original CodaMosa replication data, as well as other
 ```
 
 ## Replicating Results
+The steps below describe, roughly, how to replicate the results in the paper.
+
 > [!NOTE]
-> XXX add note about cost and time XXX
-> XXX add note that steps are rough XXX
+> At the time of writing, running CoverUp, CodaMosa, and MuTAP, as described below, is very costly (in the order of thousands of dollars).
 
 ### Running CoverUp:
 - enter OpenAI key in `config/common.sh`; see `config/common.EXAMPLE.sh` for an example.
@@ -184,4 +185,17 @@ This directory contains the original CodaMosa replication data, as well as other
 - `popd`
 
 ### Extracting Results
-TODO
+- coverage results:
+  - for each configuration C in `gpt4o-v2`, `gpt4o-v2-ablated`,  ... (see `config/gpt4o-v2*`), execute, replacing C:
+    - `python3 scripts/compare.py --to coverup-C`
+  - `python3 scripts/compare.py --to codamosa-gpt4o`
+  - `python3 scripts/compare.py --to codamosa-codex`
+  - `python3 scripts/compare.py --suite 1_0`
+  - for each configuration C in `Codex_few`, `Codex_zero`, `gpt4o_few`, `gpt4o_zero`, execute, replacing C:
+    - `python3 scripts/compare.py --suite mutap --to mutap-C`
+- cost and time results:
+  - `python3 scripts/cost.py --config gpt4o-v2`
+  - `python3 scripts/cost.py --config gpt4o-v2-ablated`
+  - `python3 scripts/cost.py --system codamosa --config gpt4o`
+- contribution of continued chat: `python3 scripts/sequences.py --config gpt4o-v2`
+- coverage-increasing test functions per run: `python3 scripts/function-by-run.py gpt4o-v2 gpt4o-v2-no-coverage`
