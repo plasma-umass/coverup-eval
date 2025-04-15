@@ -149,7 +149,7 @@ This directory contains the original CodaMosa replication data, as well as other
 ```
 
 ## Replicating Results
-The steps below describe, roughly, how to replicate the results in the paper.
+The steps below outline how to replicate the results in the paper.
 
 > [!NOTE]
 > At the time of writing, running CoverUp, CodaMosa, and MuTAP, as described below, is very costly (in the order of thousands of dollars in OpenAI fees).
